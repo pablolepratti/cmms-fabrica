@@ -12,18 +12,9 @@ def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
 def verificar_login(usuario, password):
-    print("🔐 Contraseña recibida:", repr(password))
     if os.path.exists(usuarios_path):
         usuarios = pd.read_csv(usuarios_path)
         hashed = hash_password(password)
-
-        # DEBUG - Mostrar para ver por qué no valida
-        print("🧪 DEBUG LOGIN")
-        print("Usuario ingresado:", repr(usuario))
-        print("Hash generado:", hashed)
-        print("Usuarios en CSV:")
-        print(usuarios.to_dict(orient="records"))
-
         match = usuarios[
             (usuarios["usuario"].str.strip() == usuario.strip()) &
             (usuarios["hash_contraseña"].str.strip() == hashed.strip())
@@ -32,9 +23,8 @@ def verificar_login(usuario, password):
             return match.iloc[0]["rol"]
     return None
 
-
 # -------------------------------
-# Cargar datos desde archivos CSV
+# Cargar rutas a CSVs
 # -------------------------------
 DATA_FOLDER = "cmms_data"
 maquinas_path = os.path.join(DATA_FOLDER, "maquinas.csv")
@@ -70,7 +60,7 @@ if not st.session_state.logueado:
     st.stop()
 
 # -------------------------------
-# Si está logueado, mostrar sistema
+# Sistema ya logueado
 # -------------------------------
 st.sidebar.markdown(f"👤 **{st.session_state.usuario}** ({st.session_state.rol})")
 if st.sidebar.button("Cerrar sesión"):
@@ -79,7 +69,9 @@ if st.sidebar.button("Cerrar sesión"):
     st.session_state.rol = ""
     st.rerun()
 
-# Crear nuevos usuarios (solo admin Pablo)
+# -------------------------------
+# Crear usuarios (solo admin)
+# -------------------------------
 if st.session_state.usuario == "pablo" and st.session_state.rol == "admin":
     with st.sidebar.expander("➕ Crear nuevo usuario"):
         nuevo_user = st.text_input("Nuevo usuario")
@@ -92,13 +84,19 @@ if st.session_state.usuario == "pablo" and st.session_state.rol == "admin":
             usuarios.to_csv(usuarios_path, index=False)
             st.success(f"Usuario '{nuevo_user}' creado exitosamente")
 
-# Cargar datos
-maquinas = pd.read_csv(maquinas_path) if os.path.exists(maquinas_path) else pd.DataFrame()
-tareas = pd.read_csv(tareas_path) if os.path.exists(tareas_path) else pd.DataFrame()
-inventario = pd.read_csv(inventario_path) if os.path.exists(inventario_path) else pd.DataFrame()
+# -------------------------------
+# Cargar CSVs
+# -------------------------------
+maquinas = pd.read_csv(maquinas_path) if os.path.exists(maquinas_path) else pd.DataFrame(columns=["ID", "Nombre", "Sector", "Estado"])
+tareas = pd.read_csv(tareas_path) if os.path.exists(tareas_path) else pd.DataFrame(columns=["ID", "ID_maquina", "Tarea", "Periodicidad", "Última_ejecucion"])
+inventario = pd.read_csv(inventario_path) if os.path.exists(inventario_path) else pd.DataFrame(columns=["ID", "Nombre", "Tipo", "Cantidad", "Maquina_asociada"])
+usuarios = pd.read_csv(usuarios_path) if os.path.exists(usuarios_path) else pd.DataFrame(columns=["usuario", "hash_contraseña", "rol"])
 historial = pd.read_csv(historial_path) if os.path.exists(historial_path) else pd.DataFrame(columns=["Tarea", "Fecha", "Usuario"])
-observaciones = pd.read_csv(observaciones_path) if os.path.exists(observaciones_path) else pd.DataFrame(columns=["Máquina", "Observación", "Fecha", "Usuario"])
+observaciones = pd.read_csv(observaciones_path) if os.path.exists(observaciones_path) else pd.DataFrame(columns=["ID", "Maquina", "Observacion", "Fecha", "Usuario"])
 
+# -------------------------------
+# Interfaz principal
+# -------------------------------
 st.title("🛠️ Dashboard de Mantenimiento Preventivo")
 
 menu = st.sidebar.radio("Ir a:", [
@@ -123,8 +121,8 @@ elif menu == "Tareas de mantenimiento":
 elif menu == "Tareas vencidas":
     st.subheader("Tareas vencidas")
     hoy = datetime.date.today()
-    tareas["Última ejecución"] = pd.to_datetime(tareas["Última ejecución"])
-    vencidas = tareas[tareas["Última ejecución"] < (pd.Timestamp(hoy) - pd.Timedelta(days=30))]
+    tareas["Última_ejecucion"] = pd.to_datetime(tareas["Última_ejecucion"], errors="coerce")
+    vencidas = tareas[tareas["Última_ejecucion"] < (pd.Timestamp(hoy) - pd.Timedelta(days=30))]
     st.dataframe(vencidas)
 
 elif menu == "Cargar tarea realizada":
@@ -132,7 +130,7 @@ elif menu == "Cargar tarea realizada":
     tarea = st.selectbox("Tarea a actualizar", tareas["Tarea"])
     fecha = st.date_input("Fecha de realización", value=datetime.date.today())
     if st.button("Registrar"):
-        tareas.loc[tareas["Tarea"] == tarea, "Última ejecución"] = fecha
+        tareas.loc[tareas["Tarea"] == tarea, "Última_ejecucion"] = fecha
         tareas.to_csv(tareas_path, index=False)
 
         nuevo_log = pd.DataFrame([[tarea, fecha, st.session_state.usuario]], columns=["Tarea", "Fecha", "Usuario"])
@@ -156,7 +154,9 @@ elif menu == "Observaciones técnicas":
     maquina = st.selectbox("Máquina", maquinas["Nombre"])
     observacion = st.text_area("Observación")
     if st.button("Guardar observación"):
-        nueva = pd.DataFrame([[maquina, observacion, datetime.date.today(), st.session_state.usuario]], columns=observaciones.columns)
+        nuevo_id = len(observaciones) + 1
+        nueva = pd.DataFrame([[nuevo_id, maquina, observacion, datetime.date.today(), st.session_state.usuario]],
+                             columns=observaciones.columns)
         observaciones = pd.concat([observaciones, nueva], ignore_index=True)
         observaciones.to_csv(observaciones_path, index=False)
         st.success("Observación registrada correctamente")
@@ -186,8 +186,9 @@ elif menu == "Agregar registros":
         tarea = st.text_input("Tarea")
         frecuencia = st.text_input("Frecuencia (ej: semanal, mensual, 1200h)")
         ultima = st.date_input("Última ejecución", value=datetime.date.today())
+        nuevo_id = len(tareas) + 1
         if st.button("Agregar tarea"):
-            nueva = pd.DataFrame([[id_maquina, tarea, frecuencia, ultima]], columns=tareas.columns)
+            nueva = pd.DataFrame([[nuevo_id, id_maquina, tarea, frecuencia, ultima]], columns=tareas.columns)
             tareas = pd.concat([tareas, nueva], ignore_index=True)
             tareas.to_csv(tareas_path, index=False)
             st.success(f"Tarea '{tarea}' agregada a máquina {id_maquina}")
@@ -197,9 +198,11 @@ elif menu == "Agregar registros":
         repuesto = st.text_input("Nombre del repuesto")
         tipo = st.selectbox("Tipo", ["Repuesto", "Insumo", "Consumible"])
         cantidad = st.number_input("Cantidad", min_value=1, step=1)
-        ubicacion = st.text_input("Ubicación física")
+        ubicacion = st.text_input("Máquina asociada o ubicación")
+        nuevo_id = len(inventario) + 1
         if st.button("Agregar repuesto"):
-            nuevo = pd.DataFrame([[repuesto, tipo, cantidad, ubicacion]], columns=["Repuesto", "Tipo", "Cantidad", "Ubicación"])
+            nuevo = pd.DataFrame([[nuevo_id, repuesto, tipo, cantidad, ubicacion]],
+                                 columns=["ID", "Nombre", "Tipo", "Cantidad", "Maquina_asociada"])
             inventario = pd.concat([inventario, nuevo], ignore_index=True)
             inventario.to_csv(inventario_path, index=False)
             st.success(f"Repuesto '{repuesto}' agregado al inventario")
@@ -219,11 +222,12 @@ elif menu == "Exportar PDF":
             pdf.ln(10)
 
             for index, row in df.iterrows():
-                linea = f"{row['Repuesto']} - Cantidad: {row['Cantidad']} - Ubicación: {row['Ubicación']}"
+                linea = f"{row['Nombre']} - Cantidad: {row['Cantidad']} - Ubicación: {row['Maquina_asociada']}"
                 pdf.cell(200, 10, txt=linea, ln=True)
 
             pdf_path = os.path.join(DATA_FOLDER, f"stock_{tipo_seleccionado}.pdf")
             pdf.output(pdf_path)
             with open(pdf_path, "rb") as f:
                 st.download_button("📥 Descargar PDF", f, file_name=f"stock_{tipo_seleccionado}.pdf")
+
 
