@@ -3,6 +3,7 @@ import pandas as pd
 import datetime
 import hashlib
 import os
+import time
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
@@ -19,21 +20,27 @@ DB_PASSWORD = os.getenv("DB_PASSWORD")
 DB_PORT = os.getenv("DB_PORT")
 
 # -------------------------------
-# Conexión a PostgreSQL segura
+# Conexión a PostgreSQL segura con reintento
 # -------------------------------
 def get_connection():
     try:
-        return psycopg2.connect(
-            host=DB_HOST,
-            dbname=DB_NAME,
-            user=DB_USER,
-            password=DB_PASSWORD,
-            port=DB_PORT,
-            cursor_factory=RealDictCursor,
-            sslmode="require"  # Render necesita SSL forzado
-        )
+        for intento in range(3):
+            try:
+                return psycopg2.connect(
+                    host=DB_HOST,
+                    dbname=DB_NAME,
+                    user=DB_USER,
+                    password=DB_PASSWORD,
+                    port=DB_PORT,
+                    cursor_factory=RealDictCursor,
+                    sslmode="require"
+                )
+            except psycopg2.OperationalError:
+                time.sleep(5)  # Espera 5 segundos antes de reintentar
+        st.error("🔌 No se pudo conectar a la base tras varios intentos.")
+        return None
     except Exception as e:
-        st.error(f"❌ Error al conectar a la base de datos: {e}")
+        st.error(f"❌ Error general al conectar: {e}")
         return None
 
 def query_df(sql, params=None):
@@ -54,9 +61,6 @@ def execute_query(sql, params=None):
             cur.execute(sql, params)
             conn.commit()
 
-# -------------------------------
-# Hash de contraseña y login
-# -------------------------------
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
@@ -70,30 +74,29 @@ def verificar_login(usuario, password):
         pass
     return None
 
-# -------------------------------
-# Inicialización de tablas y CSV
-# -------------------------------
 def inicializar_tabla(nombre_tabla, columnas_sql, archivo_csv=None):
-    with get_connection() as conn:
+    conn = get_connection()
+    if conn is None:
+        return
+    with conn:
         with conn.cursor() as cur:
             cur.execute(f"CREATE TABLE IF NOT EXISTS {nombre_tabla} ({columnas_sql})")
             cur.execute(f"SELECT COUNT(*) FROM {nombre_tabla}")
             count = cur.fetchone()[0]
-
-            if count == 0:
-                if archivo_csv and os.path.exists(archivo_csv):
-                    df = pd.read_csv(archivo_csv)
-                    columnas = ", ".join(df.columns)
-                    placeholders = ", ".join(["%s"] * len(df.columns))
-                    for _, row in df.iterrows():
-                        cur.execute(f"INSERT INTO {nombre_tabla} ({columnas}) VALUES ({placeholders})", tuple(row))
-                    conn.commit()
-                    print(f"✅ Datos cargados en {nombre_tabla}")
-                else:
-                    print(f"⚠️ CSV no encontrado: {archivo_csv}")
+            if count == 0 and archivo_csv and os.path.exists(archivo_csv):
+                df = pd.read_csv(archivo_csv)
+                columnas = ", ".join(df.columns)
+                placeholders = ", ".join(["%s"] * len(df.columns))
+                for _, row in df.iterrows():
+                    cur.execute(f"INSERT INTO {nombre_tabla} ({columnas}) VALUES ({placeholders})", tuple(row))
+                conn.commit()
+                print(f"✅ Datos cargados en {nombre_tabla}")
 
 def inicializar_base():
-    with get_connection() as conn:
+    conn = get_connection()
+    if conn is None:
+        return
+    with conn:
         with conn.cursor() as cur:
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS usuarios (
@@ -112,10 +115,10 @@ def inicializar_base():
     inicializar_tabla("tareas", "ID TEXT, ID_maquina TEXT, Tarea TEXT, Periodicidad TEXT, Ultima_ejecucion TEXT", "cmms_data/tareas.csv")
     inicializar_tabla("inventario", "ID TEXT, Nombre TEXT, Tipo TEXT, Cantidad TEXT, Maquina_asociada TEXT", "cmms_data/inventario.csv")
     inicializar_tabla("observaciones", "ID TEXT, Maquina TEXT, Observacion TEXT, Fecha TEXT, Usuario TEXT", "cmms_data/observaciones.csv")
-    inicializar_tabla("historial", "id_maquina TEXT, tarea TEXT, fecha TEXT, usuario TEXT", "cmms_data/historial.csv")
+    inicializar_tabla("historial", "ID_maquina TEXT, Tarea TEXT, Fecha TEXT, Usuario TEXT", "cmms_data/historial.csv")
 
 # -------------------------------
-# Interfaz de usuario
+# Streamlit app
 # -------------------------------
 st.set_page_config(page_title="CMMS Fábrica", layout="wide")
 
@@ -123,10 +126,6 @@ if "logueado" not in st.session_state:
     st.session_state.logueado = False
     st.session_state.usuario = ""
     st.session_state.rol = ""
-
-if st.sidebar.button("🔄 Inicializar Base de Datos"):
-    inicializar_base()
-    st.success("Base de datos inicializada")
 
 if not st.session_state.logueado:
     st.title("🔐 Iniciar sesión")
@@ -149,10 +148,7 @@ if st.sidebar.button("Cerrar sesión"):
     st.rerun()
 
 st.title("🛠️ Dashboard de Mantenimiento Preventivo")
-
-menu = st.sidebar.radio("Ir a:", [
-    "Inicio", "Tareas vencidas", "Cargar tarea realizada",
-    "Observaciones técnicas"])
+menu = st.sidebar.radio("Ir a:", ["Inicio", "Tareas vencidas", "Cargar tarea realizada", "Observaciones técnicas"])
 
 if menu == "Inicio":
     try:
@@ -183,10 +179,9 @@ elif menu == "Cargar tarea realizada":
         tarea = st.selectbox("Tarea a actualizar", tareas["Tarea"].unique())
         fecha = st.date_input("Fecha de realización", value=datetime.date.today())
         if st.button("Registrar ejecución"):
-            id_maquina = tareas[tareas["Tarea"] == tarea]["ID_maquina"].values[0]
             execute_query("UPDATE tareas SET Ultima_ejecucion = %s WHERE Tarea = %s", (fecha, tarea))
-            execute_query("INSERT INTO historial (id_maquina, tarea, fecha, usuario) VALUES (%s, %s, %s, %s)",
-                          (id_maquina, tarea, fecha, st.session_state.usuario))
+            execute_query("INSERT INTO historial (ID_maquina, Tarea, Fecha, Usuario) VALUES (%s, %s, %s, %s)", 
+                          (tareas[tareas["Tarea"] == tarea]["ID_maquina"].values[0], tarea, fecha, st.session_state.usuario))
             st.success(f"Tarea '{tarea}' actualizada a {fecha}")
     except:
         st.error("❌ No se pudo registrar la ejecución.")
@@ -198,8 +193,8 @@ elif menu == "Observaciones técnicas":
         maquina = st.selectbox("Máquina", maquinas["Nombre"])
         observacion = st.text_area("Observación")
         if st.button("Guardar observación"):
-            execute_query("INSERT INTO observaciones (Maquina, Observacion, Fecha, Usuario) VALUES (%s, %s, %s, %s)",
-                          (maquina, observacion, datetime.date.today(), st.session_state.usuario))
+            execute_query("INSERT INTO observaciones (ID, Maquina, Observacion, Fecha, Usuario) VALUES (%s, %s, %s, %s, %s)",
+                          (str(datetime.datetime.now().timestamp()), maquina, observacion, datetime.date.today(), st.session_state.usuario))
             st.success("Observación registrada correctamente")
 
         st.subheader("Historial de observaciones")
