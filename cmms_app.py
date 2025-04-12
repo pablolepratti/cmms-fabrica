@@ -24,7 +24,7 @@ def verificar_login(usuario, password):
     return None
 
 # -------------------------------
-# Cargar rutas a CSVs
+# Rutas de datos
 # -------------------------------
 DATA_FOLDER = "cmms_data"
 maquinas_path = os.path.join(DATA_FOLDER, "maquinas.csv")
@@ -35,10 +35,13 @@ historial_path = os.path.join(DATA_FOLDER, "historial.csv")
 observaciones_path = os.path.join(DATA_FOLDER, "observaciones.csv")
 
 # -------------------------------
-# Login y control de sesión
+# Configuración de la app
 # -------------------------------
 st.set_page_config(page_title="CMMS Fábrica", layout="wide")
 
+# -------------------------------
+# Login
+# -------------------------------
 if "logueado" not in st.session_state:
     st.session_state.logueado = False
     st.session_state.usuario = ""
@@ -60,17 +63,15 @@ if not st.session_state.logueado:
     st.stop()
 
 # -------------------------------
-# Sistema ya logueado
+# Cierre de sesión
 # -------------------------------
 st.sidebar.markdown(f"👤 **{st.session_state.usuario}** ({st.session_state.rol})")
 if st.sidebar.button("Cerrar sesión"):
     st.session_state.logueado = False
-    st.session_state.usuario = ""
-    st.session_state.rol = ""
     st.rerun()
 
 # -------------------------------
-# Crear usuarios (solo admin)
+# Crear nuevo usuario (solo Pablo)
 # -------------------------------
 if st.session_state.usuario == "pablo" and st.session_state.rol == "admin":
     with st.sidebar.expander("➕ Crear nuevo usuario"):
@@ -85,25 +86,33 @@ if st.session_state.usuario == "pablo" and st.session_state.rol == "admin":
             st.success(f"Usuario '{nuevo_user}' creado exitosamente")
 
 # -------------------------------
-# Cargar CSVs
+# Cargar archivos
 # -------------------------------
-maquinas = pd.read_csv(maquinas_path) if os.path.exists(maquinas_path) else pd.DataFrame(columns=["ID", "Nombre", "Sector", "Estado"])
-tareas = pd.read_csv(tareas_path) if os.path.exists(tareas_path) else pd.DataFrame(columns=["ID", "ID_maquina", "Tarea", "Periodicidad", "Última_ejecucion"])
-inventario = pd.read_csv(inventario_path) if os.path.exists(inventario_path) else pd.DataFrame(columns=["ID", "Nombre", "Tipo", "Cantidad", "Maquina_asociada"])
-usuarios = pd.read_csv(usuarios_path) if os.path.exists(usuarios_path) else pd.DataFrame(columns=["usuario", "hash_contraseña", "rol"])
-historial = pd.read_csv(historial_path) if os.path.exists(historial_path) else pd.DataFrame(columns=["Tarea", "Fecha", "Usuario"])
-observaciones = pd.read_csv(observaciones_path) if os.path.exists(observaciones_path) else pd.DataFrame(columns=["ID", "Maquina", "Observacion", "Fecha", "Usuario"])
+def cargar_csv(path, columnas):
+    if not os.path.exists(path):
+        df = pd.DataFrame(columns=columnas)
+        df.to_csv(path, index=False)
+    return pd.read_csv(path)
+
+maquinas = cargar_csv(maquinas_path, ["ID", "Nombre", "Sector", "Estado"])
+tareas = cargar_csv(tareas_path, ["ID", "ID_maquina", "Tarea", "Periodicidad", "Última_ejecucion"])
+inventario = cargar_csv(inventario_path, ["ID", "Nombre", "Tipo", "Cantidad", "Máquina_asociada"])
+usuarios = cargar_csv(usuarios_path, ["usuario", "hash_contraseña", "rol"])
+historial = cargar_csv(historial_path, ["ID_maquina", "Tarea", "Fecha", "Usuario"])
+observaciones = cargar_csv(observaciones_path, ["ID", "Máquina", "Observacion", "Fecha", "Usuario"])
 
 # -------------------------------
-# Interfaz principal
+# Menú lateral
 # -------------------------------
 st.title("🛠️ Dashboard de Mantenimiento Preventivo")
-
 menu = st.sidebar.radio("Ir a:", [
     "Inicio", "Máquinas", "Tareas de mantenimiento", "Tareas vencidas",
     "Cargar tarea realizada", "Inventario", "Observaciones técnicas",
     "Agregar registros", "Exportar PDF"])
 
+# -------------------------------
+# Páginas
+# -------------------------------
 if menu == "Inicio":
     st.subheader("Resumen general")
     st.metric("Máquinas registradas", len(maquinas))
@@ -129,11 +138,14 @@ elif menu == "Cargar tarea realizada":
     st.subheader("Registrar nueva ejecución de tarea")
     tarea = st.selectbox("Tarea a actualizar", tareas["Tarea"])
     fecha = st.date_input("Fecha de realización", value=datetime.date.today())
+
     if st.button("Registrar"):
-        tareas.loc[tareas["Tarea"] == tarea, "Última_ejecucion"] = fecha
+        idx = tareas[tareas["Tarea"] == tarea].index[0]
+        tareas.at[idx, "Última_ejecucion"] = fecha
         tareas.to_csv(tareas_path, index=False)
 
-        nuevo_log = pd.DataFrame([[tarea, fecha, st.session_state.usuario]], columns=["Tarea", "Fecha", "Usuario"])
+        id_maquina = tareas.at[idx, "ID_maquina"]
+        nuevo_log = pd.DataFrame([[id_maquina, tarea, fecha, st.session_state.usuario]], columns=historial.columns)
         historial = pd.concat([historial, nuevo_log], ignore_index=True)
         historial.to_csv(historial_path, index=False)
 
@@ -154,13 +166,11 @@ elif menu == "Observaciones técnicas":
     maquina = st.selectbox("Máquina", maquinas["Nombre"])
     observacion = st.text_area("Observación")
     if st.button("Guardar observación"):
-        nuevo_id = len(observaciones) + 1
-        nueva = pd.DataFrame([[nuevo_id, maquina, observacion, datetime.date.today(), st.session_state.usuario]],
+        nueva = pd.DataFrame([[len(observaciones)+1, maquina, observacion, datetime.date.today(), st.session_state.usuario]],
                              columns=observaciones.columns)
         observaciones = pd.concat([observaciones, nueva], ignore_index=True)
         observaciones.to_csv(observaciones_path, index=False)
         st.success("Observación registrada correctamente")
-
     st.subheader("Historial de observaciones")
     st.dataframe(observaciones)
 
@@ -182,13 +192,12 @@ elif menu == "Agregar registros":
 
     with tab2:
         st.markdown("### Nueva tarea de mantenimiento")
-        id_maquina = st.selectbox("Máquina", maquinas["ID"])
+        id_maquina = st.selectbox("Máquina (ID)", maquinas["ID"])
         tarea = st.text_input("Tarea")
         frecuencia = st.text_input("Frecuencia (ej: semanal, mensual, 1200h)")
         ultima = st.date_input("Última ejecución", value=datetime.date.today())
-        nuevo_id = len(tareas) + 1
         if st.button("Agregar tarea"):
-            nueva = pd.DataFrame([[nuevo_id, id_maquina, tarea, frecuencia, ultima]], columns=tareas.columns)
+            nueva = pd.DataFrame([[len(tareas)+1, id_maquina, tarea, frecuencia, ultima]], columns=tareas.columns)
             tareas = pd.concat([tareas, nueva], ignore_index=True)
             tareas.to_csv(tareas_path, index=False)
             st.success(f"Tarea '{tarea}' agregada a máquina {id_maquina}")
@@ -198,11 +207,9 @@ elif menu == "Agregar registros":
         repuesto = st.text_input("Nombre del repuesto")
         tipo = st.selectbox("Tipo", ["Repuesto", "Insumo", "Consumible"])
         cantidad = st.number_input("Cantidad", min_value=1, step=1)
-        ubicacion = st.text_input("Máquina asociada o ubicación")
-        nuevo_id = len(inventario) + 1
+        ubicacion = st.text_input("Ubicación física")
         if st.button("Agregar repuesto"):
-            nuevo = pd.DataFrame([[nuevo_id, repuesto, tipo, cantidad, ubicacion]],
-                                 columns=["ID", "Nombre", "Tipo", "Cantidad", "Maquina_asociada"])
+            nuevo = pd.DataFrame([[len(inventario)+1, repuesto, tipo, cantidad, ubicacion]], columns=inventario.columns)
             inventario = pd.concat([inventario, nuevo], ignore_index=True)
             inventario.to_csv(inventario_path, index=False)
             st.success(f"Repuesto '{repuesto}' agregado al inventario")
@@ -222,12 +229,11 @@ elif menu == "Exportar PDF":
             pdf.ln(10)
 
             for index, row in df.iterrows():
-                linea = f"{row['Nombre']} - Cantidad: {row['Cantidad']} - Ubicación: {row['Maquina_asociada']}"
+                linea = f"{row['Nombre']} - Cantidad: {row['Cantidad']} - Ubicación: {row['Máquina_asociada']}"
                 pdf.cell(200, 10, txt=linea, ln=True)
 
             pdf_path = os.path.join(DATA_FOLDER, f"stock_{tipo_seleccionado}.pdf")
             pdf.output(pdf_path)
             with open(pdf_path, "rb") as f:
                 st.download_button("📥 Descargar PDF", f, file_name=f"stock_{tipo_seleccionado}.pdf")
-
 
