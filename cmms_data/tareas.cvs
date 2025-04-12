@@ -1,4 +1,4 @@
-ID,ID maquina,Tarea,Periodicidad,Ultima_ejecucion
+ID,ID_maquina,Tarea,Periodicidad,Ultima_ejecucion
 1,1,Cambio de filtro,30 días,2025-03-15
 2,2,Control nivel de aceite,15 días,2025-03-20
 3,3,Purgado de humedad,7 días,2025-04-06
