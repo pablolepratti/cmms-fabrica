@@ -1,6 +1,6 @@
-Maquina,Observacion,Fecha,Usuario
-Compresor Schulz,Fuga leve de aceite en la base,2025-04-01,pablo
-Tanque pulmón 1,Condensado no está drenando bien,2025-04-03,pablo
-Impresora Flexográfica NILGRAF NMAF 2400,Falta bomba de tinta en 3er cuerpo,2025-04-04,pablo
-Compresor Atlas Copco GX7 FF,Mantenimiento bimensual tercerizado sin fallas detectadas,2025-04-02,pablo
-Secadora de aire,Verificar purga automática de humedad,2025-04-06,pablo
+ID,Maquina,Observacion,Fecha,Usuario
+1,Compresor Schulz,Fuga leve de aceite en la base,2025-04-01,pablo
+2,Tanque pulmón 1,Condensado no está drenando bien,2025-04-03,pablo
+3,Impresora Flexográfica NILGRAF NMAF 2400,Falta bomba de tinta en 3er cuerpo,2025-04-04,pablo
+4,Compresor Atlas Copco GX7 FF,Mantenimiento bimensual tercerizado sin fallas detectadas,2025-04-02,pablo
+5,Secadora de aire,Verificar purga automática de humedad,2025-04-06,pablo
