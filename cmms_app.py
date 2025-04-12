@@ -27,7 +27,8 @@ def get_connection():
         dbname=DB_NAME,
         user=DB_USER,
         password=DB_PASSWORD,
-        port=DB_PORT
+        port=DB_PORT,
+        sslmode="require"
     )
 
 def query_df(sql, params=None):
@@ -43,7 +44,7 @@ def execute_query(sql, params=None):
             conn.commit()
 
 # -------------------------------
-# Funciones de login
+# Login y seguridad
 # -------------------------------
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
@@ -56,7 +57,7 @@ def verificar_login(usuario, password):
     return None
 
 # -------------------------------
-# Inicializar tabla usuarios
+# Crear tabla de usuarios si no existe
 # -------------------------------
 def inicializar_tabla_usuarios():
     with get_connection() as conn:
@@ -74,18 +75,20 @@ def inicializar_tabla_usuarios():
             count = cur.fetchone()[0]
 
             if count == 0:
-                hash_admin = hash_password("admin123")
                 cur.execute("""
                     INSERT INTO usuarios (usuario, hash_contraseña, rol)
                     VALUES (%s, %s, %s)
-                """, ("pablo", hash_admin, "admin"))
+                """, ("pablo", hash_password("admin123"), "admin"))
                 conn.commit()
-                print("✅ Usuario 'pablo' creado con contraseña 'admin123'")
+                print("✅ Usuario inicial creado: pablo / admin123")
 
 # -------------------------------
-# Cargar CSV si tabla vacía
+# Cargar datos CSV si tabla vacía
 # -------------------------------
 def cargar_csv_si_vacio(nombre_tabla, archivo_csv):
+    if not os.path.exists(archivo_csv):
+        print(f"⚠️ Archivo {archivo_csv} no encontrado. Se omite.")
+        return
     df = pd.read_csv(archivo_csv)
     with get_connection() as conn:
         with conn.cursor() as cur:
@@ -98,10 +101,10 @@ def cargar_csv_si_vacio(nombre_tabla, archivo_csv):
                     placeholders = ', '.join(['%s'] * len(valores))
                     cur.execute(f"INSERT INTO {nombre_tabla} VALUES ({placeholders})", valores)
                 conn.commit()
-                print(f"✅ Tabla '{nombre_tabla}' cargada desde '{archivo_csv}'")
+                print(f"✅ Datos cargados: {archivo_csv}")
 
 # -------------------------------
-# Inicializar todo
+# Inicialización completa
 # -------------------------------
 def inicializar_base():
     inicializar_tabla_usuarios()
@@ -138,6 +141,7 @@ if not st.session_state.logueado:
             st.error("Usuario o contraseña incorrectos")
     st.stop()
 
+# Sidebar de sesión
 st.sidebar.markdown(f"👤 **{st.session_state.usuario}** ({st.session_state.rol})")
 if st.sidebar.button("Cerrar sesión"):
     st.session_state.logueado = False
@@ -145,6 +149,9 @@ if st.sidebar.button("Cerrar sesión"):
     st.session_state.rol = ""
     st.rerun()
 
+# -------------------------------
+# Contenido principal
+# -------------------------------
 st.title("🛠️ Dashboard de Mantenimiento Preventivo")
 
 menu = st.sidebar.radio("Ir a:", [
