@@ -19,25 +19,36 @@ DB_PASSWORD = os.getenv("DB_PASSWORD")
 DB_PORT = os.getenv("DB_PORT")
 
 # -------------------------------
-# Conexión a PostgreSQL
+# Conexión a PostgreSQL segura
 # -------------------------------
 def get_connection():
-    return psycopg2.connect(
-        host=DB_HOST,
-        dbname=DB_NAME,
-        user=DB_USER,
-        password=DB_PASSWORD,
-        port=DB_PORT
-    )
+    try:
+        return psycopg2.connect(
+            host=DB_HOST,
+            dbname=DB_NAME,
+            user=DB_USER,
+            password=DB_PASSWORD,
+            port=DB_PORT,
+            cursor_factory=RealDictCursor
+        )
+    except Exception as e:
+        st.error(f"❌ Error al conectar a la base de datos: {e}")
+        return None
 
 def query_df(sql, params=None):
-    with get_connection() as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+    conn = get_connection()
+    if conn is None:
+        return pd.DataFrame()
+    with conn:
+        with conn.cursor() as cur:
             cur.execute(sql, params)
             return pd.DataFrame(cur.fetchall())
 
 def execute_query(sql, params=None):
-    with get_connection() as conn:
+    conn = get_connection()
+    if conn is None:
+        return
+    with conn:
         with conn.cursor() as cur:
             cur.execute(sql, params)
             conn.commit()
@@ -59,7 +70,7 @@ def verificar_login(usuario, password):
     return None
 
 # -------------------------------
-# Inicialización segura de tablas
+# Inicialización de tablas y CSV
 # -------------------------------
 def inicializar_tabla(nombre_tabla, columnas_sql, archivo_csv=None):
     with get_connection() as conn:
@@ -68,20 +79,20 @@ def inicializar_tabla(nombre_tabla, columnas_sql, archivo_csv=None):
             cur.execute(f"SELECT COUNT(*) FROM {nombre_tabla}")
             count = cur.fetchone()[0]
 
-            if count == 0 and archivo_csv and os.path.exists(archivo_csv):
-                df = pd.read_csv(archivo_csv)
-                columnas = ", ".join(df.columns)
-                placeholders = ", ".join(["%s"] * len(df.columns))
-                for _, row in df.iterrows():
-                    cur.execute(f"INSERT INTO {nombre_tabla} ({columnas}) VALUES ({placeholders})", tuple(row))
-                conn.commit()
-                print(f"✅ Datos cargados en {nombre_tabla}")
+            if count == 0:
+                if archivo_csv and os.path.exists(archivo_csv):
+                    df = pd.read_csv(archivo_csv)
+                    columnas = ", ".join(df.columns)
+                    placeholders = ", ".join(["%s"] * len(df.columns))
+                    for _, row in df.iterrows():
+                        cur.execute(f"INSERT INTO {nombre_tabla} ({columnas}) VALUES ({placeholders})", tuple(row))
+                    conn.commit()
+                    print(f"✅ Datos cargados en {nombre_tabla}")
+                else:
+                    print(f"⚠️ CSV no encontrado: {archivo_csv}")
 
-# -------------------------------
-# Inicializar base completa
-# -------------------------------
 def inicializar_base():
-    # Usuarios con valor inicial
+    # Usuarios por defecto
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute("""
@@ -97,17 +108,15 @@ def inicializar_base():
                 conn.commit()
                 print("✅ Usuario admin creado")
 
-    # Otras tablas
+    # Resto de tablas
     inicializar_tabla("maquinas", "ID TEXT, Nombre TEXT, Sector TEXT, Estado TEXT", "cmms_data/maquinas.csv")
     inicializar_tabla("tareas", "id_maquina TEXT, tarea TEXT, periodicidad TEXT, ultima_ejecucion TEXT", "cmms_data/tareas.csv")
     inicializar_tabla("inventario", "id TEXT, item TEXT, cantidad TEXT", "cmms_data/inventario.csv")
     inicializar_tabla("observaciones", "maquina TEXT, observacion TEXT, fecha TEXT, usuario TEXT", "cmms_data/observaciones.csv")
     inicializar_tabla("historial", "tarea TEXT, fecha TEXT, usuario TEXT", "cmms_data/historial.csv")
 
-inicializar_base()
-
 # -------------------------------
-# Streamlit app
+# Interfaz de usuario (Streamlit)
 # -------------------------------
 st.set_page_config(page_title="CMMS Fábrica", layout="wide")
 
@@ -116,6 +125,12 @@ if "logueado" not in st.session_state:
     st.session_state.usuario = ""
     st.session_state.rol = ""
 
+# Botón para inicializar (sólo admins, opcional)
+if st.sidebar.button("🔄 Inicializar Base de Datos"):
+    inicializar_base()
+    st.success("Base inicializada")
+
+# Login
 if not st.session_state.logueado:
     st.title("🔐 Iniciar sesión")
     usuario = st.text_input("Usuario")
@@ -131,7 +146,7 @@ if not st.session_state.logueado:
             st.error("Usuario o contraseña incorrectos")
     st.stop()
 
-# Sesión activa
+# Sesión iniciada
 st.sidebar.markdown(f"👤 **{st.session_state.usuario}** ({st.session_state.rol})")
 if st.sidebar.button("Cerrar sesión"):
     st.session_state.logueado = False
@@ -153,7 +168,7 @@ if menu == "Inicio":
         st.metric("Tareas programadas", len(tareas))
         st.metric("Stock total", len(inventario))
     except:
-        st.warning("⚠️ No se pudieron cargar las métricas. Verificá si las tablas están vacías o si hay conexión con la base.")
+        st.warning("⚠️ No se pudieron cargar las métricas.")
 
 elif menu == "Tareas vencidas":
     try:
