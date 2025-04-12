@@ -12,35 +12,6 @@ from dotenv import load_dotenv
 # -------------------------------
 load_dotenv()
 
-# Verificar existencia de tabla usuarios y crearla si no existe
-def inicializar_tabla_usuarios():
-    with get_connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS usuarios (
-                    usuario TEXT PRIMARY KEY,
-                    hash_contraseña TEXT,
-                    rol TEXT
-                )
-            """)
-            conn.commit()
-
-            # Verificar si la tabla está vacía
-            cur.execute("SELECT COUNT(*) FROM usuarios")
-            count = cur.fetchone()[0]
-
-            if count == 0:
-                hash_admin = hash_password("admin123")  # ⚠️ Podés cambiar después
-                cur.execute("""
-                    INSERT INTO usuarios (usuario, hash_contraseña, rol)
-                    VALUES (%s, %s, %s)
-                """, ("pablo", hash_admin, "admin"))
-                conn.commit()
-                print("✅ Usuario 'pablo' creado con contraseña 'admin123'")
-
-inicializar_tabla_usuarios()
-
-
 DB_HOST = os.getenv("DB_HOST")
 DB_NAME = os.getenv("DB_NAME")
 DB_USER = os.getenv("DB_USER")
@@ -85,7 +56,65 @@ def verificar_login(usuario, password):
     return None
 
 # -------------------------------
-# Configuración Streamlit
+# Inicializar tabla usuarios
+# -------------------------------
+def inicializar_tabla_usuarios():
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS usuarios (
+                    usuario TEXT PRIMARY KEY,
+                    hash_contraseña TEXT,
+                    rol TEXT
+                )
+            """)
+            conn.commit()
+
+            cur.execute("SELECT COUNT(*) FROM usuarios")
+            count = cur.fetchone()[0]
+
+            if count == 0:
+                hash_admin = hash_password("admin123")
+                cur.execute("""
+                    INSERT INTO usuarios (usuario, hash_contraseña, rol)
+                    VALUES (%s, %s, %s)
+                """, ("pablo", hash_admin, "admin"))
+                conn.commit()
+                print("✅ Usuario 'pablo' creado con contraseña 'admin123'")
+
+# -------------------------------
+# Cargar CSV si tabla vacía
+# -------------------------------
+def cargar_csv_si_vacio(nombre_tabla, archivo_csv):
+    df = pd.read_csv(archivo_csv)
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(f"CREATE TABLE IF NOT EXISTS {nombre_tabla} ({', '.join([f'{col} TEXT' for col in df.columns])})")
+            cur.execute(f"SELECT COUNT(*) FROM {nombre_tabla}")
+            count = cur.fetchone()[0]
+            if count == 0:
+                for _, row in df.iterrows():
+                    valores = tuple(row.astype(str))
+                    placeholders = ', '.join(['%s'] * len(valores))
+                    cur.execute(f"INSERT INTO {nombre_tabla} VALUES ({placeholders})", valores)
+                conn.commit()
+                print(f"✅ Tabla '{nombre_tabla}' cargada desde '{archivo_csv}'")
+
+# -------------------------------
+# Inicializar todo
+# -------------------------------
+def inicializar_base():
+    inicializar_tabla_usuarios()
+    cargar_csv_si_vacio("maquinas", "cmms_data/maquinas.csv")
+    cargar_csv_si_vacio("tareas", "cmms_data/tareas.csv")
+    cargar_csv_si_vacio("inventario", "cmms_data/inventario.csv")
+    cargar_csv_si_vacio("observaciones", "cmms_data/observaciones.csv")
+    cargar_csv_si_vacio("historial", "cmms_data/historial.csv")
+
+inicializar_base()
+
+# -------------------------------
+# Interfaz Streamlit
 # -------------------------------
 st.set_page_config(page_title="CMMS Fábrica", layout="wide")
 
@@ -109,9 +138,6 @@ if not st.session_state.logueado:
             st.error("Usuario o contraseña incorrectos")
     st.stop()
 
-# -------------------------------
-# Sistema activo
-# -------------------------------
 st.sidebar.markdown(f"👤 **{st.session_state.usuario}** ({st.session_state.rol})")
 if st.sidebar.button("Cerrar sesión"):
     st.session_state.logueado = False
@@ -147,7 +173,6 @@ elif menu == "Cargar tarea realizada":
     tarea = st.selectbox("Tarea a actualizar", tareas["tarea"].unique())
     fecha = st.date_input("Fecha de realización", value=datetime.date.today())
     if st.button("Registrar ejecución"):
-        id_maquina = tareas[tareas["tarea"] == tarea].iloc[0]["id_maquina"]
         execute_query("UPDATE tareas SET ultima_ejecucion = %s WHERE tarea = %s", (fecha, tarea))
         execute_query("INSERT INTO historial (tarea, fecha, usuario) VALUES (%s, %s, %s)", (tarea, fecha, st.session_state.usuario))
         st.success(f"Tarea '{tarea}' actualizada a {fecha}")
@@ -165,44 +190,3 @@ elif menu == "Observaciones técnicas":
     st.subheader("Historial de observaciones")
     obs = query_df("SELECT * FROM observaciones")
     st.dataframe(obs)
-    
-# -------------------------------
-# Cargar datos desde CSV si tablas están vacías (solo admin Pablo)
-# -------------------------------
-if st.session_state.usuario == "pablo" and st.session_state.rol == "admin":
-    st.sidebar.markdown("---")
-    if st.sidebar.button("📥 Cargar datos desde CSV"):
-        tablas_y_archivos = {
-            "usuarios": "cmms_data/usuarios.csv",
-            "maquinas": "cmms_data/maquinas.csv",
-            "tareas": "cmms_data/tareas.csv",
-            "inventario": "cmms_data/inventario.csv",
-            "observaciones": "cmms_data/observaciones.csv",
-            "historial": "cmms_data/historial.csv"
-        }
-
-        for tabla, archivo in tablas_y_archivos.items():
-            try:
-                # Verificar si la tabla ya tiene datos
-                df_existente = query_df(f"SELECT * FROM {tabla} LIMIT 1")
-                if not df_existente.empty:
-                    st.warning(f"⚠️ La tabla '{tabla}' ya contiene datos. No se sobrescribió.")
-                    continue
-
-                df_csv = pd.read_csv(archivo)
-                columnas = ", ".join(df_csv.columns)
-                placeholders = ", ".join(["%s"] * len(df_csv.columns))
-
-                with get_connection() as conn:
-                    with conn.cursor() as cur:
-                        for _, fila in df_csv.iterrows():
-                            valores = tuple(fila)
-                            cur.execute(
-                                f"INSERT INTO {tabla} ({columnas}) VALUES ({placeholders})",
-                                valores
-                            )
-                    conn.commit()
-                st.success(f"✅ Datos de '{archivo}' importados a la tabla '{tabla}'")
-            except Exception as e:
-                st.error(f"❌ Error importando '{archivo}' → {e}")
-
