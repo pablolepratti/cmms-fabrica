@@ -1,3 +1,1 @@
-ID,ID máquina,Tarea,Periodicidad,Última ejecución
-1,1,Cambio de filtro,30 días,2025-03-15
-
+ID,ID_máquina,Tarea,Periodicidad,Ultima_ejecucion
