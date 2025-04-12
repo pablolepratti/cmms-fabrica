@@ -1,55 +1,57 @@
-
 import os
-import pandas as pd
 import psycopg2
-from psycopg2.extras import execute_values
+import pandas as pd
 from dotenv import load_dotenv
 
+# Cargar variables de entorno desde .env
 load_dotenv()
 
-DB_HOST = os.getenv("DB_HOST")
-DB_NAME = os.getenv("DB_NAME")
-DB_USER = os.getenv("DB_USER")
-DB_PASSWORD = os.getenv("DB_PASSWORD")
-DB_PORT = os.getenv("DB_PORT")
+# Intentar usar DATABASE_URL directamente
+DATABASE_URL = os.getenv("DATABASE_URL")
 
-conn = psycopg2.connect(
-    host=DB_HOST,
-    dbname=DB_NAME,
-    user=DB_USER,
-    password=DB_PASSWORD,
-    port=DB_PORT
-)
+# Conexión
+conn = psycopg2.connect(DATABASE_URL)
+cur = conn.cursor()
 
+# Función para importar un CSV
 def importar_csv(nombre_tabla, archivo_csv):
+    print(f"📥 Importando '{archivo_csv}' a la tabla '{nombre_tabla}'...")
     df = pd.read_csv(archivo_csv)
-    columnas = ', '.join(df.columns)
-    valores = [tuple(x) for x in df.to_numpy()]
-    with conn.cursor() as cur:
-        cur.execute(f"""
-            CREATE TABLE IF NOT EXISTS {nombre_tabla} (
-                {', '.join([col + ' TEXT' for col in df.columns])}
-            )
-        """)
-        cur.execute(f"DELETE FROM {nombre_tabla}")
-        execute_values(cur, f"INSERT INTO {nombre_tabla} ({columnas}) VALUES %s", valores)
-    print(f"✅ {nombre_tabla} importada desde {archivo_csv}")
+    
+    # Crear tabla (solo si no existe)
+    columnas = ', '.join([f"{col} TEXT" for col in df.columns])
+    cur.execute(f"CREATE TABLE IF NOT EXISTS {nombre_tabla} ({columnas})")
 
-archivos = {
-    "usuarios": "cmms_data/usuarios.csv",
-    "maquinas": "cmms_data/maquinas.csv",
-    "tareas": "cmms_data/tareas.csv",
-    "inventario": "cmms_data/inventario.csv",
-    "observaciones": "cmms_data/observaciones.csv",
-    "historial": "cmms_data/historial.csv"
+    # Borrar datos previos
+    cur.execute(f"DELETE FROM {nombre_tabla}")
+
+    # Insertar fila por fila
+    for _, row in df.iterrows():
+        valores = tuple(row.astype(str))
+        placeholders = ', '.join(['%s'] * len(valores))
+        cur.execute(f"INSERT INTO {nombre_tabla} VALUES ({placeholders})", valores)
+
+    conn.commit()
+    print(f"✅ Datos importados en '{nombre_tabla}'.")
+
+# Rutas relativas
+BASE = "cmms_data"
+tablas_csv = {
+    "usuarios": "usuarios.csv",
+    "maquinas": "maquinas.csv",
+    "tareas": "tareas.csv",
+    "inventario": "inventario.csv",
+    "observaciones": "observaciones.csv",
+    "historial": "historial.csv"
 }
 
-for tabla, archivo in archivos.items():
-    if os.path.exists(archivo):
-        importar_csv(tabla, archivo)
+for tabla, archivo in tablas_csv.items():
+    ruta = os.path.join(BASE, archivo)
+    if os.path.exists(ruta):
+        importar_csv(tabla, ruta)
     else:
-        print(f"⚠️ Archivo no encontrado: {archivo}")
+        print(f"⚠️ No se encontró el archivo {ruta}.")
 
-conn.commit()
+cur.close()
 conn.close()
-print("🎉 Importación finalizada.")
+
