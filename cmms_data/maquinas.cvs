@@ -1,3 +1,10 @@
 ID,Nombre,Sector,Estado
-1,Compresor Schulz,Compresores,Operativa
-
+1,Compresor Schulz SRP 3040,Compresores,Operativa
+2,Compresor Atlas Copco GX7 FF,Compresores,Operativa
+3,Secadora de aire,Compresores,Operativa
+4,Tanque pulmón 1,Compresores,Operativa
+5,Tanque pulmón 2,Compresores,Operativa
+6,Tanque pulmón 3,Compresores,Operativa
+7,Impresora Flexográfica NILGRAF NMAF 2400,Impresión,En mantenimiento
+8,Encoladora automática DLG,Pegado,Operativa
+9,Troqueladora BOBST SP 126-E,Troquelado,Operativa
