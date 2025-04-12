@@ -1,5 +1,5 @@
-streamlit
-pandas
-fpdf
-python-dotenv
-psycopg2-binary
+streamlit==1.33.0
+pandas==2.2.1
+fpdf==1.7.2
+python-dotenv==1.0.1
+psycopg2-binary==2.9.9
