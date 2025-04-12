@@ -136,4 +136,44 @@ elif menu == "Observaciones técnicas":
     st.subheader("Historial de observaciones")
     obs = query_df("SELECT * FROM observaciones")
     st.dataframe(obs)
+    
+# -------------------------------
+# Cargar datos desde CSV si tablas están vacías (solo admin Pablo)
+# -------------------------------
+if st.session_state.usuario == "pablo" and st.session_state.rol == "admin":
+    st.sidebar.markdown("---")
+    if st.sidebar.button("📥 Cargar datos desde CSV"):
+        tablas_y_archivos = {
+            "usuarios": "cmms_data/usuarios.csv",
+            "maquinas": "cmms_data/maquinas.csv",
+            "tareas": "cmms_data/tareas.csv",
+            "inventario": "cmms_data/inventario.csv",
+            "observaciones": "cmms_data/observaciones.csv",
+            "historial": "cmms_data/historial.csv"
+        }
+
+        for tabla, archivo in tablas_y_archivos.items():
+            try:
+                # Verificar si la tabla ya tiene datos
+                df_existente = query_df(f"SELECT * FROM {tabla} LIMIT 1")
+                if not df_existente.empty:
+                    st.warning(f"⚠️ La tabla '{tabla}' ya contiene datos. No se sobrescribió.")
+                    continue
+
+                df_csv = pd.read_csv(archivo)
+                columnas = ", ".join(df_csv.columns)
+                placeholders = ", ".join(["%s"] * len(df_csv.columns))
+
+                with get_connection() as conn:
+                    with conn.cursor() as cur:
+                        for _, fila in df_csv.iterrows():
+                            valores = tuple(fila)
+                            cur.execute(
+                                f"INSERT INTO {tabla} ({columnas}) VALUES ({placeholders})",
+                                valores
+                            )
+                    conn.commit()
+                st.success(f"✅ Datos de '{archivo}' importados a la tabla '{tabla}'")
+            except Exception as e:
+                st.error(f"❌ Error importando '{archivo}' → {e}")
 
