@@ -29,7 +29,8 @@ def get_connection():
             user=DB_USER,
             password=DB_PASSWORD,
             port=DB_PORT,
-            cursor_factory=RealDictCursor
+            cursor_factory=RealDictCursor,
+            sslmode="require"  # Render necesita SSL forzado
         )
     except Exception as e:
         st.error(f"❌ Error al conectar a la base de datos: {e}")
