@@ -27,8 +27,7 @@ def get_connection():
         dbname=DB_NAME,
         user=DB_USER,
         password=DB_PASSWORD,
-        port=DB_PORT,
-        sslmode="require"
+        port=DB_PORT
     )
 
 def query_df(sql, params=None):
@@ -44,7 +43,7 @@ def execute_query(sql, params=None):
             conn.commit()
 
 # -------------------------------
-# Login y seguridad
+# Funciones de login
 # -------------------------------
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
@@ -57,7 +56,7 @@ def verificar_login(usuario, password):
     return None
 
 # -------------------------------
-# Crear tabla de usuarios si no existe
+# Inicializar tabla usuarios
 # -------------------------------
 def inicializar_tabla_usuarios():
     with get_connection() as conn:
@@ -75,20 +74,20 @@ def inicializar_tabla_usuarios():
             count = cur.fetchone()[0]
 
             if count == 0:
+                hash_admin = hash_password("admin123")
                 cur.execute("""
                     INSERT INTO usuarios (usuario, hash_contraseña, rol)
                     VALUES (%s, %s, %s)
-                """, ("pablo", hash_password("admin123"), "admin"))
+                """, ("pablo", hash_admin, "admin"))
                 conn.commit()
-                print("✅ Usuario inicial creado: pablo / admin123")
 
 # -------------------------------
-# Cargar datos CSV si tabla vacía
+# Cargar CSV si tabla vacía
 # -------------------------------
 def cargar_csv_si_vacio(nombre_tabla, archivo_csv):
     if not os.path.exists(archivo_csv):
-        print(f"⚠️ Archivo {archivo_csv} no encontrado. Se omite.")
-        return
+        return  # Ignora si no existe
+
     df = pd.read_csv(archivo_csv)
     with get_connection() as conn:
         with conn.cursor() as cur:
@@ -101,10 +100,9 @@ def cargar_csv_si_vacio(nombre_tabla, archivo_csv):
                     placeholders = ', '.join(['%s'] * len(valores))
                     cur.execute(f"INSERT INTO {nombre_tabla} VALUES ({placeholders})", valores)
                 conn.commit()
-                print(f"✅ Datos cargados: {archivo_csv}")
 
 # -------------------------------
-# Inicialización completa
+# Inicializar todo
 # -------------------------------
 def inicializar_base():
     inicializar_tabla_usuarios()
@@ -141,7 +139,6 @@ if not st.session_state.logueado:
             st.error("Usuario o contraseña incorrectos")
     st.stop()
 
-# Sidebar de sesión
 st.sidebar.markdown(f"👤 **{st.session_state.usuario}** ({st.session_state.rol})")
 if st.sidebar.button("Cerrar sesión"):
     st.session_state.logueado = False
@@ -149,9 +146,6 @@ if st.sidebar.button("Cerrar sesión"):
     st.session_state.rol = ""
     st.rerun()
 
-# -------------------------------
-# Contenido principal
-# -------------------------------
 st.title("🛠️ Dashboard de Mantenimiento Preventivo")
 
 menu = st.sidebar.radio("Ir a:", [
@@ -159,13 +153,16 @@ menu = st.sidebar.radio("Ir a:", [
     "Observaciones técnicas"])
 
 if menu == "Inicio":
-    maquinas = query_df("SELECT * FROM maquinas")
-    tareas = query_df("SELECT * FROM tareas")
-    inventario = query_df("SELECT * FROM inventario")
-    st.subheader("Resumen general")
-    st.metric("Máquinas registradas", len(maquinas))
-    st.metric("Tareas programadas", len(tareas))
-    st.metric("Stock total", len(inventario))
+    try:
+        maquinas = query_df("SELECT * FROM maquinas")
+        tareas = query_df("SELECT * FROM tareas")
+        inventario = query_df("SELECT * FROM inventario")
+        st.subheader("Resumen general")
+        st.metric("Máquinas registradas", len(maquinas))
+        st.metric("Tareas programadas", len(tareas))
+        st.metric("Stock total", len(inventario))
+    except:
+        st.warning("⚠️ No se pudieron cargar las métricas. Verificá si las tablas están vacías o si hay conexión con la base.")
 
 elif menu == "Tareas vencidas":
     tareas = query_df("SELECT * FROM tareas")
