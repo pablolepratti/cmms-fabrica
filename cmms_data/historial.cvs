@@ -1,1 +1,5 @@
-ID_maquina,Tarea,Fecha,Usuario
+id_maquina,tarea,fecha,usuario
+2,Cambio de filtro,2025-03-15,pablo
+3,Purgado de humedad,2025-04-06,pablo
+8,Limpieza rodillos encoladores,2025-04-11,pablo
+
