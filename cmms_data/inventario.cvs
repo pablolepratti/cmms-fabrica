@@ -1,3 +1,7 @@
-ID,Nombre,Tipo,Cantidad,Máquina_asociada
-1,Filtro de aire,Repuesto,3,Compresor Schulz
-
+ID,Nombre,Tipo,Cantidad,Máquina asociada
+1,Filtro de aire,Repuesto,3,Compresor Schulz SRP 3040
+2,Aceite sintético ISO VG 150,Insumo,2,Compresor Atlas Copco GX7 FF
+3,Válvula de retención,Repuesto,1,Secadora de aire
+4,Grasa ROCOL Hi-Torque 220,Lubricante,1,NILGRAF NMAF 2400
+5,Rodillo encolador de repuesto,Repuesto,2,Encoladora DLG
+6,Correa B81,Repuesto,3,BOBST SP 126-E
