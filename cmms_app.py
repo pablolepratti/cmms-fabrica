@@ -12,6 +12,7 @@ def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
 def verificar_login(usuario, password):
+    print("🔐 Contraseña recibida:", repr(password))
     if os.path.exists(usuarios_path):
         usuarios = pd.read_csv(usuarios_path)
         hashed = hash_password(password)
