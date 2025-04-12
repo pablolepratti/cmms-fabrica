@@ -1,4 +1,4 @@
-ID,Nombre,Tipo,Cantidad,Máquina asociada
+ID,Nombre,Tipo,Cantidad,Maquina_asociada
 1,Filtro de aire,Repuesto,3,Compresor Schulz SRP 3040
 2,Aceite sintético ISO VG 150,Insumo,2,Compresor Atlas Copco GX7 FF
 3,Válvula de retención,Repuesto,1,Secadora de aire
