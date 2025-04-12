@@ -15,10 +15,22 @@ def verificar_login(usuario, password):
     if os.path.exists(usuarios_path):
         usuarios = pd.read_csv(usuarios_path)
         hashed = hash_password(password)
-        match = usuarios[(usuarios["usuario"] == usuario) & (usuarios["hash_contraseña"] == hashed)]
+
+        # DEBUG - Mostrar para ver por qué no valida
+        print("🧪 DEBUG LOGIN")
+        print("Usuario ingresado:", repr(usuario))
+        print("Hash generado:", hashed)
+        print("Usuarios en CSV:")
+        print(usuarios.to_dict(orient="records"))
+
+        match = usuarios[
+            (usuarios["usuario"].str.strip() == usuario.strip()) &
+            (usuarios["hash_contraseña"].str.strip() == hashed.strip())
+        ]
         if not match.empty:
             return match.iloc[0]["rol"]
     return None
+
 
 # -------------------------------
 # Cargar datos desde archivos CSV
