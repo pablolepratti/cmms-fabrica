@@ -12,6 +12,35 @@ from dotenv import load_dotenv
 # -------------------------------
 load_dotenv()
 
+# Verificar existencia de tabla usuarios y crearla si no existe
+def inicializar_tabla_usuarios():
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS usuarios (
+                    usuario TEXT PRIMARY KEY,
+                    hash_contraseña TEXT,
+                    rol TEXT
+                )
+            """)
+            conn.commit()
+
+            # Verificar si la tabla está vacía
+            cur.execute("SELECT COUNT(*) FROM usuarios")
+            count = cur.fetchone()[0]
+
+            if count == 0:
+                hash_admin = hash_password("admin123")  # ⚠️ Podés cambiar después
+                cur.execute("""
+                    INSERT INTO usuarios (usuario, hash_contraseña, rol)
+                    VALUES (%s, %s, %s)
+                """, ("pablo", hash_admin, "admin"))
+                conn.commit()
+                print("✅ Usuario 'pablo' creado con contraseña 'admin123'")
+
+inicializar_tabla_usuarios()
+
+
 DB_HOST = os.getenv("DB_HOST")
 DB_NAME = os.getenv("DB_NAME")
 DB_USER = os.getenv("DB_USER")
