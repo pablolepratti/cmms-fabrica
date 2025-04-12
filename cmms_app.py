@@ -105,6 +105,13 @@ observaciones = cargar_csv(observaciones_path, ["ID", "Máquina", "Observacion",
 # Menú lateral
 # -------------------------------
 st.title("🛠️ Dashboard de Mantenimiento Preventivo")
+st.markdown("""
+<div style='text-align: right;'>
+    <a href="https://cmms-mobile.onrender.com" target="_blank" style="text-decoration: none;">
+        📱 Ir a la versión Mobile
+    </a>
+</div>
+""", unsafe_allow_html=True)
 menu = st.sidebar.radio("Ir a:", [
     "Inicio", "Máquinas", "Tareas de mantenimiento", "Tareas vencidas",
     "Cargar tarea realizada", "Inventario", "Observaciones técnicas",
