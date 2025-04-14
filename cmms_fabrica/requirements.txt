@@ -1,4 +1,4 @@
-streamlit
-pandas
-fpdf
-httpagentparser
+streamlit==1.33.0
+pandas==2.2.1
+fpdf==1.7.2
+httpagentparser==1.9.0
