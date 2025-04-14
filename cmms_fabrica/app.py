@@ -47,7 +47,7 @@ else:
         st.title("📊 Dashboard CMMS")
         st.info("Acá irá el resumen general con KPIs.")
     elif modo == "Máquinas":
-    app_maquinas()
+        app_maquinas()
     elif modo == "Tareas":
         st.title("🗓️ Gestión de Tareas")
         st.info("Módulo de tareas en desarrollo.")
