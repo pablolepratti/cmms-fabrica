@@ -2,19 +2,15 @@ import streamlit as st
 st.set_page_config(page_title="CMMS Fábrica", layout="wide")
 
 import httpagentparser
-from streamlit.web.server.websocket_headers import _get_websocket_headers
 
 # -----------------------------
 # 🔍 Detección de dispositivo
 # -----------------------------
 def detectar_dispositivo():
     try:
-        ua = _get_websocket_headers().get("User-Agent", "")
+        ctx = st.runtime.scriptrunner.get_script_run_context()
+        ua = ctx.request.headers.get("User-Agent", "")
         info = httpagentparser.detect(ua)
-        if "platform" in info and "name" in info["platform"]:
-            plataforma = info["platform"]["name"]
-        else:
-            plataforma = "Desconocido"
         if "Mobile" in str(info):
             return "mobile"
         else:
@@ -38,10 +34,10 @@ modo = st.sidebar.radio("Seleccionar módulo:", (
 if dispositivo == "mobile":
     st.sidebar.markdown("📱 *Versión simplificada móvil*")
     if modo not in ["Tareas", "Observaciones", "Inventario"]:
-        st.warning("Esta sección no está disponible en versión móvil.")
-    else:
         st.header(f"📱 {modo}")
         st.info("Este módulo se mostrará pronto en versión móvil.")
+    else:
+        st.warning("Este módulo aún no está disponible en mobile.")
 else:
     # -----------------------------
     # 🧱 Navegación principal
