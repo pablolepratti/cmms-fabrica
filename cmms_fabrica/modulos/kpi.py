@@ -1,64 +1,38 @@
-import os
+import streamlit as st
 import pandas as pd
-from datetime import datetime
+import os
 
-RUTA_TAREAS = os.path.join("data", "tareas.csv")
-RUTA_SERVICIOS = os.path.join("data", "servicios.csv")
+def cargar_csv(ruta):
+    if os.path.exists(ruta):
+        return pd.read_csv(ruta)
+    else:
+        return pd.DataFrame()
 
-# Cargar datasets
-def cargar_tareas():
-    return pd.read_csv(RUTA_TAREAS)
+def mostrar_kpis():
+    st.subheader("📈 Indicadores Clave de Mantenimiento")
 
-def cargar_servicios():
-    return pd.read_csv(RUTA_SERVICIOS)
+    df_tareas = cargar_csv("data/tareas.csv")
+    df_servicios = cargar_csv("data/servicios.csv")
 
-# KPI tareas internas
-def resumen_tareas_internas():
-    df = cargar_tareas()
-    total = len(df)
-    cumplidas = len(df[df["estado"] == "cumplida"])
-    reactivas = len(df[df["origen"] == "reactiva"])
-    pendientes = len(df[df["estado"] == "pendiente"])
-    return {
-        "total": total,
-        "cumplidas": cumplidas,
-        "pendientes": pendientes,
-        "reactivas": reactivas,
-        "cumplimiento_%": round((cumplidas / total) * 100, 2) if total else 0
-    }
+    col1, col2 = st.columns(2)
 
-# KPI servicios externos
-def resumen_servicios_externos():
-    df = cargar_servicios()
-    realizados = len(df[df["estado"] == "realizado"])
-    pendientes = len(df[df["estado"] == "pendiente"])
-    vencidos = len(df[df["estado"] == "vencido"])
-    total = len(df)
-    return {
-        "total": total,
-        "realizados": realizados,
-        "pendientes": pendientes,
-        "vencidos": vencidos,
-        "cumplimiento_%": round((realizados / total) * 100, 2) if total else 0
-    }
+    with col1:
+        st.markdown("### 🧰 Tareas Internas")
+        total = len(df_tareas)
+        pendientes = len(df_tareas[df_tareas["estado"] == "pendiente"])
+        cumplidas = len(df_tareas[df_tareas["estado"] == "cumplida"])
+        st.metric("Total", total)
+        st.metric("Pendientes", pendientes)
+        st.metric("Cumplidas", cumplidas)
 
-# Total intervenciones (internas + externas)
-def kpi_total_intervenciones():
-    tareas = cargar_tareas()
-    servicios = cargar_servicios()
-    total_tareas = len(tareas)
-    total_servicios = len(servicios)
-    return {
-        "intervenciones_totales": total_tareas + total_servicios,
-        "tareas_internas": total_tareas,
-        "servicios_externos": total_servicios
-    }
+    with col2:
+        st.markdown("### 🛠️ Servicios Externos")
+        total_s = len(df_servicios)
+        vencidos = len(df_servicios[df_servicios["estado"] == "vencido"])
+        realizados = len(df_servicios[df_servicios["estado"] == "realizado"])
+        st.metric("Total", total_s)
+        st.metric("Realizados", realizados)
+        st.metric("Vencidos", vencidos)
 
-# Activos más intervenidos (tareas + servicios)
-def activos_con_mas_movimiento(top_n=5):
-    tareas = cargar_tareas()
-    servicios = cargar_servicios()
-    tareas_count = tareas["id_maquina"].value_counts()
-    servicios_count = servicios["id_activo"].value_counts()
-    total = (tareas_count.add(servicios_count, fill_value=0)).sort_values(ascending=False)
-    return total.head(top_n).reset_index().rename(columns={"index": "id_activo", 0: "intervenciones"})
+def app_kpi():
+    mostrar_kpis()
