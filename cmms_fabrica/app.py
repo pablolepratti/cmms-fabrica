@@ -1,4 +1,5 @@
 import streamlit as st
+from modulos.maquinas import app_maquinas
 st.set_page_config(page_title="CMMS Fábrica", layout="wide")
 
 import httpagentparser
@@ -46,8 +47,7 @@ else:
         st.title("📊 Dashboard CMMS")
         st.info("Acá irá el resumen general con KPIs.")
     elif modo == "Máquinas":
-        st.title("🏭 Gestión de Máquinas y Sistemas")
-        st.info("Módulo de máquinas en desarrollo.")
+    app_maquinas()
     elif modo == "Tareas":
         st.title("🗓️ Gestión de Tareas")
         st.info("Módulo de tareas en desarrollo.")
