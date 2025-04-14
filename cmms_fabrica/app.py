@@ -1,4 +1,6 @@
 import streamlit as st
+st.set_page_config(page_title="CMMS Fábrica", layout="wide")
+
 import httpagentparser
 from streamlit.web.server.websocket_headers import _get_websocket_headers
 
@@ -25,8 +27,6 @@ dispositivo = detectar_dispositivo()
 # -----------------------------
 # 🎨 Layout general
 # -----------------------------
-st.set_page_config(page_title="CMMS Fábrica", layout="wide")
-
 st.sidebar.title("🛠️ CMMS Fábrica")
 modo = st.sidebar.radio("Seleccionar módulo:", (
     "Inicio", "Máquinas", "Tareas", "Observaciones", "Inventario", "Servicios Externos", "Reportes", "KPIs"
