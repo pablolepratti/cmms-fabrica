@@ -1,8 +1,16 @@
 import streamlit as st
-from modulos.maquinas import app_maquinas
 st.set_page_config(page_title="CMMS Fábrica", layout="wide")
 
 import httpagentparser
+
+# Importar funciones principales de cada módulo
+from modulos.maquinas import app_maquinas
+from modulos.tareas import app_tareas
+from modulos.observaciones import app_observaciones
+from modulos.inventario import app_inventario
+from modulos.servicios_ext import app_servicios_ext
+from modulos.reportes import app_reportes
+from modulos.kpi import app_kpi
 
 # -----------------------------
 # 🔍 Detección de dispositivo
@@ -35,34 +43,33 @@ modo = st.sidebar.radio("Seleccionar módulo:", (
 if dispositivo == "mobile":
     st.sidebar.markdown("📱 *Versión simplificada móvil*")
     if modo not in ["Tareas", "Observaciones", "Inventario"]:
-        st.header(f"📱 {modo}")
-        st.info("Este módulo se mostrará pronto en versión móvil.")
+        st.warning("Esta sección no está disponible en versión móvil.")
     else:
-        st.warning("Este módulo aún no está disponible en mobile.")
+        st.header(f"📱 {modo}")
+        if modo == "Tareas":
+            app_tareas()
+        elif modo == "Observaciones":
+            app_observaciones()
+        elif modo == "Inventario":
+            app_inventario()
 else:
     # -----------------------------
     # 🧱 Navegación principal
     # -----------------------------
     if modo == "Inicio":
         st.title("📊 Dashboard CMMS")
-        st.info("Acá irá el resumen general con KPIs.")
+        st.info("Bienvenido al sistema. Seleccioná un módulo del menú.")
     elif modo == "Máquinas":
         app_maquinas()
     elif modo == "Tareas":
-        st.title("🗓️ Gestión de Tareas")
-        st.info("Módulo de tareas en desarrollo.")
+        app_tareas()
     elif modo == "Observaciones":
-        st.title("📝 Observaciones Técnicas")
-        st.info("Módulo de observaciones en desarrollo.")
+        app_observaciones()
     elif modo == "Inventario":
-        st.title("📦 Inventario Técnico")
-        st.info("Módulo de inventario en desarrollo.")
+        app_inventario()
     elif modo == "Servicios Externos":
-        st.title("🔧 Servicios Tercerizados")
-        st.info("Módulo de servicios externos en desarrollo.")
+        app_servicios_ext()
     elif modo == "Reportes":
-        st.title("🖨️ Generación de Reportes")
-        st.info("Módulo de reportes en desarrollo.")
+        app_reportes()
     elif modo == "KPIs":
-        st.title("📈 Indicadores Clave de Desempeño")
-        st.info("Módulo de KPIs en desarrollo.")
+        app_kpi()
