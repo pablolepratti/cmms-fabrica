@@ -1,0 +1,7 @@
+id,nombre,tipo_activo,sector,estado,mantenimiento_responsable,observaciones
+COMP_ATLAS,Compresor Atlas Copco GX7 FF,maquina,Técnica,activo,externo,
+COMP_SCHULZ,Compresor Schulz SRP 3040,maquina,Técnica,activo,interno,
+RED_AIRE,Red de aire comprimido,sistema,General,activo,interno,
+RED_ELECTRICA,Red eléctrica general,sistema,General,activo,interno,
+BOMBA_INCENDIO,Motobomba sistema incendio,maquina,Técnica,activo,interno,
+RED_INCENDIOS,Red fija contra incendios,sistema,General,activo,externo,

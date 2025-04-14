@@ -1,0 +1,2 @@
+id_obs,id_maquina,fecha,descripcion,autor,criticidad,crear_tarea,estado,tarea_relacionada
+O001,COMP_SCHULZ,2025-04-15,Ruido anormal al encender,pablo,media,no,pendiente,
