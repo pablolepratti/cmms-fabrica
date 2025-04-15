@@ -14,7 +14,7 @@ from modulos.kpi_resumen import kpi_resumen_inicio
 
 # Título principal
 st.set_page_config(page_title="CMMS Fábrica", layout="wide")
-st.sidebar.image("https://img.icons8.com/fluency/48/maintenance.png", use_column_width=True)
+#st.sidebar.image("https://img.icons8.com/fluency/48/maintenance.png", use_column_width=True)
 st.sidebar.title("🔧 CMMS Fábrica")
 seccion = st.sidebar.radio("Seleccionar módulo:", [
     "Inicio", "Máquinas", "Tareas", "Observaciones", "Inventario",
