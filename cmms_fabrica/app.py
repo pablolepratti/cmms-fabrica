@@ -4,7 +4,7 @@ st.set_page_config(page_title="CMMS Fábrica", layout="wide")
 import httpagentparser
 
 # Importar funciones principales de cada módulo
-from modulos.maquinas import app_maquinas
+from modulos.app_maquinas import app_maquinas
 from modulos.tareas import app_tareas
 from modulos.observaciones import app_observaciones
 from modulos.app_inventario import app_inventario
