@@ -50,7 +50,8 @@ def app_tareas():
             submitted = st.form_submit_button("Guardar tarea")
 
             if submitted:
-                tareas = tareas.append(nueva, ignore_index=True)
+                tareas = pd.concat([tareas, pd.DataFrame([nueva])], ignore_index=True)
+
                 guardar_tareas(tareas)
                 st.success("✅ Tarea agregada correctamente")
                 st.experimental_rerun()
