@@ -11,6 +11,7 @@ from modulos.inventario import app_inventario
 from modulos.servicios_ext import app_servicios_ext
 from modulos.reportes import app_reportes
 from modulos.kpi import app_kpi
+from modulos.mantenimiento import app_mantenimiento
 
 # -----------------------------
 # 🔍 Detección de dispositivo
@@ -34,7 +35,8 @@ dispositivo = detectar_dispositivo()
 # -----------------------------
 st.sidebar.title("🛠️ CMMS Fábrica")
 modo = st.sidebar.radio("Seleccionar módulo:", (
-    "Inicio", "Máquinas", "Tareas", "Observaciones", "Inventario", "Servicios Externos", "Reportes", "KPIs"
+    "Inicio", "Mantenimiento", "Máquinas", "Tareas", "Observaciones",
+    "Inventario", "Servicios Externos", "Reportes", "KPIs"
 ))
 
 # -----------------------------
@@ -59,6 +61,8 @@ else:
     if modo == "Inicio":
         st.title("📊 Dashboard CMMS")
         st.info("Bienvenido al sistema. Seleccioná un módulo del menú.")
+    elif modo == "Mantenimiento":
+        app_mantenimiento()
     elif modo == "Máquinas":
         app_maquinas()
     elif modo == "Tareas":
