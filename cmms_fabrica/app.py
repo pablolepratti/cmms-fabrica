@@ -7,7 +7,7 @@ import httpagentparser
 from modulos.maquinas import app_maquinas
 from modulos.tareas import app_tareas
 from modulos.observaciones import app_observaciones
-from modulos.inventario import app_inventario
+from modulos.app_inventario import app_inventario
 from modulos.servicios_ext import app_servicios_ext
 from modulos.reportes import app_reportes
 from modulos.kpi import app_kpi
