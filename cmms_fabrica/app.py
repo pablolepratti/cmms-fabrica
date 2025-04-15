@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import hashlib
@@ -25,6 +24,10 @@ def verificar_login():
     st.sidebar.subheader("🔑 Iniciar sesión")
     usuario = st.sidebar.text_input("Usuario")
     password = st.sidebar.text_input("Contraseña", type="password")
+
+    # 🧪 Bloque DEBUG opcional para ver hash
+    if st.sidebar.checkbox("🧪 Ver hash de esta contraseña"):
+        st.sidebar.code(hashlib.sha256(password.encode()).hexdigest(), language="bash")
 
     if st.sidebar.button("Ingresar"):
         if os.path.exists("data/usuarios.csv"):
@@ -85,4 +88,4 @@ if st.session_state.get("rol") == "admin":
     st.sidebar.markdown("---")
     st.sidebar.subheader("⚙️ Opciones avanzadas")
     if st.sidebar.checkbox("🧑‍💼 Gestión de Usuarios"):
-        app_usuarios()
+        app_usuarios(st.session_state["usuario"], st.session_state["rol"])
