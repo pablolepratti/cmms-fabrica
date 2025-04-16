@@ -18,15 +18,23 @@ from modulos.kpi_resumen import kpi_resumen_inicio
 from modulos.conexion_mongo import db
 
 # ---------------------
-# 📱 Responsive layout para móvil
+# 📱 Layout responsive
 # ---------------------
 try:
     is_mobile = st.runtime.scriptrunner.get_script_run_context().client.display_width < 768
 except:
-    is_mobile = False  # fallback por compatibilidad
+    is_mobile = False
 
 layout_mode = "wide" if not is_mobile else "centered"
 st.set_page_config(page_title="CMMS Fábrica", layout=layout_mode)
+
+# ---------------------
+# 🧠 Inicializar claves de sesión
+# ---------------------
+if "usuario" not in st.session_state:
+    st.session_state["usuario"] = None
+if "rol" not in st.session_state:
+    st.session_state["rol"] = None
 
 # ---------------------
 # 🔐 Login con MongoDB
@@ -39,7 +47,7 @@ def hash_password(password):
 def verificar_login():
     st.sidebar.subheader("🔑 Iniciar sesión")
     with st.sidebar.form("form_login"):
-        usuario = st.text_input("Usuario").strip().lower()
+        usuario = st.text_input("Usuario")
         password = st.text_input("Contraseña", type="password")
         ver_hash = st.checkbox("🧪 Ver hash de esta contraseña")
         ingresar = st.form_submit_button("Ingresar")
@@ -48,26 +56,24 @@ def verificar_login():
         st.sidebar.code(hash_password(password), language="bash")
 
     if ingresar:
-        print("➡️ Intento de login para:", usuario)
         usuario_data = coleccion_usuarios.find_one({"usuario": usuario})
-        print("📦 Resultado en Mongo:", usuario_data)
-
         if usuario_data:
             if hash_password(password) == usuario_data["password_hash"]:
-                print("✅ Contraseña válida. Login exitoso.")
                 st.session_state["usuario"] = usuario
                 st.session_state["rol"] = usuario_data["rol"]
                 st.rerun()
             else:
-                print("❌ Contraseña incorrecta.")
                 st.error("❌ Contraseña incorrecta")
         else:
-            print("❌ Usuario no encontrado en Mongo.")
             st.error("❌ Usuario no encontrado")
 
+# 🔒 Requiere login
+if not st.session_state["usuario"]:
+    verificar_login()
+    st.stop()
 
 # ---------------------
-# 🚀 Interfaz Principal
+# 🚀 Interfaz principal
 # ---------------------
 st.sidebar.title("🔧 CMMS Fábrica")
 seccion = st.sidebar.radio("Seleccionar módulo:", [
