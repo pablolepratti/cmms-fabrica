@@ -1,51 +1,41 @@
 import streamlit as st
 import pandas as pd
-import os
 from datetime import datetime
+from modulos.conexion_mongo import db
 
-RUTA = "data/tareas.csv"
+coleccion = db["tareas"]
 
-# Cargar tareas desde CSV
-def cargar_tareas():
-    if os.path.exists(RUTA):
-        return pd.read_csv(RUTA)
-    else:
-        return pd.DataFrame(columns=[
-            "id_tarea", "id_maquina", "descripcion", "tipo_tarea", "origen",
-            "ultima_ejecucion", "proxima_ejecucion", "estado", "observaciones"
-        ])
-
-# Guardar tareas en CSV
-def guardar_tareas(df):
-    df.to_csv(RUTA, index=False)
-
-# Mostrar panel de visualización y gestión de tareas
 def app_tareas():
     st.subheader("🛠️ Gestión de Tareas Correctivas")
-    tareas = cargar_tareas()
     rol = st.session_state.get("rol", "invitado")
+
+    datos = list(coleccion.find({}, {"_id": 0}))
+    tareas = pd.DataFrame(datos)
 
     tabs = st.tabs(["📋 Ver tareas", "🛠️ Administrar tareas"])
 
     # --- TAB 1: VISUALIZACIÓN ---
     with tabs[0]:
-        filtro_estado = st.selectbox("Filtrar por estado", ["Todos"] + list(tareas["estado"].dropna().unique()))
-        filtro_origen = st.selectbox("Filtrar por origen", ["Todos"] + list(tareas["origen"].dropna().unique()))
+        if tareas.empty:
+            st.info("No hay tareas registradas.")
+        else:
+            filtro_estado = st.selectbox("Filtrar por estado", ["Todos"] + list(tareas["estado"].dropna().unique()))
+            filtro_origen = st.selectbox("Filtrar por origen", ["Todos"] + list(tareas["origen"].dropna().unique()))
 
-        datos = tareas.copy()
-        if filtro_estado != "Todos":
-            datos = datos[datos["estado"] == filtro_estado]
-        if filtro_origen != "Todos":
-            datos = datos[datos["origen"] == filtro_origen]
+            datos = tareas.copy()
+            if filtro_estado != "Todos":
+                datos = datos[datos["estado"] == filtro_estado]
+            if filtro_origen != "Todos":
+                datos = datos[datos["origen"] == filtro_origen]
 
-        st.dataframe(datos.sort_values("proxima_ejecucion", ascending=True), use_container_width=True)
+            st.dataframe(datos.sort_values("proxima_ejecucion", ascending=True), use_container_width=True)
 
     # --- TAB 2: CREACIÓN DE TAREAS ---
     with tabs[1]:
         if rol in ["admin", "tecnico", "produccion"]:
             st.markdown("### ➕ Agregar nueva tarea")
 
-            nuevo_id = f"TAR{len(tareas)+1:04d}"
+            nuevo_id = f"TAR{coleccion.estimated_document_count() + 1:04d}"
             with st.form(key="form_tarea"):
                 st.text_input("ID de Tarea", value=nuevo_id, disabled=True)
                 nueva = {}
@@ -67,8 +57,7 @@ def app_tareas():
 
                 submitted = st.form_submit_button("Guardar tarea")
                 if submitted:
-                    tareas = pd.concat([tareas, pd.DataFrame([nueva])], ignore_index=True)
-                    guardar_tareas(tareas)
+                    coleccion.insert_one(nueva)
                     st.success("✅ Tarea agregada correctamente")
                     st.experimental_rerun()
         else:
