@@ -124,9 +124,26 @@ if rol == "admin":
         app_usuarios(st.session_state["usuario"], rol)
 
 # ---------------------
-# 🔓 Cerrar sesión
+# 🔓 Cierre de sesión con backup automático (si aplica)
 # ---------------------
 st.sidebar.markdown("---")
 if st.sidebar.button("🔓 Cerrar sesión"):
+    if rol in ["admin", "tecnico"] and es_windows:
+        with st.spinner("Realizando backup antes de cerrar sesión..."):
+            carpeta_local = r"C:\Users\plepratti\OneDrive - Mercopack\Escritorio\rclone"
+            rclone_path = r"C:\Users\plepratti\OneDrive - Mercopack\Escritorio\rclone\rclone.exe"
+            remoto = "cmms_drive:/CMMS_Backup/"
+            comando = f'"{rclone_path}" copy "{carpeta_local}" {remoto} --progress --update'
+
+            try:
+                import subprocess
+                resultado = subprocess.run(comando, shell=True, capture_output=True, text=True)
+                if resultado.returncode == 0:
+                    st.success("✅ Backup realizado antes de cerrar sesión.")
+                else:
+                    st.warning(f"⚠️ Backup con errores:\n{resultado.stderr}")
+            except Exception as e:
+                st.warning(f"⚠️ No se pudo hacer el backup: {e}")
+
     st.session_state.clear()
     st.experimental_rerun()
