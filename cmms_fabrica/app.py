@@ -82,13 +82,35 @@ elif seccion == "Mantenimiento":
     app_mantenimiento()
 elif seccion == "Semana":
     app_semana()
-
-# Mostrar módulo de usuarios solo si es admin
-if st.session_state.get("rol") == "admin":
+# Opciones avanzadas para admin y técnico
+if st.session_state.get("rol") in ["admin", "tecnico"]:
     st.sidebar.markdown("---")
     st.sidebar.subheader("⚙️ Opciones avanzadas")
+
+    # Botón de backup manual
+    if st.sidebar.button("📁 Backup manual a Drive"):
+        with st.spinner("Realizando backup..."):
+            # ✅ Personalizá esta ruta según tu PC
+            carpeta_local = "C:/Users/pablo/Documentos/CMMS"
+            remoto = "mia_backup:/CMMS_Backup/"
+
+            comando = f"rclone copy \"{carpeta_local}\" {remoto} --progress --update"
+
+            try:
+                import subprocess
+                resultado = subprocess.run(comando, shell=True, capture_output=True, text=True)
+                if resultado.returncode == 0:
+                    st.success("✅ Backup realizado con éxito.")
+                else:
+                    st.error(f"❌ Error en el backup:\n{resultado.stderr}")
+            except Exception as e:
+                st.error(f"❌ Excepción al ejecutar el backup: {e}")
+
+# Gestión de usuarios solo para admin
+if st.session_state.get("rol") == "admin":
     if st.sidebar.checkbox("🧑‍💼 Gestión de Usuarios"):
         app_usuarios(st.session_state["usuario"], st.session_state["rol"])
+
 st.sidebar.markdown("---")
 if st.sidebar.button("🔓 Cerrar sesión"):
     st.session_state.clear()
