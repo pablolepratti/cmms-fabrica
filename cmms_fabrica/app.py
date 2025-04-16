@@ -92,11 +92,9 @@ if st.session_state.get("rol") in ["admin", "tecnico"]:
     if st.sidebar.button("📁 Backup manual a Drive"):
         with st.spinner("Realizando backup..."):
             # ✅ Personalizá esta ruta según tu PC
-            carpeta_local = "C:\Users\plepratti\OneDrive - Mercopack\Escritorio\rclone"
+            carpeta_local = r"C:\Users\lepratti\OneDrive - Mercopack\Escritorio\rclone"
             remoto = "cmms_drive:/CMMS_Backup/"
-
             comando = f"rclone copy \"{carpeta_local}\" {remoto} --progress --update"
-
             try:
                 import subprocess
                 resultado = subprocess.run(comando, shell=True, capture_output=True, text=True)
