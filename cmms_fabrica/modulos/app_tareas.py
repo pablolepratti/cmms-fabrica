@@ -19,6 +19,7 @@ def guardar_tareas(df):
 def app_tareas():
     st.subheader("🛠️ Gestión de Tareas Correctivas")
     tareas = cargar_tareas()
+    rol = st.session_state.get("rol", "invitado")
 
     tabs = st.tabs(["📋 Ver tareas", "🛠️ Administrar tareas"])
 
@@ -35,23 +36,35 @@ def app_tareas():
         st.dataframe(datos, use_container_width=True)
 
     with tabs[1]:
-        st.markdown("### ➕ Agregar nueva tarea")
-        with st.form(key="form_tarea"):
-            nueva = {}
-            nueva["id_tarea"] = st.text_input("ID de Tarea")
-            nueva["id_maquina"] = st.text_input("ID de Máquina")
-            nueva["descripcion"] = st.text_area("Descripción")
-            nueva["tipo_tarea"] = st.selectbox("Tipo", ["mantenimiento", "inspección"])
-            nueva["origen"] = st.selectbox("Origen", ["manual", "observacion"])
-            nueva["ultima_ejecucion"] = st.date_input("Última ejecución").strftime("%Y-%m-%d")
-            nueva["proxima_ejecucion"] = st.date_input("Próxima ejecución").strftime("%Y-%m-%d")
-            nueva["estado"] = st.selectbox("Estado", ["pendiente", "cumplida"])
-            nueva["observaciones"] = st.text_area("Observaciones")
-            submitted = st.form_submit_button("Guardar tarea")
+        if rol in ["admin", "tecnico", "produccion"]:
+            st.markdown("### ➕ Agregar nueva tarea")
 
-            if submitted:
-                tareas = pd.concat([tareas, pd.DataFrame([nueva])], ignore_index=True)
+            with st.form(key="form_tarea"):
+                nueva = {}
+                nueva["id_tarea"] = st.text_input("ID de Tarea")
+                nueva["id_maquina"] = st.text_input("ID de Máquina")
+                nueva["descripcion"] = st.text_area("Descripción")
 
-                guardar_tareas(tareas)
-                st.success("✅ Tarea agregada correctamente")
-                st.experimental_rerun()
+                # Tipo fijo
+                nueva["tipo_tarea"] = "correctiva"
+
+                # Origen según rol
+                if rol == "produccion":
+                    nueva["origen"] = "Producción"
+                    st.info("⚠️ Esta tarea será registrada con origen *Producción*.")
+                else:
+                    nueva["origen"] = st.selectbox("Origen", ["manual", "observacion", "Producción"])
+
+                nueva["ultima_ejecucion"] = st.date_input("Última ejecución").strftime("%Y-%m-%d")
+                nueva["proxima_ejecucion"] = st.date_input("Próxima ejecución").strftime("%Y-%m-%d")
+                nueva["estado"] = st.selectbox("Estado", ["pendiente", "cumplida"])
+                nueva["observaciones"] = st.text_area("Observaciones")
+
+                submitted = st.form_submit_button("Guardar tarea")
+                if submitted:
+                    tareas = pd.concat([tareas, pd.DataFrame([nueva])], ignore_index=True)
+                    guardar_tareas(tareas)
+                    st.success("✅ Tarea agregada correctamente")
+                    st.experimental_rerun()
+        else:
+            st.info("👁️ Solo usuarios con permisos pueden registrar nuevas tareas.")
