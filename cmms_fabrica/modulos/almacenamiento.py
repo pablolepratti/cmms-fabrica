@@ -1,60 +1,55 @@
+import pymongo
 import os
-import pandas as pd
 from datetime import datetime
+from dotenv import load_dotenv
 from modulos.historial import log_evento
+from modulos.conexion_mongo import db
 
-CARPETA_DATA = "data"
 LIMITE_MB = 400
 
-# Archivos CSV a gestionar
-csv_rotables = {
-    "historial.csv": "fecha",
-    "observaciones.csv": "fecha",
-    "tareas.csv": "ultima_ejecucion",
-    "servicios.csv": "fecha_realizacion"
+# Colecciones a rotar, campo por el que se ordenan (más antiguos primero)
+colecciones_rotables = {
+    "historial": "fecha",
+    "observaciones": "fecha",
+    "tareas": "ultima_ejecucion",
+    "servicios": "fecha_realizacion"
 }
 
 def obtener_tamano_total_mb():
-    total_bytes = 0
-    for archivo in os.listdir(CARPETA_DATA):
-        path = os.path.join(CARPETA_DATA, archivo)
-        if os.path.isfile(path):
-            total_bytes += os.path.getsize(path)
+    """Obtiene el tamaño total estimado de la base de datos Mongo en MB."""
+    stats = db.command("dbstats")
+    total_bytes = stats.get("storageSize", 0)
     return total_bytes / (1024 * 1024)
 
-def limpiar_csv_por_fecha(nombre_archivo, campo_fecha, max_filas=None):
-    ruta = os.path.join(CARPETA_DATA, nombre_archivo)
-    try:
-        df = pd.read_csv(ruta)
-        if campo_fecha not in df.columns or len(df) < 100:
-            return 0
-        df[campo_fecha] = pd.to_datetime(df[campo_fecha], errors='coerce')
-        df = df.sort_values(by=campo_fecha)
-        filas_a_borrar = int(len(df) * 0.3) if max_filas is None else max_filas
-        df = df.iloc[filas_a_borrar:]
-        df.to_csv(ruta, index=False)
-        return filas_a_borrar
-    except:
+def limpiar_coleccion(nombre, campo_fecha, porcentaje=0.3, minimo=100):
+    """Elimina los documentos más antiguos de una colección si tiene muchos registros"""
+    coleccion = db[nombre]
+    total = coleccion.count_documents({})
+
+    if total < minimo:
         return 0
+
+    cantidad_a_eliminar = int(total * porcentaje)
+    documentos = coleccion.find({}, {"_id": 1, campo_fecha: 1}).sort(campo_fecha, 1).limit(cantidad_a_eliminar)
+    ids_a_borrar = [doc["_id"] for doc in documentos if campo_fecha in doc]
+
+    if ids_a_borrar:
+        coleccion.delete_many({"_id": {"$in": ids_a_borrar}})
+        log_evento("sistema", "Limpieza automática Mongo", nombre, "almacenamiento", f"Se eliminaron {len(ids_a_borrar)} documentos.")
+        return len(ids_a_borrar)
+
+    return 0
 
 def ejecutar_limpieza_si_es_necesario():
     uso_actual = obtener_tamano_total_mb()
     if uso_actual < LIMITE_MB:
         return False
 
-    archivos_ordenados = sorted(
-        csv_rotables.items(),
-        key=lambda x: os.path.getsize(os.path.join(CARPETA_DATA, x[0])),
-        reverse=True
-    )
-
-    total_filas_eliminadas = 0
-    for nombre_archivo, campo_fecha in archivos_ordenados:
-        filas = limpiar_csv_por_fecha(nombre_archivo, campo_fecha)
-        if filas > 0:
-            log_evento("sistema", "Limpieza automática de almacenamiento", nombre_archivo, "almacenamiento", f"Se eliminaron {filas} filas por exceso de espacio.")
-            total_filas_eliminadas += filas
+    total_eliminados = 0
+    for nombre, campo_fecha in sorted(colecciones_rotables.items(), key=lambda x: db[x[0]].estimated_document_count(), reverse=True):
+        eliminados = limpiar_coleccion(nombre, campo_fecha)
+        total_eliminados += eliminados
         if obtener_tamano_total_mb() < LIMITE_MB:
             break
 
-    return total_filas_eliminadas > 0
+    return total_eliminados > 0
