@@ -4,7 +4,6 @@ import hashlib
 import os
 import platform
 
-from modulos.conexion_mongo import db
 from modulos.app_inventario import app_inventario
 from modulos.app_maquinas import app_maquinas
 from modulos.app_observaciones import app_observaciones
@@ -16,21 +15,27 @@ from modulos.app_mantenimiento import app_mantenimiento
 from modulos.app_semana import app_semana
 from modulos.app_usuarios import app_usuarios
 from modulos.kpi_resumen import kpi_resumen_inicio
+from modulos.conexion_mongo import db
 
 # ---------------------
-# 📱 Responsive layout
+# 📱 Responsive layout para móvil
 # ---------------------
 try:
     is_mobile = st.runtime.scriptrunner.get_script_run_context().client.display_width < 768
 except:
-    is_mobile = False
+    is_mobile = False  # fallback por compatibilidad
 
 layout_mode = "wide" if not is_mobile else "centered"
 st.set_page_config(page_title="CMMS Fábrica", layout=layout_mode)
 
 # ---------------------
-# 🔐 Login desde MongoDB
+# 🔐 Login con MongoDB
 # ---------------------
+coleccion_usuarios = db["usuarios"]
+
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
+
 def verificar_login():
     st.sidebar.subheader("🔑 Iniciar sesión")
     with st.sidebar.form("form_login"):
@@ -40,16 +45,14 @@ def verificar_login():
         ingresar = st.form_submit_button("Ingresar")
 
     if ver_hash:
-        st.sidebar.code(hashlib.sha256(password.encode()).hexdigest(), language="bash")
+        st.sidebar.code(hash_password(password), language="bash")
 
     if ingresar:
-        coleccion_usuarios = db["usuarios"]
-        fila = coleccion_usuarios.find_one({"usuario": usuario})
-        if fila:
-            hashed = hashlib.sha256(password.encode()).hexdigest()
-            if hashed == fila["password_hash"]:
+        usuario_data = coleccion_usuarios.find_one({"usuario": usuario})
+        if usuario_data:
+            if hash_password(password) == usuario_data["password_hash"]:
                 st.session_state["usuario"] = usuario
-                st.session_state["rol"] = fila["rol"]
+                st.session_state["rol"] = usuario_data["rol"]
                 st.rerun()
             else:
                 st.error("❌ Contraseña incorrecta")
@@ -93,38 +96,9 @@ elif seccion == "Semana":
     app_semana()
 
 # ---------------------
-# ⚙️ Opciones Avanzadas
+# 👥 Gestión de usuarios (solo admin)
 # ---------------------
 rol = st.session_state.get("rol")
-es_windows = platform.system() == "Windows"
-
-if rol in ["admin", "tecnico"]:
-    st.sidebar.markdown("---")
-    st.sidebar.subheader("⚙️ Opciones avanzadas")
-
-    if es_windows:
-        if st.sidebar.button("📁 Backup manual a Drive"):
-            with st.spinner("Realizando backup..."):
-                carpeta_local = r"C:\Users\plepratti\OneDrive - Mercopack\Escritorio\rclone"
-                rclone_path = r"C:\Users\plepratti\OneDrive - Mercopack\Escritorio\rclone\rclone.exe"
-                remoto = "cmms_drive:/CMMS_Backup/"
-                comando = f'"{rclone_path}" copy "{carpeta_local}" {remoto} --progress --update'
-
-                try:
-                    import subprocess
-                    resultado = subprocess.run(comando, shell=True, capture_output=True, text=True)
-                    if resultado.returncode == 0:
-                        st.success("✅ Backup realizado con éxito.")
-                    else:
-                        st.error(f"❌ Error en el backup:\n{resultado.stderr}")
-                except Exception as e:
-                    st.error(f"❌ Excepción al ejecutar el backup: {e}")
-    else:
-        st.sidebar.warning("⚠️ El backup manual solo está disponible desde una PC con Windows.")
-
-# ---------------------
-# 👥 Gestión de usuarios
-# ---------------------
 if rol == "admin":
     if st.sidebar.checkbox("🧑‍💼 Gestión de Usuarios"):
         app_usuarios(st.session_state["usuario"], rol)
@@ -134,22 +108,5 @@ if rol == "admin":
 # ---------------------
 st.sidebar.markdown("---")
 if st.sidebar.button("🔓 Cerrar sesión"):
-    if rol in ["admin", "tecnico"] and es_windows:
-        with st.spinner("Realizando backup antes de cerrar sesión..."):
-            carpeta_local = r"C:\Users\plepratti\OneDrive - Mercopack\Escritorio\rclone"
-            rclone_path = r"C:\Users\plepratti\OneDrive - Mercopack\Escritorio\rclone\rclone.exe"
-            remoto = "cmms_drive:/CMMS_Backup/"
-            comando = f'"{rclone_path}" copy "{carpeta_local}" {remoto} --progress --update'
-
-            try:
-                import subprocess
-                resultado = subprocess.run(comando, shell=True, capture_output=True, text=True)
-                if resultado.returncode == 0:
-                    st.success("✅ Backup realizado antes de cerrar sesión.")
-                else:
-                    st.warning(f"⚠️ Backup con errores:\n{resultado.stderr}")
-            except Exception as e:
-                st.warning(f"⚠️ No se pudo hacer el backup: {e}")
-
     st.session_state.clear()
     st.rerun()
