@@ -16,7 +16,16 @@ from modulos.app_semana import app_semana
 from modulos.app_usuarios import app_usuarios
 from modulos.kpi_resumen import kpi_resumen_inicio
 
-st.set_page_config(page_title="CMMS Fábrica", layout="wide")
+# ---------------------
+# 📱 Responsive layout para móvil
+# ---------------------
+try:
+    is_mobile = st.runtime.scriptrunner.get_script_run_context().client.display_width < 768
+except:
+    is_mobile = False  # fallback por compatibilidad
+
+layout_mode = "wide" if not is_mobile else "centered"
+st.set_page_config(page_title="CMMS Fábrica", layout=layout_mode)
 
 # ---------------------
 # 🔐 Login
@@ -41,7 +50,7 @@ def verificar_login():
                 if hashed == fila["password_hash"]:
                     st.session_state["usuario"] = usuario
                     st.session_state["rol"] = fila["rol"]
-                    st.experimental_rerun()
+                    st.rerun()
                 else:
                     st.error("❌ Contraseña incorrecta")
             else:
@@ -66,7 +75,6 @@ if seccion == "Inicio":
     st.title("📊 Dashboard CMMS")
     st.info(f"Bienvenido, {st.session_state['usuario'].capitalize()} 👷‍♂️")
     kpi_resumen_inicio()
-
 elif seccion == "Inventario":
     app_inventario()
 elif seccion == "Máquinas":
@@ -124,7 +132,7 @@ if rol == "admin":
         app_usuarios(st.session_state["usuario"], rol)
 
 # ---------------------
-# 🔓 Cierre de sesión con backup automático (si aplica)
+# 🔓 Cierre de sesión con backup automático
 # ---------------------
 st.sidebar.markdown("---")
 if st.sidebar.button("🔓 Cerrar sesión"):
@@ -146,4 +154,4 @@ if st.sidebar.button("🔓 Cerrar sesión"):
                 st.warning(f"⚠️ No se pudo hacer el backup: {e}")
 
     st.session_state.clear()
-    st.experimental_rerun()
+    st.rerun()
