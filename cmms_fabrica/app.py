@@ -39,7 +39,7 @@ def hash_password(password):
 def verificar_login():
     st.sidebar.subheader("🔑 Iniciar sesión")
     with st.sidebar.form("form_login"):
-        usuario = st.text_input("Usuario")
+        usuario = st.text_input("Usuario").strip().lower()
         password = st.text_input("Contraseña", type="password")
         ver_hash = st.checkbox("🧪 Ver hash de esta contraseña")
         ingresar = st.form_submit_button("Ingresar")
@@ -48,20 +48,23 @@ def verificar_login():
         st.sidebar.code(hash_password(password), language="bash")
 
     if ingresar:
+        print("➡️ Intento de login para:", usuario)
         usuario_data = coleccion_usuarios.find_one({"usuario": usuario})
+        print("📦 Resultado en Mongo:", usuario_data)
+
         if usuario_data:
             if hash_password(password) == usuario_data["password_hash"]:
+                print("✅ Contraseña válida. Login exitoso.")
                 st.session_state["usuario"] = usuario
                 st.session_state["rol"] = usuario_data["rol"]
                 st.rerun()
             else:
+                print("❌ Contraseña incorrecta.")
                 st.error("❌ Contraseña incorrecta")
         else:
+            print("❌ Usuario no encontrado en Mongo.")
             st.error("❌ Usuario no encontrado")
 
-if "usuario" not in st.session_state:
-    verificar_login()
-    st.stop()
 
 # ---------------------
 # 🚀 Interfaz Principal
