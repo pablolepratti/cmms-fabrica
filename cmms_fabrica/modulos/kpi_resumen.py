@@ -1,28 +1,23 @@
-
 import streamlit as st
 import pandas as pd
-import os
+from modulos.conexion_mongo import db
 
-def cargar_csv(ruta):
-    if os.path.exists(ruta):
-        return pd.read_csv(ruta)
-    else:
-        return pd.DataFrame()
+def cargar_coleccion(nombre):
+    return pd.DataFrame(list(db[nombre].find({}, {"_id": 0})))
 
 def kpi_resumen_inicio():
-    st.markdown("### 🔍 Resumen Rápido de Mantenimiento")
+    df_tareas = cargar_coleccion("tareas")
+    df_servicios = cargar_coleccion("servicios")
+    df_mantenimiento = cargar_coleccion("mantenimientos")
 
-    df_tareas = cargar_csv("data/tareas.csv")
-    df_servicios = cargar_csv("data/servicios.csv")
-
-    col1, col2 = st.columns(2)
-
+    st.markdown("### 📊 Resumen del sistema")
+    col1, col2, col3 = st.columns(3)
     with col1:
-        st.markdown("**Tareas Internas**")
-        st.metric("Pendientes", len(df_tareas[df_tareas["estado"] == "pendiente"]))
-        st.metric("Cumplidas", len(df_tareas[df_tareas["estado"] == "cumplida"]))
-
+        pendientes = len(df_tareas[df_tareas["estado"] == "pendiente"])
+        st.metric("🧰 Tareas pendientes", pendientes)
     with col2:
-        st.markdown("**Servicios Externos**")
-        st.metric("Vencidos", len(df_servicios[df_servicios["estado"] == "vencido"]))
-        st.metric("Realizados", len(df_servicios[df_servicios["estado"] == "realizado"]))
+        vencidos = len(df_servicios[df_servicios["estado"] == "vencido"])
+        st.metric("🛠️ Servicios vencidos", vencidos)
+    with col3:
+        no_realizados = len(df_mantenimiento[df_mantenimiento["estado"] == "no realizado"])
+        st.metric("📅 Mantenimientos no realizados", no_realizados)
