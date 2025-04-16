@@ -1,35 +1,22 @@
 import streamlit as st
 import pandas as pd
-import os
 from datetime import datetime
+from modulos.conexion_mongo import db
 
-DATA_PATH = "data/observaciones.csv"
-TAREAS_PATH = "data/tareas.csv"
 
 def cargar_observaciones():
-    columnas = [
-        "id_obs", "id_maquina", "fecha", "descripcion", "autor",
-        "criticidad", "crear_tarea", "estado", "tarea_relacionada"
-    ]
-    if os.path.exists(DATA_PATH):
-        return pd.read_csv(DATA_PATH)
-    else:
-        return pd.DataFrame(columns=columnas)
+    return list(db["observaciones"].find())
 
-def guardar_observaciones(df):
-    df.to_csv(DATA_PATH, index=False)
+def guardar_observacion(obs):
+    db["observaciones"].insert_one(obs)
+
+def actualizar_observacion(id_obs, nuevos_datos):
+    db["observaciones"].update_one({"id_obs": id_obs}, {"$set": nuevos_datos})
 
 def crear_tarea_automatica(id_obs, id_maquina, descripcion):
-    if os.path.exists(TAREAS_PATH):
-        df_tareas = pd.read_csv(TAREAS_PATH)
-    else:
-        df_tareas = pd.DataFrame(columns=[
-            "id_tarea", "id_maquina", "descripcion", "tipo_tarea", "origen",
-            "ultima_ejecucion", "proxima_ejecucion", "estado", "observaciones"
-        ])
-    
-    nuevo_id_tarea = f"TAR{len(df_tareas)+1:04d}"
     hoy = datetime.today().strftime("%Y-%m-%d")
+    count = db["tareas"].count_documents({})
+    nuevo_id_tarea = f"TAR{count + 1:04d}"
 
     nueva_tarea = {
         "id_tarea": nuevo_id_tarea,
@@ -42,15 +29,14 @@ def crear_tarea_automatica(id_obs, id_maquina, descripcion):
         "estado": "pendiente",
         "observaciones": f"Generada automáticamente desde observación {id_obs}"
     }
-
-    df_tareas = pd.concat([df_tareas, pd.DataFrame([nueva_tarea])], ignore_index=True)
-    df_tareas.to_csv(TAREAS_PATH, index=False)
+    db["tareas"].insert_one(nueva_tarea)
     st.success(f"🛠️ Tarea {nuevo_id_tarea} creada automáticamente desde la observación.")
 
 def app_observaciones():
     st.subheader("📝 Observaciones Técnicas")
 
-    df = cargar_observaciones()
+    data = cargar_observaciones()
+    df = pd.DataFrame(data)
     rol = st.session_state.get("rol", "invitado")
     tabs = st.tabs(["📄 Ver Observaciones", "🛠️ Administrar Observaciones"])
 
@@ -105,8 +91,7 @@ def app_observaciones():
                         "estado": estado,
                         "tarea_relacionada": tarea_relacionada
                     }
-                    df = pd.concat([df, pd.DataFrame([nueva_obs])], ignore_index=True)
-                    guardar_observaciones(df)
+                    guardar_observacion(nueva_obs)
                     st.success("✅ Observación agregada correctamente.")
 
                     if crear_tarea == "sí":
@@ -128,15 +113,16 @@ def app_observaciones():
                     update = st.form_submit_button("Actualizar")
 
                 if update:
-                    df.loc[df["id_obs"] == id_sel, "id_maquina"] = id_maquina
-                    df.loc[df["id_obs"] == id_sel, "descripcion"] = descripcion
-                    df.loc[df["id_obs"] == id_sel, "criticidad"] = criticidad
-                    df.loc[df["id_obs"] == id_sel, "estado"] = estado
-                    df.loc[df["id_obs"] == id_sel, "crear_tarea"] = crear_tarea
-                    df.loc[df["id_obs"] == id_sel, "tarea_relacionada"] = tarea_relacionada
-                    df.loc[df["id_obs"] == id_sel, "autor"] = autor
-                    guardar_observaciones(df)
+                    nuevos_datos = {
+                        "id_maquina": id_maquina,
+                        "descripcion": descripcion,
+                        "criticidad": criticidad,
+                        "estado": estado,
+                        "crear_tarea": crear_tarea,
+                        "tarea_relacionada": tarea_relacionada,
+                        "autor": autor
+                    }
+                    actualizar_observacion(id_sel, nuevos_datos)
                     st.success("✅ Observación actualizada correctamente.")
         else:
             st.info("👁️ Solo técnicos o administradores pueden agregar o editar observaciones.")
-
