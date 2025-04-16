@@ -1,22 +1,19 @@
 import streamlit as st
 import pandas as pd
-import os
-from datetime import datetime
+from modulos.conexion_mongo import db
+from bson.objectid import ObjectId
 
-DATA_PATH = "data/maquinas.csv"
+coleccion = db["maquinas"]
 
 def cargar_maquinas():
-    columnas = [
-        "id", "nombre", "tipo_activo", "sector", "estado", 
-        "mantenimiento_responsable", "observaciones"
-    ]
-    if os.path.exists(DATA_PATH):
-        return pd.read_csv(DATA_PATH)
-    else:
-        return pd.DataFrame(columns=columnas)
+    data = list(coleccion.find({}, {"_id": 0}))
+    return pd.DataFrame(data)
 
-def guardar_maquinas(df):
-    df.to_csv(DATA_PATH, index=False)
+def guardar_maquina(nueva_maquina):
+    coleccion.insert_one(nueva_maquina)
+
+def actualizar_maquina(id_maquina, nuevos_datos):
+    coleccion.update_one({"id": id_maquina}, {"$set": nuevos_datos})
 
 def app_maquinas():
     st.subheader("🏭 Gestión de Máquinas, Sistemas y Activos")
@@ -72,8 +69,7 @@ def app_maquinas():
                     "mantenimiento_responsable": mantenimiento_responsable,
                     "observaciones": observaciones
                 }
-                df = pd.concat([df, pd.DataFrame([nuevo])], ignore_index=True)
-                guardar_maquinas(df)
+                guardar_maquina(nuevo)
                 st.success("✅ Activo agregado correctamente.")
 
         if len(df) > 0:
@@ -81,28 +77,24 @@ def app_maquinas():
             id_sel = st.selectbox("Seleccionar activo por ID", df["id"].tolist())
             datos = df[df["id"] == id_sel].iloc[0]
 
-            # 🔧 Solución a FutureWarning: asegurar tipo str
-            for col in ["nombre", "tipo_activo", "sector", "estado", "mantenimiento_responsable", "observaciones"]:
-                if col in df.columns:
-                    df[col] = df[col].astype(str)
-
             with st.form("editar_activo"):
                 nombre = st.text_input("Nombre", value=datos["nombre"])
                 tipo_activo = st.text_input("Tipo de activo", value=datos["tipo_activo"])
                 sector = st.text_input("Sector asignado", value=datos["sector"])
                 estado = st.selectbox("Estado", ["activo", "inactivo"], index=0 if datos["estado"] == "activo" else 1)
-                mantenimiento_responsable = st.selectbox(
-                    "Responsable del mantenimiento", ["interno", "externo"],
-                    index=0 if datos["mantenimiento_responsable"] == "interno" else 1)
+                mantenimiento_responsable = st.selectbox("Responsable del mantenimiento", ["interno", "externo"],
+                                                         index=0 if datos["mantenimiento_responsable"] == "interno" else 1)
                 observaciones = st.text_area("Observaciones", value=datos["observaciones"])
                 update = st.form_submit_button("Actualizar")
 
             if update:
-                df.loc[df["id"] == id_sel, "nombre"] = nombre
-                df.loc[df["id"] == id_sel, "tipo_activo"] = tipo_activo
-                df.loc[df["id"] == id_sel, "sector"] = sector
-                df.loc[df["id"] == id_sel, "estado"] = estado
-                df.loc[df["id"] == id_sel, "mantenimiento_responsable"] = mantenimiento_responsable
-                df.loc[df["id"] == id_sel, "observaciones"] = observaciones
-                guardar_maquinas(df)
+                nuevos_datos = {
+                    "nombre": nombre,
+                    "tipo_activo": tipo_activo,
+                    "sector": sector,
+                    "estado": estado,
+                    "mantenimiento_responsable": mantenimiento_responsable,
+                    "observaciones": observaciones
+                }
+                actualizar_maquina(id_sel, nuevos_datos)
                 st.success("✅ Activo actualizado correctamente.")
