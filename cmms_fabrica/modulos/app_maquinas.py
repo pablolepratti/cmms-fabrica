@@ -81,13 +81,19 @@ def app_maquinas():
             id_sel = st.selectbox("Seleccionar activo por ID", df["id"].tolist())
             datos = df[df["id"] == id_sel].iloc[0]
 
+            # 🔧 Solución a FutureWarning: asegurar tipo str
+            for col in ["nombre", "tipo_activo", "sector", "estado", "mantenimiento_responsable", "observaciones"]:
+                if col in df.columns:
+                    df[col] = df[col].astype(str)
+
             with st.form("editar_activo"):
                 nombre = st.text_input("Nombre", value=datos["nombre"])
                 tipo_activo = st.text_input("Tipo de activo", value=datos["tipo_activo"])
                 sector = st.text_input("Sector asignado", value=datos["sector"])
                 estado = st.selectbox("Estado", ["activo", "inactivo"], index=0 if datos["estado"] == "activo" else 1)
-                mantenimiento_responsable = st.selectbox("Responsable del mantenimiento", ["interno", "externo"],
-                                                         index=0 if datos["mantenimiento_responsable"] == "interno" else 1)
+                mantenimiento_responsable = st.selectbox(
+                    "Responsable del mantenimiento", ["interno", "externo"],
+                    index=0 if datos["mantenimiento_responsable"] == "interno" else 1)
                 observaciones = st.text_area("Observaciones", value=datos["observaciones"])
                 update = st.form_submit_button("Actualizar")
 
