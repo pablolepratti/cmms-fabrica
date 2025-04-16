@@ -1,18 +1,16 @@
 import streamlit as st
 import pandas as pd
-import os
+from modulos.conexion_mongo import db
 
-def cargar_csv(ruta):
-    if os.path.exists(ruta):
-        return pd.read_csv(ruta)
-    else:
-        return pd.DataFrame()
+
+def cargar_coleccion(nombre):
+    return pd.DataFrame(list(db[nombre].find({}, {"_id": 0})))
 
 def mostrar_kpis(compacto=False):
-    df_tareas = cargar_csv("data/tareas.csv")
-    df_servicios = cargar_csv("data/servicios.csv")
-    df_mantenimiento = cargar_csv("data/mantenimientos_preventivos.csv")
-    df_semana = cargar_csv("data/plan_semana.csv")
+    df_tareas = cargar_coleccion("tareas")
+    df_servicios = cargar_coleccion("servicios")
+    df_mantenimiento = cargar_coleccion("mantenimientos")
+    df_semana = cargar_coleccion("plan_semana")
 
     if compacto:
         st.markdown("### 📊 Resumen rápido")
