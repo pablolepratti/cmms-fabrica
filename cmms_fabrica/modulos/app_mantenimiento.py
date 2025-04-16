@@ -1,31 +1,25 @@
 import streamlit as st
 import pandas as pd
-import os
 from datetime import datetime
+from modulos.conexion_mongo import db
 
-DATA_PATH = "data/mantenimientos_preventivos.csv"
+coleccion = db["mantenimientos"]
 
 def cargar_mantenimientos():
-    columnas = [
-        "id_mantenimiento", "activo", "sector", "tipo_activo",
-        "frecuencia", "modo", "tiempo_estimado", "planilla_asociada",
-        "ultimo_mantenimiento", "proximo_mantenimiento", "estado", "responsable"
-    ]
-    if os.path.exists(DATA_PATH):
-        return pd.read_csv(DATA_PATH)
-    else:
-        return pd.DataFrame(columns=columnas)
+    return pd.DataFrame(list(coleccion.find({}, {"_id": 0})))
 
-def guardar_mantenimientos(df):
-    df.to_csv(DATA_PATH, index=False)
+def guardar_mantenimiento(nuevo):
+    coleccion.insert_one(nuevo)
+
+def actualizar_mantenimiento(id_mantenimiento, nuevos_datos):
+    coleccion.update_one({"id_mantenimiento": id_mantenimiento}, {"$set": nuevos_datos})
 
 def app_mantenimiento():
-    st.subheader("📅 Mantenimiento Preventivo Mensual")
+    st.subheader("🗕️ Mantenimiento Preventivo Mensual")
 
     df = cargar_mantenimientos()
     tabs = st.tabs(["📄 Ver Plan Mensual", "🛠️ Administrar Planes"])
 
-    # --- TAB 1: VER ---
     with tabs[0]:
         if df.empty:
             st.warning("No hay mantenimientos programados.")
@@ -43,7 +37,6 @@ def app_mantenimiento():
 
             st.dataframe(df.sort_values("proximo_mantenimiento"), use_container_width=True)
 
-    # --- TAB 2: CRUD ---
     with tabs[1]:
         st.markdown("### ➕ Programar nuevo mantenimiento")
         with st.form("form_mantenimiento"):
@@ -83,9 +76,9 @@ def app_mantenimiento():
                     "estado": estado,
                     "responsable": responsable
                 }
-                df = pd.concat([df, pd.DataFrame([nuevo])], ignore_index=True)
-                guardar_mantenimientos(df)
+                guardar_mantenimiento(nuevo)
                 st.success("✅ Mantenimiento programado correctamente.")
+                st.experimental_rerun()
 
         if len(df) > 0:
             st.markdown("### ✏️ Editar mantenimiento existente")
@@ -107,16 +100,19 @@ def app_mantenimiento():
                 update = st.form_submit_button("Actualizar")
 
             if update:
-                df.loc[df["id_mantenimiento"] == id_sel, "activo"] = activo
-                df.loc[df["id_mantenimiento"] == id_sel, "sector"] = sector
-                df.loc[df["id_mantenimiento"] == id_sel, "tipo_activo"] = tipo_activo
-                df.loc[df["id_mantenimiento"] == id_sel, "frecuencia"] = frecuencia
-                df.loc[df["id_mantenimiento"] == id_sel, "modo"] = modo
-                df.loc[df["id_mantenimiento"] == id_sel, "tiempo_estimado"] = tiempo_estimado
-                df.loc[df["id_mantenimiento"] == id_sel, "planilla_asociada"] = planilla_asociada
-                df.loc[df["id_mantenimiento"] == id_sel, "ultimo_mantenimiento"] = str(ultimo_mantenimiento)
-                df.loc[df["id_mantenimiento"] == id_sel, "proximo_mantenimiento"] = str(proximo_mantenimiento)
-                df.loc[df["id_mantenimiento"] == id_sel, "estado"] = estado
-                df.loc[df["id_mantenimiento"] == id_sel, "responsable"] = responsable
-                guardar_mantenimientos(df)
+                nuevos_datos = {
+                    "activo": activo,
+                    "sector": sector,
+                    "tipo_activo": tipo_activo,
+                    "frecuencia": frecuencia,
+                    "modo": modo,
+                    "tiempo_estimado": tiempo_estimado,
+                    "planilla_asociada": planilla_asociada,
+                    "ultimo_mantenimiento": str(ultimo_mantenimiento),
+                    "proximo_mantenimiento": str(proximo_mantenimiento),
+                    "estado": estado,
+                    "responsable": responsable
+                }
+                actualizar_mantenimiento(id_sel, nuevos_datos)
                 st.success("✅ Mantenimiento actualizado correctamente.")
+                st.experimental_rerun()
