@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import hashlib
 import os
+import platform
 
 from modulos.app_inventario import app_inventario
 from modulos.app_maquinas import app_maquinas
@@ -22,14 +23,16 @@ st.set_page_config(page_title="CMMS Fábrica", layout="wide")
 # ---------------------
 def verificar_login():
     st.sidebar.subheader("🔑 Iniciar sesión")
-    usuario = st.sidebar.text_input("Usuario")
-    password = st.sidebar.text_input("Contraseña", type="password")
+    with st.sidebar.form("form_login"):
+        usuario = st.text_input("Usuario")
+        password = st.text_input("Contraseña", type="password")
+        ver_hash = st.checkbox("🧪 Ver hash de esta contraseña")
+        ingresar = st.form_submit_button("Ingresar")
 
-    # 🧪 Bloque DEBUG opcional para ver hash
-    if st.sidebar.checkbox("🧪 Ver hash de esta contraseña"):
+    if ver_hash:
         st.sidebar.code(hashlib.sha256(password.encode()).hexdigest(), language="bash")
 
-    if st.sidebar.button("Ingresar"):
+    if ingresar:
         if os.path.exists("data/usuarios.csv"):
             df = pd.read_csv("data/usuarios.csv")
             hashed = hashlib.sha256(password.encode()).hexdigest()
@@ -54,11 +57,10 @@ if "usuario" not in st.session_state:
 # 🚀 Interfaz Principal
 # ---------------------
 st.sidebar.title("🔧 CMMS Fábrica")
-menu_modulos = [
+seccion = st.sidebar.radio("Seleccionar módulo:", [
     "Inicio", "Máquinas", "Tareas", "Observaciones", "Inventario",
     "Servicios Externos", "Reportes", "KPIs", "Mantenimiento", "Semana"
-]
-seccion = st.sidebar.radio("Seleccionar módulo:", menu_modulos)
+])
 
 if seccion == "Inicio":
     st.title("📊 Dashboard CMMS")
@@ -83,38 +85,47 @@ elif seccion == "Mantenimiento":
     app_mantenimiento()
 elif seccion == "Semana":
     app_semana()
-# Opciones avanzadas para admin y técnico
-if st.session_state.get("rol") in ["admin", "tecnico"]:
+
+# ---------------------
+# ⚙️ Opciones Avanzadas (solo admin y técnico)
+# ---------------------
+rol = st.session_state.get("rol")
+es_windows = platform.system() == "Windows"
+
+if rol in ["admin", "tecnico"]:
     st.sidebar.markdown("---")
     st.sidebar.subheader("⚙️ Opciones avanzadas")
 
-  # Botón de backup manual
-if st.sidebar.button("📁 Backup manual a Drive"):
-    with st.spinner("Realizando backup..."):
-        # ✅ Ruta de la carpeta que querés respaldar
-        carpeta_local = r"C:\Users\plepratti\OneDrive - Mercopack\Escritorio\rclone"
+    if es_windows:
+        if st.sidebar.button("📁 Backup manual a Drive"):
+            with st.spinner("Realizando backup..."):
+                carpeta_local = r"C:\Users\plepratti\OneDrive - Mercopack\Escritorio\rclone"
+                rclone_path = r"C:\Users\plepratti\OneDrive - Mercopack\Escritorio\rclone\rclone.exe"
+                remoto = "cmms_drive:/CMMS_Backup/"
+                comando = f'"{rclone_path}" copy "{carpeta_local}" {remoto} --progress --update'
 
-        # ✅ Ruta completa al ejecutable de rclone
-        rclone_path = r"C:\Users\plepratti\OneDrive - Mercopack\Escritorio\rclone\rclone.exe"
+                try:
+                    import subprocess
+                    resultado = subprocess.run(comando, shell=True, capture_output=True, text=True)
+                    if resultado.returncode == 0:
+                        st.success("✅ Backup realizado con éxito.")
+                    else:
+                        st.error(f"❌ Error en el backup:\n{resultado.stderr}")
+                except Exception as e:
+                    st.error(f"❌ Excepción al ejecutar el backup: {e}")
+    else:
+        st.sidebar.warning("⚠️ El backup manual solo está disponible desde una PC con Windows.")
 
-        remoto = "cmms_drive:/CMMS_Backup/"
-        comando = f'"{rclone_path}" copy "{carpeta_local}" {remoto} --progress --update'
-
-        try:
-            import subprocess
-            resultado = subprocess.run(comando, shell=True, capture_output=True, text=True)
-            if resultado.returncode == 0:
-                st.success("✅ Backup realizado con éxito.")
-            else:
-                st.error(f"❌ Error en el backup:\n{resultado.stderr}")
-        except Exception as e:
-            st.error(f"❌ Excepción al ejecutar el backup: {e}")
-
-# Gestión de usuarios solo para admin
-if st.session_state.get("rol") == "admin":
+# ---------------------
+# 👥 Gestión de usuarios (solo admin)
+# ---------------------
+if rol == "admin":
     if st.sidebar.checkbox("🧑‍💼 Gestión de Usuarios"):
-        app_usuarios(st.session_state["usuario"], st.session_state["rol"])
+        app_usuarios(st.session_state["usuario"], rol)
 
+# ---------------------
+# 🔓 Cerrar sesión
+# ---------------------
 st.sidebar.markdown("---")
 if st.sidebar.button("🔓 Cerrar sesión"):
     st.session_state.clear()
