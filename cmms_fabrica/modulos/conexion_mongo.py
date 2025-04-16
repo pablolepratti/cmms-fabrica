@@ -15,4 +15,4 @@ if not MONGO_URI:
 client = pymongo.MongoClient(MONGO_URI)
 
 # Base de datos
-db = client["cmms_fabrica"]  # Asegurate que este sea exactamente el nombre en Atlas
+db = client["cmms"]  # Asegurate que este sea exactamente el nombre en Atlas
