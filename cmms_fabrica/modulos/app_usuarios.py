@@ -30,7 +30,7 @@ def app_usuarios(usuario_logueado, rol_logueado):
     with tabs[1]:
         st.markdown("### ➕ Crear nuevo usuario")
         with st.form("form_usuario"):
-            nuevo_usuario = st.text_input("Nombre de usuario")
+            nuevo_usuario = st.text_input("Nombre de usuario").strip().lower()
             nueva_clave = st.text_input("Contraseña", type="password")
             rol = st.selectbox("Rol", ["admin", "tecnico", "produccion", "invitado"])
             submitted = st.form_submit_button("Crear usuario")
@@ -56,7 +56,7 @@ def app_usuarios(usuario_logueado, rol_logueado):
                 cambiar = st.form_submit_button("Actualizar contraseña")
             if cambiar:
                 coleccion.update_one(
-                    {"usuario": usuario_sel},
+                    {"usuario": usuario_sel.strip().lower()},
                     {"$set": {"password_hash": hash_password(nueva_pass)}}
                 )
                 st.success("✅ Contraseña actualizada.")
