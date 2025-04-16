@@ -4,6 +4,7 @@ import hashlib
 import os
 import platform
 
+from modulos.conexion_mongo import db
 from modulos.app_inventario import app_inventario
 from modulos.app_maquinas import app_maquinas
 from modulos.app_observaciones import app_observaciones
@@ -17,18 +18,18 @@ from modulos.app_usuarios import app_usuarios
 from modulos.kpi_resumen import kpi_resumen_inicio
 
 # ---------------------
-# 📱 Responsive layout para móvil
+# 📱 Responsive layout
 # ---------------------
 try:
     is_mobile = st.runtime.scriptrunner.get_script_run_context().client.display_width < 768
 except:
-    is_mobile = False  # fallback por compatibilidad
+    is_mobile = False
 
 layout_mode = "wide" if not is_mobile else "centered"
 st.set_page_config(page_title="CMMS Fábrica", layout=layout_mode)
 
 # ---------------------
-# 🔐 Login
+# 🔐 Login desde MongoDB
 # ---------------------
 def verificar_login():
     st.sidebar.subheader("🔑 Iniciar sesión")
@@ -42,21 +43,18 @@ def verificar_login():
         st.sidebar.code(hashlib.sha256(password.encode()).hexdigest(), language="bash")
 
     if ingresar:
-        if os.path.exists("data/usuarios.csv"):
-            df = pd.read_csv("data/usuarios.csv")
+        coleccion_usuarios = db["usuarios"]
+        fila = coleccion_usuarios.find_one({"usuario": usuario})
+        if fila:
             hashed = hashlib.sha256(password.encode()).hexdigest()
-            if usuario in df["usuario"].values:
-                fila = df[df["usuario"] == usuario].iloc[0]
-                if hashed == fila["password_hash"]:
-                    st.session_state["usuario"] = usuario
-                    st.session_state["rol"] = fila["rol"]
-                    st.rerun()
-                else:
-                    st.error("❌ Contraseña incorrecta")
+            if hashed == fila["password_hash"]:
+                st.session_state["usuario"] = usuario
+                st.session_state["rol"] = fila["rol"]
+                st.rerun()
             else:
-                st.error("❌ Usuario no encontrado")
+                st.error("❌ Contraseña incorrecta")
         else:
-            st.error("Archivo de usuarios no encontrado.")
+            st.error("❌ Usuario no encontrado")
 
 if "usuario" not in st.session_state:
     verificar_login()
@@ -95,7 +93,7 @@ elif seccion == "Semana":
     app_semana()
 
 # ---------------------
-# ⚙️ Opciones Avanzadas (solo admin y técnico)
+# ⚙️ Opciones Avanzadas
 # ---------------------
 rol = st.session_state.get("rol")
 es_windows = platform.system() == "Windows"
@@ -125,14 +123,14 @@ if rol in ["admin", "tecnico"]:
         st.sidebar.warning("⚠️ El backup manual solo está disponible desde una PC con Windows.")
 
 # ---------------------
-# 👥 Gestión de usuarios (solo admin)
+# 👥 Gestión de usuarios
 # ---------------------
 if rol == "admin":
     if st.sidebar.checkbox("🧑‍💼 Gestión de Usuarios"):
         app_usuarios(st.session_state["usuario"], rol)
 
 # ---------------------
-# 🔓 Cierre de sesión con backup automático
+# 🔓 Cierre de sesión
 # ---------------------
 st.sidebar.markdown("---")
 if st.sidebar.button("🔓 Cerrar sesión"):
