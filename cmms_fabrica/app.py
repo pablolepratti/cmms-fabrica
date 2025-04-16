@@ -54,10 +54,11 @@ if "usuario" not in st.session_state:
 # 🚀 Interfaz Principal
 # ---------------------
 st.sidebar.title("🔧 CMMS Fábrica")
-seccion = st.sidebar.radio("Seleccionar módulo:", [
+menu_modulos = [
     "Inicio", "Máquinas", "Tareas", "Observaciones", "Inventario",
     "Servicios Externos", "Reportes", "KPIs", "Mantenimiento", "Semana"
-])
+]
+seccion = st.sidebar.radio("Seleccionar módulo:", menu_modulos)
 
 if seccion == "Inicio":
     st.title("📊 Dashboard CMMS")
