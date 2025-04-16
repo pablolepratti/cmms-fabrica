@@ -89,3 +89,7 @@ if st.session_state.get("rol") == "admin":
     st.sidebar.subheader("⚙️ Opciones avanzadas")
     if st.sidebar.checkbox("🧑‍💼 Gestión de Usuarios"):
         app_usuarios(st.session_state["usuario"], st.session_state["rol"])
+st.sidebar.markdown("---")
+if st.sidebar.button("🔓 Cerrar sesión"):
+    st.session_state.clear()
+    st.experimental_rerun()
