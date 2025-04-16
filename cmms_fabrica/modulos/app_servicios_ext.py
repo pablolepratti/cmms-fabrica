@@ -1,28 +1,15 @@
 import streamlit as st
 import pandas as pd
-import os
 from datetime import datetime
+from modulos.conexion_mongo import db
 
-DATA_PATH = "data/servicios.csv"
-
-def cargar_servicios():
-    columnas = [
-        "id_servicio", "id_activo", "empresa", "fecha_realizacion",
-        "descripcion", "periodicidad", "proxima_fecha", "estado",
-        "responsable_fabrica", "observaciones"
-    ]
-    if os.path.exists(DATA_PATH):
-        return pd.read_csv(DATA_PATH)
-    else:
-        return pd.DataFrame(columns=columnas)
-
-def guardar_servicios(df):
-    df.to_csv(DATA_PATH, index=False)
+coleccion = db["servicios"]
 
 def app_servicios_ext():
     st.subheader("🔧 Servicios Tercerizados")
 
-    df = cargar_servicios()
+    datos = list(coleccion.find({}, {"_id": 0}))
+    df = pd.DataFrame(datos)
     tabs = st.tabs(["📄 Ver Servicios", "🛠️ Administrar Servicios"])
 
     # --- TAB 1: VER ---
@@ -61,26 +48,26 @@ def app_servicios_ext():
             submitted = st.form_submit_button("Agregar servicio")
 
         if submitted:
-            if id_servicio in df["id_servicio"].values:
+            if coleccion.count_documents({"id_servicio": id_servicio}) > 0:
                 st.error("⚠️ Ya existe un servicio con ese ID.")
             else:
                 nuevo = {
                     "id_servicio": id_servicio,
                     "id_activo": id_activo,
                     "empresa": empresa,
-                    "fecha_realizacion": str(fecha_realizacion),
+                    "fecha_realizacion": fecha_realizacion.strftime("%Y-%m-%d"),
                     "descripcion": descripcion,
                     "periodicidad": periodicidad,
-                    "proxima_fecha": str(proxima_fecha),
+                    "proxima_fecha": proxima_fecha.strftime("%Y-%m-%d"),
                     "estado": estado,
                     "responsable_fabrica": responsable_fabrica,
                     "observaciones": observaciones
                 }
-                df = pd.concat([df, pd.DataFrame([nuevo])], ignore_index=True)
-                guardar_servicios(df)
+                coleccion.insert_one(nuevo)
                 st.success("✅ Servicio agregado correctamente.")
+                st.experimental_rerun()
 
-        if len(df) > 0:
+        if not df.empty:
             st.markdown("### ✏️ Editar servicio existente")
             id_sel = st.selectbox("Seleccionar servicio por ID", df["id_servicio"].tolist())
             datos = df[df["id_servicio"] == id_sel].iloc[0]
@@ -90,7 +77,7 @@ def app_servicios_ext():
                 empresa = st.text_input("Empresa", value=datos["empresa"])
                 fecha_realizacion = st.date_input("Fecha de realización", value=pd.to_datetime(datos["fecha_realizacion"]))
                 descripcion = st.text_area("Descripción del servicio", value=datos["descripcion"])
-                periodicidad = st.selectbox("Periodicidad", ["mensual", "bimensual", "trimestral", "anual"], index=["mensual","bimensual","trimestral","anual"].index(datos["periodicidad"]))
+                periodicidad = st.selectbox("Periodicidad", ["mensual", "bimensual", "trimestral", "anual"], index=["mensual", "bimensual", "trimestral", "anual"].index(datos["periodicidad"]))
                 proxima_fecha = st.date_input("Próxima fecha", value=pd.to_datetime(datos["proxima_fecha"]))
                 estado = st.selectbox("Estado", ["pendiente", "realizado", "vencido"], index=["pendiente", "realizado", "vencido"].index(datos["estado"]))
                 responsable_fabrica = st.text_input("Responsable en fábrica", value=datos["responsable_fabrica"])
@@ -98,14 +85,19 @@ def app_servicios_ext():
                 update = st.form_submit_button("Actualizar")
 
             if update:
-                df.loc[df["id_servicio"] == id_sel, "id_activo"] = id_activo
-                df.loc[df["id_servicio"] == id_sel, "empresa"] = empresa
-                df.loc[df["id_servicio"] == id_sel, "fecha_realizacion"] = str(fecha_realizacion)
-                df.loc[df["id_servicio"] == id_sel, "descripcion"] = descripcion
-                df.loc[df["id_servicio"] == id_sel, "periodicidad"] = periodicidad
-                df.loc[df["id_servicio"] == id_sel, "proxima_fecha"] = str(proxima_fecha)
-                df.loc[df["id_servicio"] == id_sel, "estado"] = estado
-                df.loc[df["id_servicio"] == id_sel, "responsable_fabrica"] = responsable_fabrica
-                df.loc[df["id_servicio"] == id_sel, "observaciones"] = observaciones
-                guardar_servicios(df)
+                coleccion.update_one(
+                    {"id_servicio": id_sel},
+                    {"$set": {
+                        "id_activo": id_activo,
+                        "empresa": empresa,
+                        "fecha_realizacion": fecha_realizacion.strftime("%Y-%m-%d"),
+                        "descripcion": descripcion,
+                        "periodicidad": periodicidad,
+                        "proxima_fecha": proxima_fecha.strftime("%Y-%m-%d"),
+                        "estado": estado,
+                        "responsable_fabrica": responsable_fabrica,
+                        "observaciones": observaciones
+                    }}
+                )
                 st.success("✅ Servicio actualizado correctamente.")
+                st.experimental_rerun()
