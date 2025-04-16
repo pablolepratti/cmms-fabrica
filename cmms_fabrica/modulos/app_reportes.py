@@ -3,14 +3,16 @@ import pandas as pd
 import os
 from fpdf import FPDF
 from datetime import datetime
+from modulos.conexion_mongo import db
 
-RUTAS = {
-    "Tareas": "data/tareas.csv",
-    "Observaciones": "data/observaciones.csv",
-    "Servicios": "data/servicios.csv",
-    "Mantenimiento Preventivo": "data/mantenimientos_preventivos.csv",
-    "Semana Laboral": "data/plan_semana.csv",
-    "Historial": "data/historial.csv"
+# Mapear colecciones reales
+FUENTES = {
+    "Tareas": db["tareas"],
+    "Observaciones": db["observaciones"],
+    "Servicios": db["servicios"],
+    "Mantenimiento Preventivo": db["mantenimientos"],
+    "Semana Laboral": db["plan_semana"],
+    "Historial": db["historial"]
 }
 
 def generar_pdf(nombre_reporte, df):
@@ -45,30 +47,7 @@ def generar_pdf(nombre_reporte, df):
 def mostrar_reportes():
     st.subheader("🖨️ Reportes del Sistema CMMS")
 
-    opcion = st.selectbox("Seleccionar fuente de datos", list(RUTAS.keys()))
-    ruta = RUTAS[opcion]
+    opcion = st.selectbox("Seleccionar fuente de datos", list(FUENTES.keys()))
+    coleccion = FUENTES[opcion]
 
-    if not os.path.exists(ruta):
-        st.warning("No hay datos para mostrar en esta sección.")
-        return
-
-    df = pd.read_csv(ruta)
-
-    if df.empty:
-        st.info("No hay registros para mostrar.")
-    else:
-        st.write(f"Mostrando los últimos {min(20, len(df))} registros:")
-        st.dataframe(df.tail(20), use_container_width=True)
-
-        if st.button("📄 Generar PDF de todo el reporte"):
-            archivo = generar_pdf(opcion, df)
-            with open(archivo, "rb") as f:
-                st.download_button(
-                    label="⬇️ Descargar PDF",
-                    data=f,
-                    file_name=os.path.basename(archivo),
-                    mime="application/pdf"
-                )
-
-def app_reportes():
-    mostrar_reportes()
+    # Cargar datos desde Mongo
