@@ -51,3 +51,23 @@ def mostrar_reportes():
     coleccion = FUENTES[opcion]
 
     # Cargar datos desde Mongo
+    datos = list(coleccion.find({}, {"_id": 0}))
+    if not datos:
+        st.warning("No hay datos en esta colección.")
+        return
+
+    df = pd.DataFrame(datos)
+    st.dataframe(df.tail(20), use_container_width=True)
+
+    if st.button("📄 Generar PDF de todo el reporte"):
+        archivo = generar_pdf(opcion, df)
+        with open(archivo, "rb") as f:
+            st.download_button(
+                label="⬇️ Descargar PDF",
+                data=f,
+                file_name=os.path.basename(archivo),
+                mime="application/pdf"
+            )
+
+def app_reportes():
+    mostrar_reportes()
