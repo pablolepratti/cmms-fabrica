@@ -91,8 +91,8 @@ if st.session_state.get("rol") in ["admin", "tecnico"]:
     if st.sidebar.button("📁 Backup manual a Drive"):
         with st.spinner("Realizando backup..."):
             # ✅ Personalizá esta ruta según tu PC
-            carpeta_local = "C:/Users/pablo/Documentos/CMMS"
-            remoto = "mia_backup:/CMMS_Backup/"
+            carpeta_local = "C:\Users\plepratti\OneDrive - Mercopack\Escritorio\rclone"
+            remoto = "cmms_drive:/CMMS_Backup/"
 
             comando = f"rclone copy \"{carpeta_local}\" {remoto} --progress --update"
 
