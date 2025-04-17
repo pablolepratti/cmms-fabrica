@@ -2,9 +2,12 @@ import streamlit as st
 import pandas as pd
 from modulos.conexion_mongo import db
 
-
 def cargar_coleccion(nombre):
-    return pd.DataFrame(list(db[nombre].find({}, {"_id": 0})))
+    df = pd.DataFrame(list(db[nombre].find({}, {"_id": 0})))
+    for col in df.columns:
+        if "id" in col.lower():
+            df[col] = df[col].astype(str)
+    return df
 
 def mostrar_kpis(compacto=False):
     df_tareas = cargar_coleccion("tareas")
