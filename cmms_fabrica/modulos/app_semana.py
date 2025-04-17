@@ -109,4 +109,4 @@ def app_semana():
                             })
                         coleccion_plan.insert_many(nuevas)
                         st.success(f"✅ {len(nuevas)} mantenimiento(s) planificados correctamente.")
-                        st.experimental_rerun()
+                        st.rerun()
