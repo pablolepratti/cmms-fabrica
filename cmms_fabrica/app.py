@@ -112,4 +112,4 @@ if rol == "admin":
 st.sidebar.markdown("---")
 if st.sidebar.button("🔓 Cerrar sesión"):
     st.session_state.clear()
-    st.experimental_rerun()  # Recarga la página para volver a mostrar el login
+    st.rerun()  # Recarga la página para volver a mostrar el login
