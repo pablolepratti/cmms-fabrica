@@ -17,15 +17,13 @@ def app_semana():
     st.subheader("📅 Planificación de Semana Laboral")
 
     fechas, dias_semana = obtener_semana_actual()
-
-    # Cargar datos desde Mongo
     plan = pd.DataFrame(list(coleccion_plan.find({}, {"_id": 0})))
     tareas_pendientes = pd.DataFrame(list(coleccion_tareas.find({"estado": "pendiente"}, {"_id": 0})))
     mantenimientos = pd.DataFrame(list(coleccion_mantenimientos.find({}, {"_id": 0})))
 
     tabs = st.tabs(["📄 Ver Semana", "🛠️ Planificar Semana"])
 
-    # --- TAB 1: VER SEMANA ---
+    # --- TAB 1: VISUALIZACIÓN ---
     with tabs[0]:
         st.markdown("### 📆 Semana actual")
         df_semana = plan[plan["fecha"].isin(fechas)]
@@ -56,19 +54,20 @@ def app_semana():
                     confirmar_tareas = st.form_submit_button("✅ Agendar tareas seleccionadas")
 
                 if confirmar_tareas:
-                    nuevas = []
-                    for i in seleccionadas_tareas:
-                        tarea = tareas_pendientes.loc[i]
-                        nuevas.append({
-                            "fecha": fecha_tarea,
-                            "dia": dias_semana[fechas.index(fecha_tarea)],
-                            "actividad": f"[TAREA] {tarea['descripcion']}",
-                            "equipo": tarea["id_maquina"],
-                            "estado": "pendiente",
-                            "notas": f"ID: {tarea['id_tarea']} – Responsable: {responsable} – {notas_tarea}"
-                        })
-
-                    if nuevas:
+                    if not responsable:
+                        st.error("⚠️ Debes ingresar un responsable.")
+                    else:
+                        nuevas = []
+                        for i in seleccionadas_tareas:
+                            tarea = tareas_pendientes.loc[i]
+                            nuevas.append({
+                                "fecha": fecha_tarea,
+                                "dia": dias_semana[fechas.index(fecha_tarea)],
+                                "actividad": f"[TAREA] {tarea['descripcion']}",
+                                "equipo": tarea["id_maquina"],
+                                "estado": "pendiente",
+                                "notas": f"ID: {tarea['id_tarea']} – Responsable: {responsable} – {notas_tarea}"
+                            })
                         coleccion_plan.insert_many(nuevas)
                         st.success(f"✅ {len(nuevas)} tarea(s) planificadas correctamente.")
                         st.experimental_rerun()
@@ -94,19 +93,20 @@ def app_semana():
                     confirmar_mant = st.form_submit_button("✅ Agendar mantenimientos seleccionados")
 
                 if confirmar_mant:
-                    nuevas = []
-                    for i in seleccionados_mant:
-                        mant = mantenimientos.loc[i]
-                        nuevas.append({
-                            "fecha": fecha_mant,
-                            "dia": dias_semana[fechas.index(fecha_mant)],
-                            "actividad": f"[MANTENIMIENTO] {mant['modo']} – {mant['tipo_activo']}",
-                            "equipo": mant["activo"],
-                            "estado": "pendiente",
-                            "notas": f"ID: {mant['id_mantenimiento']} – Responsable: {responsable_m} – {notas_mant}"
-                        })
-
-                    if nuevas:
+                    if not responsable_m:
+                        st.error("⚠️ Debes ingresar un responsable.")
+                    else:
+                        nuevas = []
+                        for i in seleccionados_mant:
+                            mant = mantenimientos.loc[i]
+                            nuevas.append({
+                                "fecha": fecha_mant,
+                                "dia": dias_semana[fechas.index(fecha_mant)],
+                                "actividad": f"[MANTENIMIENTO] {mant['modo']} – {mant['tipo_activo']}",
+                                "equipo": mant["activo"],
+                                "estado": "pendiente",
+                                "notas": f"ID: {mant['id_mantenimiento']} – Responsable: {responsable_m} – {notas_mant}"
+                            })
                         coleccion_plan.insert_many(nuevas)
                         st.success(f"✅ {len(nuevas)} mantenimiento(s) planificados correctamente.")
                         st.experimental_rerun()
