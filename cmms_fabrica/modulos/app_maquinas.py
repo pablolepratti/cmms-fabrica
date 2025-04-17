@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 from modulos.conexion_mongo import db
-from bson.objectid import ObjectId
 
 coleccion = db["maquinas"]
 
@@ -57,7 +56,9 @@ def app_maquinas():
             submitted = st.form_submit_button("Agregar activo")
 
         if submitted:
-            if id_maquina in df["id"].values:
+            if not id_maquina or not nombre or not tipo_activo or not sector:
+                st.error("⚠️ Completá todos los campos obligatorios: ID, Nombre, Tipo y Sector.")
+            elif id_maquina in df["id"].values:
                 st.error("⚠️ Ya existe un activo con ese ID.")
             else:
                 nuevo = {
@@ -71,8 +72,10 @@ def app_maquinas():
                 }
                 guardar_maquina(nuevo)
                 st.success("✅ Activo agregado correctamente.")
+                st.experimental_rerun()
 
         if len(df) > 0:
+            st.divider()
             st.markdown("### ✏️ Editar activo existente")
             id_sel = st.selectbox("Seleccionar activo por ID", df["id"].tolist())
             datos = df[df["id"] == id_sel].iloc[0]
@@ -82,8 +85,9 @@ def app_maquinas():
                 tipo_activo = st.text_input("Tipo de activo", value=datos["tipo_activo"])
                 sector = st.text_input("Sector asignado", value=datos["sector"])
                 estado = st.selectbox("Estado", ["activo", "inactivo"], index=0 if datos["estado"] == "activo" else 1)
-                mantenimiento_responsable = st.selectbox("Responsable del mantenimiento", ["interno", "externo"],
-                                                         index=0 if datos["mantenimiento_responsable"] == "interno" else 1)
+                mantenimiento_responsable = st.selectbox(
+                    "Responsable del mantenimiento", ["interno", "externo"],
+                    index=0 if datos["mantenimiento_responsable"] == "interno" else 1)
                 observaciones = st.text_area("Observaciones", value=datos["observaciones"])
                 update = st.form_submit_button("Actualizar")
 
@@ -98,3 +102,4 @@ def app_maquinas():
                 }
                 actualizar_maquina(id_sel, nuevos_datos)
                 st.success("✅ Activo actualizado correctamente.")
+                st.experimental_rerun()
