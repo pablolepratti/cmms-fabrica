@@ -105,4 +105,4 @@ def app_servicios_ext():
                     }}
                 )
                 st.success("✅ Servicio actualizado correctamente.")
-                st.experimental_rerun()
+                st.rerun()
