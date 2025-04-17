@@ -6,13 +6,20 @@ from modulos.conexion_mongo import db
 coleccion = db["mantenimientos"]
 
 def cargar_mantenimientos():
-    return pd.DataFrame(list(coleccion.find({}, {"_id": 0})))
+    df = pd.DataFrame(list(coleccion.find({}, {"_id": 0})))
+    for col in df.columns:
+        if "id" in col.lower():
+            df[col] = df[col].astype(str)
+    return df
 
 def guardar_mantenimiento(nuevo):
     coleccion.insert_one(nuevo)
 
 def actualizar_mantenimiento(id_mantenimiento, nuevos_datos):
     coleccion.update_one({"id_mantenimiento": id_mantenimiento}, {"$set": nuevos_datos})
+
+def eliminar_mantenimiento(id_mantenimiento):
+    coleccion.delete_one({"id_mantenimiento": id_mantenimiento})
 
 def app_mantenimiento():
     st.subheader("🗕️ Mantenimiento Preventivo Mensual")
@@ -79,7 +86,7 @@ def app_mantenimiento():
                 }
                 guardar_mantenimiento(nuevo)
                 st.success("✅ Mantenimiento programado correctamente.")
-                st.experimental_rerun()
+                st.rerun()
 
         if len(df) > 0:
             st.divider()
@@ -119,4 +126,12 @@ def app_mantenimiento():
                 }
                 actualizar_mantenimiento(id_sel, nuevos_datos)
                 st.success("✅ Mantenimiento actualizado correctamente.")
+                st.rerun()
+
+            st.divider()
+            st.markdown("### 🗑️ Eliminar mantenimiento")
+            id_del = st.selectbox("Seleccionar ID a eliminar", df["id_mantenimiento"].tolist())
+            if st.button("Eliminar mantenimiento seleccionado"):
+                eliminar_mantenimiento(id_del)
+                st.success("🗑️ Mantenimiento eliminado correctamente.")
                 st.rerun()
