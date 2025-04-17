@@ -102,4 +102,4 @@ def app_maquinas():
                 }
                 actualizar_maquina(id_sel, nuevos_datos)
                 st.success("✅ Activo actualizado correctamente.")
-                st.experimental_rerun()
+                st.rerun()
