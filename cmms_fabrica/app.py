@@ -1,8 +1,6 @@
 import streamlit as st
 import pandas as pd
 import hashlib
-import os
-import platform
 
 from modulos.app_inventario import app_inventario
 from modulos.app_maquinas import app_maquinas
@@ -49,11 +47,7 @@ def verificar_login():
     with st.sidebar.form("form_login"):
         usuario = st.text_input("Usuario")
         password = st.text_input("Contraseña", type="password")
-        ver_hash = st.checkbox("🧪 Ver hash de esta contraseña")
         ingresar = st.form_submit_button("Ingresar")
-
-    if ver_hash:
-        st.sidebar.code(hash_password(password), language="bash")
 
     if ingresar:
         usuario_data = coleccion_usuarios.find_one({"usuario": usuario})
@@ -61,7 +55,7 @@ def verificar_login():
             if hash_password(password) == usuario_data["password_hash"]:
                 st.session_state["usuario"] = usuario
                 st.session_state["rol"] = usuario_data["rol"]
-                st.rerun()
+                st.experimental_rerun()  # Recarga la página para mostrar la interfaz principal
             else:
                 st.error("❌ Contraseña incorrecta")
         else:
@@ -118,4 +112,4 @@ if rol == "admin":
 st.sidebar.markdown("---")
 if st.sidebar.button("🔓 Cerrar sesión"):
     st.session_state.clear()
-    st.rerun()
+    st.experimental_rerun()  # Recarga la página para volver a mostrar el login
