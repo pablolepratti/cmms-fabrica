@@ -119,4 +119,4 @@ def app_mantenimiento():
                 }
                 actualizar_mantenimiento(id_sel, nuevos_datos)
                 st.success("✅ Mantenimiento actualizado correctamente.")
-                st.experimental_rerun()
+                st.rerun()
