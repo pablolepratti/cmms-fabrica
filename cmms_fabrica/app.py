@@ -15,28 +15,20 @@ from modulos.app_usuarios import app_usuarios
 from modulos.kpi_resumen import kpi_resumen_inicio
 from modulos.conexion_mongo import db
 
-# ---------------------
-# 📱 Layout responsive
-# ---------------------
+# 📱 Layout adaptativo
 try:
     is_mobile = st.runtime.scriptrunner.get_script_run_context().client.display_width < 768
 except:
     is_mobile = False
+st.set_page_config(page_title="CMMS Fábrica", layout="centered" if is_mobile else "wide")
 
-layout_mode = "wide" if not is_mobile else "centered"
-st.set_page_config(page_title="CMMS Fábrica", layout=layout_mode)
-
-# ---------------------
-# 🧠 Inicializar claves de sesión
-# ---------------------
+# 🧠 Inicializar sesión
 if "usuario" not in st.session_state:
     st.session_state["usuario"] = None
 if "rol" not in st.session_state:
     st.session_state["rol"] = None
 
-# ---------------------
-# 🔐 Login con MongoDB
-# ---------------------
+# 🔐 Login
 coleccion_usuarios = db["usuarios"]
 
 def hash_password(password):
@@ -48,27 +40,20 @@ def verificar_login():
         usuario = st.text_input("Usuario")
         password = st.text_input("Contraseña", type="password")
         ingresar = st.form_submit_button("Ingresar")
-
     if ingresar:
         usuario_data = coleccion_usuarios.find_one({"usuario": usuario})
-        if usuario_data:
-            if hash_password(password) == usuario_data["password_hash"]:
-                st.session_state["usuario"] = usuario
-                st.session_state["rol"] = usuario_data["rol"]
-                st.experimental_rerun()  # Recarga la página para mostrar la interfaz principal
-            else:
-                st.error("❌ Contraseña incorrecta")
+        if usuario_data and hash_password(password) == usuario_data["password_hash"]:
+            st.session_state["usuario"] = usuario
+            st.session_state["rol"] = usuario_data["rol"]
+            st.rerun()
         else:
-            st.error("❌ Usuario no encontrado")
+            st.error("❌ Usuario o contraseña incorrectos")
 
-# 🔒 Requiere login
 if not st.session_state["usuario"]:
     verificar_login()
     st.stop()
 
-# ---------------------
 # 🚀 Interfaz principal
-# ---------------------
 st.sidebar.title("🔧 CMMS Fábrica")
 seccion = st.sidebar.radio("Seleccionar módulo:", [
     "Inicio", "Máquinas", "Tareas", "Observaciones", "Inventario",
@@ -98,18 +83,13 @@ elif seccion == "Mantenimiento":
 elif seccion == "Semana":
     app_semana()
 
-# ---------------------
-# 👥 Gestión de usuarios (solo admin)
-# ---------------------
-rol = st.session_state.get("rol")
-if rol == "admin":
+# 👥 Admin: gestión de usuarios
+if st.session_state["rol"] == "admin":
     if st.sidebar.checkbox("🧑‍💼 Gestión de Usuarios"):
-        app_usuarios(st.session_state["usuario"], rol)
+        app_usuarios(st.session_state["usuario"], st.session_state["rol"])
 
-# ---------------------
-# 🔓 Cierre de sesión
-# ---------------------
+# 🔓 Logout
 st.sidebar.markdown("---")
 if st.sidebar.button("🔓 Cerrar sesión"):
     st.session_state.clear()
-    st.rerun()  # Recarga la página para volver a mostrar el login
+    st.rerun()
