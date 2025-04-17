@@ -9,7 +9,10 @@ def app_servicios_ext():
     st.subheader("🔧 Servicios Tercerizados")
 
     datos = list(coleccion.find({}, {"_id": 0}))
+    for doc in datos:
+        doc["id_servicio"] = str(doc["id_servicio"])
     df = pd.DataFrame(datos)
+
     tabs = st.tabs(["📄 Ver Servicios", "🛠️ Administrar Servicios"])
 
     # --- TAB 1: VER ---
@@ -67,7 +70,7 @@ def app_servicios_ext():
                 }
                 coleccion.insert_one(nuevo)
                 st.success("✅ Servicio agregado correctamente.")
-                st.experimental_rerun()
+                st.rerun()
 
         if not df.empty:
             st.divider()
@@ -87,7 +90,9 @@ def app_servicios_ext():
                                       index=["pendiente", "realizado", "vencido"].index(datos["estado"]))
                 responsable_fabrica = st.text_input("Responsable en fábrica", value=datos["responsable_fabrica"])
                 observaciones = st.text_area("Observaciones", value=datos["observaciones"])
-                update = st.form_submit_button("Actualizar")
+                col1, col2 = st.columns([2, 1])
+                update = col1.form_submit_button("Actualizar")
+                eliminar = col2.form_submit_button("🗑️ Eliminar")
 
             if update:
                 coleccion.update_one(
@@ -105,4 +110,9 @@ def app_servicios_ext():
                     }}
                 )
                 st.success("✅ Servicio actualizado correctamente.")
+                st.rerun()
+
+            if eliminar:
+                coleccion.delete_one({"id_servicio": id_sel})
+                st.success("🗑️ Servicio eliminado correctamente.")
                 st.rerun()
