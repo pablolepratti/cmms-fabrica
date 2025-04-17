@@ -16,7 +16,6 @@ def actualizar_item(id_item, nuevos_datos):
 
 def app_inventario():
     st.subheader("📦 Inventario Técnico")
-
     tabs = st.tabs(["📄 Ver Inventario", "🛠️ Administrar Inventario"])
     df = cargar_inventario()
 
@@ -60,7 +59,9 @@ def app_inventario():
             submitted = st.form_submit_button("Agregar ítem")
 
         if submitted:
-            if id_item in df["id_item"].values:
+            if not id_item or not descripcion or not unidad:
+                st.error("⚠️ Los campos 'ID del ítem', 'Descripción' y 'Unidad' son obligatorios.")
+            elif id_item in df["id_item"].values:
                 st.error("⚠️ Ya existe un ítem con ese ID.")
             else:
                 nueva_fila = {
@@ -83,6 +84,7 @@ def app_inventario():
                 st.experimental_rerun()
 
         if len(df) > 0:
+            st.divider()
             st.markdown("### ✏️ Editar ítem existente")
             item_sel = st.selectbox("Seleccionar ítem por ID", df["id_item"].tolist())
             item_data = df[df["id_item"] == item_sel].iloc[0]
