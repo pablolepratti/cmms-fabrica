@@ -22,13 +22,13 @@ def app_tareas():
             filtro_estado = st.selectbox("Filtrar por estado", ["Todos"] + list(tareas["estado"].dropna().unique()))
             filtro_origen = st.selectbox("Filtrar por origen", ["Todos"] + list(tareas["origen"].dropna().unique()))
 
-            datos = tareas.copy()
+            datos_filtrados = tareas.copy()
             if filtro_estado != "Todos":
-                datos = datos[datos["estado"] == filtro_estado]
+                datos_filtrados = datos_filtrados[datos_filtrados["estado"] == filtro_estado]
             if filtro_origen != "Todos":
-                datos = datos[datos["origen"] == filtro_origen]
+                datos_filtrados = datos_filtrados[datos_filtrados["origen"] == filtro_origen]
 
-            st.dataframe(datos.sort_values("proxima_ejecucion", ascending=True), use_container_width=True)
+            st.dataframe(datos_filtrados.sort_values("proxima_ejecucion", ascending=True), use_container_width=True)
 
     # --- TAB 2: CREACIÓN DE TAREAS ---
     with tabs[1]:
@@ -38,27 +38,40 @@ def app_tareas():
             nuevo_id = f"TAR{coleccion.estimated_document_count() + 1:04d}"
             with st.form(key="form_tarea"):
                 st.text_input("ID de Tarea", value=nuevo_id, disabled=True)
-                nueva = {}
-                nueva["id_tarea"] = nuevo_id
-                nueva["id_maquina"] = st.text_input("ID de Máquina")
-                nueva["descripcion"] = st.text_area("Descripción")
-                nueva["tipo_tarea"] = "correctiva"
+                id_maquina = st.text_input("ID de Máquina")
+                descripcion = st.text_area("Descripción")
+                tipo_tarea = "correctiva"
 
                 if rol == "produccion":
-                    nueva["origen"] = "Producción"
+                    origen = "Producción"
                     st.info("⚠️ Esta tarea será registrada con origen *Producción*.")
                 else:
-                    nueva["origen"] = st.selectbox("Origen", ["manual", "observacion", "Producción"])
+                    origen = st.selectbox("Origen", ["manual", "observacion", "Producción"])
 
-                nueva["ultima_ejecucion"] = st.date_input("Última ejecución").strftime("%Y-%m-%d")
-                nueva["proxima_ejecucion"] = st.date_input("Próxima ejecución").strftime("%Y-%m-%d")
-                nueva["estado"] = st.selectbox("Estado", ["pendiente", "cumplida"])
-                nueva["observaciones"] = st.text_area("Observaciones")
+                ultima_ejecucion = st.date_input("Última ejecución").strftime("%Y-%m-%d")
+                proxima_ejecucion = st.date_input("Próxima ejecución").strftime("%Y-%m-%d")
+                estado = st.selectbox("Estado", ["pendiente", "cumplida"])
+                observaciones = st.text_area("Observaciones")
 
                 submitted = st.form_submit_button("Guardar tarea")
+
                 if submitted:
-                    coleccion.insert_one(nueva)
-                    st.success("✅ Tarea agregada correctamente")
-                    st.experimental_rerun()
+                    if not id_maquina or not descripcion:
+                        st.error("⚠️ Debes completar los campos 'ID de Máquina' y 'Descripción'.")
+                    else:
+                        nueva = {
+                            "id_tarea": nuevo_id,
+                            "id_maquina": id_maquina,
+                            "descripcion": descripcion,
+                            "tipo_tarea": tipo_tarea,
+                            "origen": origen,
+                            "ultima_ejecucion": ultima_ejecucion,
+                            "proxima_ejecucion": proxima_ejecucion,
+                            "estado": estado,
+                            "observaciones": observaciones
+                        }
+                        coleccion.insert_one(nueva)
+                        st.success("✅ Tarea agregada correctamente.")
+                        st.experimental_rerun()
         else:
             st.info("👁️ Solo usuarios con permisos pueden registrar nuevas tareas.")
