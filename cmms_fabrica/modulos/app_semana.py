@@ -21,9 +21,14 @@ def app_semana():
     tareas_pendientes = pd.DataFrame(list(coleccion_tareas.find({"estado": "pendiente"}, {"_id": 0})))
     mantenimientos = pd.DataFrame(list(coleccion_mantenimientos.find({}, {"_id": 0})))
 
+    # 🔧 Convertir campos 'id' a string por compatibilidad Arrow
+    for df in [plan, tareas_pendientes, mantenimientos]:
+        for col in df.columns:
+            if "id" in col.lower():
+                df[col] = df[col].astype(str)
+
     tabs = st.tabs(["📄 Ver Semana", "🛠️ Planificar Semana"])
 
-    # --- TAB 1: VISUALIZACIÓN ---
     with tabs[0]:
         st.markdown("### 📆 Semana actual")
         df_semana = plan[plan["fecha"].isin(fechas)]
@@ -32,7 +37,16 @@ def app_semana():
         else:
             st.dataframe(df_semana.sort_values("fecha"), use_container_width=True)
 
-    # --- TAB 2: PLANIFICACIÓN ---
+            st.divider()
+            st.markdown("### 🗑️ Eliminar planificación")
+            df_semana["opcion"] = df_semana["fecha"] + " – " + df_semana["actividad"]
+            selected = st.selectbox("Seleccionar planificación", df_semana["opcion"].tolist())
+            if st.button("Eliminar planificación seleccionada"):
+                fila = df_semana[df_semana["opcion"] == selected].iloc[0]
+                coleccion_plan.delete_one({"fecha": fila["fecha"], "actividad": fila["actividad"]})
+                st.success("🗑️ Planificación eliminada correctamente.")
+                st.rerun()
+
     with tabs[1]:
         st.markdown("### 🛠️ Agendar tareas correctivas")
 
@@ -70,7 +84,7 @@ def app_semana():
                             })
                         coleccion_plan.insert_many(nuevas)
                         st.success(f"✅ {len(nuevas)} tarea(s) planificadas correctamente.")
-                        st.experimental_rerun()
+                        st.rerun()
 
         st.markdown("---")
         st.markdown("### 🧰 Agendar mantenimientos programados")
