@@ -72,6 +72,6 @@ def app_tareas():
                         }
                         coleccion.insert_one(nueva)
                         st.success("✅ Tarea agregada correctamente.")
-                        st.experimental_rerun()
+                        st.rerun()
         else:
             st.info("👁️ Solo usuarios con permisos pueden registrar nuevas tareas.")
