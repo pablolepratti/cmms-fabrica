@@ -3,7 +3,6 @@ import pandas as pd
 from datetime import datetime
 from modulos.conexion_mongo import db
 
-
 def cargar_observaciones():
     return list(db["observaciones"].find())
 
@@ -77,7 +76,9 @@ def app_observaciones():
                 submitted = st.form_submit_button("Agregar observación")
 
             if submitted:
-                if id_obs in df["id_obs"].values:
+                if not id_maquina or not descripcion or not autor:
+                    st.error("⚠️ Completá todos los campos obligatorios: Máquina, Descripción y Autor.")
+                elif id_obs in df["id_obs"].values:
                     st.error("⚠️ Ya existe una observación con ese ID.")
                 else:
                     nueva_obs = {
@@ -97,7 +98,10 @@ def app_observaciones():
                     if crear_tarea == "sí":
                         crear_tarea_automatica(id_obs, id_maquina, descripcion)
 
+                    st.experimental_rerun()
+
             if not df.empty:
+                st.divider()
                 st.markdown("### ✏️ Editar observación existente")
                 id_sel = st.selectbox("Seleccionar observación por ID", df["id_obs"].tolist())
                 datos = df[df["id_obs"] == id_sel].iloc[0]
@@ -124,5 +128,6 @@ def app_observaciones():
                     }
                     actualizar_observacion(id_sel, nuevos_datos)
                     st.success("✅ Observación actualizada correctamente.")
+                    st.experimental_rerun()
         else:
             st.info("👁️ Solo técnicos o administradores pueden agregar o editar observaciones.")
