@@ -20,12 +20,14 @@ def app_usuarios(usuario_logueado, rol_logueado):
 
     tabs = st.tabs(["📄 Ver Usuarios", "🛠️ Administrar Usuarios"])
 
+    # --- TAB 1: VER ---
     with tabs[0]:
         if df.empty:
             st.info("No hay usuarios registrados.")
         else:
             st.dataframe(df.drop(columns=["password_hash"]), use_container_width=True)
 
+    # --- TAB 2: ADMINISTRAR ---
     with tabs[1]:
         st.markdown("### ➕ Crear nuevo usuario")
         with st.form("form_usuario"):
@@ -47,23 +49,32 @@ def app_usuarios(usuario_logueado, rol_logueado):
                 }
                 coleccion.insert_one(nuevo)
                 st.success(f"✅ Usuario '{nuevo_usuario}' creado correctamente.")
-                st.experimental_rerun()
+                st.rerun()
 
         st.divider()
-        st.markdown("### ✏️ Cambiar contraseña de usuario existente")
+        st.markdown("### ✏️ Modificar o eliminar usuario")
         if not df.empty:
-            usuario_sel = st.selectbox("Seleccionar usuario", df["usuario"].tolist())
-            with st.form("form_pass"):
+            usuario_sel = st.selectbox("Seleccionar usuario", [u for u in df["usuario"].tolist() if u != usuario_logueado])
+            col1, col2 = st.columns([2, 1])
+
+            with col1.form("form_pass"):
                 nueva_pass = st.text_input("Nueva contraseña", type="password")
                 cambiar = st.form_submit_button("Actualizar contraseña")
+            with col2.form("form_borrar"):
+                eliminar = st.form_submit_button("🗑️ Eliminar usuario")
 
             if cambiar:
                 if not nueva_pass:
                     st.error("⚠️ La nueva contraseña no puede estar vacía.")
                 else:
                     coleccion.update_one(
-                        {"usuario": usuario_sel.strip().lower()},
+                        {"usuario": usuario_sel},
                         {"$set": {"password_hash": hash_password(nueva_pass)}}
                     )
                     st.success("✅ Contraseña actualizada.")
                     st.rerun()
+
+            if eliminar:
+                coleccion.delete_one({"usuario": usuario_sel})
+                st.success(f"🗑️ Usuario '{usuario_sel}' eliminado.")
+                st.rerun()
