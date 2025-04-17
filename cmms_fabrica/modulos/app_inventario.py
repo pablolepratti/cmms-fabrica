@@ -6,13 +6,20 @@ from modulos.conexion_mongo import db
 coleccion = db["inventario"]
 
 def cargar_inventario():
-    return pd.DataFrame(list(coleccion.find({}, {"_id": 0})))
+    df = pd.DataFrame(list(coleccion.find({}, {"_id": 0})))
+    for col in df.columns:
+        if "id" in col.lower():
+            df[col] = df[col].astype(str)
+    return df
 
 def guardar_item(item):
     coleccion.insert_one(item)
 
 def actualizar_item(id_item, nuevos_datos):
     coleccion.update_one({"id_item": id_item}, {"$set": nuevos_datos})
+
+def eliminar_item(id_item):
+    coleccion.delete_one({"id_item": id_item})
 
 def app_inventario():
     st.subheader("📦 Inventario Técnico")
@@ -81,7 +88,7 @@ def app_inventario():
                 }
                 guardar_item(nueva_fila)
                 st.success("✅ Ítem agregado correctamente.")
-                st.experimental_rerun()
+                st.rerun()
 
         if len(df) > 0:
             st.divider()
@@ -118,4 +125,12 @@ def app_inventario():
                 }
                 actualizar_item(item_sel, nuevos_datos)
                 st.success("✅ Ítem actualizado correctamente.")
+                st.rerun()
+
+            st.divider()
+            st.markdown("### 🗑️ Eliminar ítem")
+            item_delete = st.selectbox("Seleccionar ítem a eliminar", df["id_item"].tolist())
+            if st.button("Eliminar ítem seleccionado"):
+                eliminar_item(item_delete)
+                st.success("🗑️ Ítem eliminado correctamente.")
                 st.rerun()
