@@ -40,11 +40,11 @@ def app_maquinas():
                 df = df[df["sector"] == sector]
             if estado != "Todos":
                 df = df[df["estado"] == estado]
-st.dataframe(
-    df.sort_values("nombre").drop(columns=["modelo"]),
-    use_container_width=True,
-    hide_index=True  
-)
+    st.dataframe(
+        df.sort_values("nombre").drop(columns=["modelo"]),
+        use_container_width=True,
+        hide_index=True  
+    )
 
 
 
