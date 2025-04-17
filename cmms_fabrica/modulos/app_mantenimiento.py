@@ -56,7 +56,7 @@ def app_mantenimiento():
                 modo = st.selectbox("Modo de ejecución", ["interno", "externo"])
             with col2:
                 tiempo_estimado = st.text_input("Tiempo estimado (minutos)")
-                planilla_asociada = st.text_input("Planilla asociada (PDF)")
+                planilla_asociada = st.text_input("Planilla asociada (Excel)")
                 ultimo_mantenimiento = st.date_input("Último mantenimiento")
                 proximo_mantenimiento = st.date_input("Próximo mantenimiento")
                 estado = st.selectbox("Estado", ["pendiente", "realizado", "no realizado"])
