@@ -66,4 +66,4 @@ def app_usuarios(usuario_logueado, rol_logueado):
                         {"$set": {"password_hash": hash_password(nueva_pass)}}
                     )
                     st.success("✅ Contraseña actualizada.")
-                    st.experimental_rerun()
+                    st.rerun()
