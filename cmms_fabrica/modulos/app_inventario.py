@@ -118,4 +118,4 @@ def app_inventario():
                 }
                 actualizar_item(item_sel, nuevos_datos)
                 st.success("✅ Ítem actualizado correctamente.")
-                st.experimental_rerun()
+                st.rerun()
