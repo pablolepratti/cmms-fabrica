@@ -10,6 +10,8 @@ def app_tareas():
     rol = st.session_state.get("rol", "invitado")
 
     datos = list(coleccion.find({}, {"_id": 0}))
+    for doc in datos:
+        doc["id_tarea"] = str(doc["id_tarea"])
     tareas = pd.DataFrame(datos)
 
     tabs = st.tabs(["📋 Ver tareas", "🛠️ Administrar tareas"])
@@ -30,7 +32,7 @@ def app_tareas():
 
             st.dataframe(datos_filtrados.sort_values("proxima_ejecucion", ascending=True), use_container_width=True)
 
-    # --- TAB 2: CREACIÓN DE TAREAS ---
+    # --- TAB 2: CREACIÓN Y ELIMINACIÓN ---
     with tabs[1]:
         if rol in ["admin", "tecnico", "produccion"]:
             st.markdown("### ➕ Agregar nueva tarea")
@@ -73,5 +75,14 @@ def app_tareas():
                         coleccion.insert_one(nueva)
                         st.success("✅ Tarea agregada correctamente.")
                         st.rerun()
+
+            st.divider()
+            st.markdown("### 🗑️ Eliminar tarea existente")
+            if not tareas.empty:
+                id_sel = st.selectbox("Seleccionar tarea por ID", tareas["id_tarea"].tolist())
+                if st.button("Eliminar tarea seleccionada"):
+                    coleccion.delete_one({"id_tarea": id_sel})
+                    st.success("🗑️ Tarea eliminada correctamente.")
+                    st.rerun()
         else:
-            st.info("👁️ Solo usuarios con permisos pueden registrar nuevas tareas.")
+            st.info("👁️ Solo usuarios con permisos pueden registrar o eliminar tareas.")
