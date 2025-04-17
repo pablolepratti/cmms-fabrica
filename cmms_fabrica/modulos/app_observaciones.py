@@ -128,6 +128,6 @@ def app_observaciones():
                     }
                     actualizar_observacion(id_sel, nuevos_datos)
                     st.success("✅ Observación actualizada correctamente.")
-                    st.experimental_rerun()
+                    st.rerun()
         else:
             st.info("👁️ Solo técnicos o administradores pueden agregar o editar observaciones.")
