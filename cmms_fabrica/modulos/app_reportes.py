@@ -57,6 +57,12 @@ def mostrar_reportes():
         return
 
     df = pd.DataFrame(datos)
+
+    # 🔧 Fix tipo Arrow: convertir columnas que contengan "id" a string
+    for col in df.columns:
+        if "id" in col.lower():
+            df[col] = df[col].astype(str)
+
     st.dataframe(df.tail(20), use_container_width=True)
 
     if st.button("📄 Generar PDF de todo el reporte"):
