@@ -10,14 +10,24 @@ def kpi_resumen_inicio():
     df_servicios = cargar_coleccion("servicios")
     df_mantenimiento = cargar_coleccion("mantenimientos")
 
+    # 🔧 Asegurar columnas 'estado' en string para evitar errores
+    for df in [df_tareas, df_servicios, df_mantenimiento]:
+        if "estado" in df.columns:
+            df["estado"] = df["estado"].astype(str)
+
     st.markdown("### 📊 Resumen del sistema")
-    col1, col2, col3 = st.columns(3)
-    with col1:
+
+    col_tareas, col_servicios, col_mant = st.columns(3)
+
+    with col_tareas:
         pendientes = len(df_tareas[df_tareas["estado"] == "pendiente"])
         st.metric("🧰 Tareas pendientes", pendientes)
-    with col2:
+
+    with col_servicios:
         vencidos = len(df_servicios[df_servicios["estado"] == "vencido"])
         st.metric("🛠️ Servicios vencidos", vencidos)
-    with col3:
+
+    with col_mant:
         no_realizados = len(df_mantenimiento[df_mantenimiento["estado"] == "no realizado"])
         st.metric("📅 Mantenimientos no realizados", no_realizados)
+
