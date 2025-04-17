@@ -15,7 +15,6 @@ def app_usuarios(usuario_logueado, rol_logueado):
         st.warning("Acceso restringido. Solo administradores pueden ver este módulo.")
         return
 
-    # Cargar usuarios desde Mongo
     datos = list(coleccion.find({}, {"_id": 0}))
     df = pd.DataFrame(datos)
 
@@ -36,7 +35,9 @@ def app_usuarios(usuario_logueado, rol_logueado):
             submitted = st.form_submit_button("Crear usuario")
 
         if submitted:
-            if coleccion.count_documents({"usuario": nuevo_usuario}) > 0:
+            if not nuevo_usuario or not nueva_clave:
+                st.error("⚠️ Debes completar todos los campos.")
+            elif coleccion.count_documents({"usuario": nuevo_usuario}) > 0:
                 st.error("⚠️ Ya existe un usuario con ese nombre.")
             else:
                 nuevo = {
@@ -48,15 +49,21 @@ def app_usuarios(usuario_logueado, rol_logueado):
                 st.success(f"✅ Usuario '{nuevo_usuario}' creado correctamente.")
                 st.experimental_rerun()
 
+        st.divider()
         st.markdown("### ✏️ Cambiar contraseña de usuario existente")
         if not df.empty:
             usuario_sel = st.selectbox("Seleccionar usuario", df["usuario"].tolist())
             with st.form("form_pass"):
                 nueva_pass = st.text_input("Nueva contraseña", type="password")
                 cambiar = st.form_submit_button("Actualizar contraseña")
+
             if cambiar:
-                coleccion.update_one(
-                    {"usuario": usuario_sel.strip().lower()},
-                    {"$set": {"password_hash": hash_password(nueva_pass)}}
-                )
-                st.success("✅ Contraseña actualizada.")
+                if not nueva_pass:
+                    st.error("⚠️ La nueva contraseña no puede estar vacía.")
+                else:
+                    coleccion.update_one(
+                        {"usuario": usuario_sel.strip().lower()},
+                        {"$set": {"password_hash": hash_password(nueva_pass)}}
+                    )
+                    st.success("✅ Contraseña actualizada.")
+                    st.experimental_rerun()
