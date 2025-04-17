@@ -5,8 +5,11 @@ from modulos.conexion_mongo import db
 coleccion = db["maquinas"]
 
 def cargar_maquinas():
-    data = list(coleccion.find({}, {"_id": 0}))
-    return pd.DataFrame(data)
+    df = pd.DataFrame(list(coleccion.find({}, {"_id": 0})))
+    for col in df.columns:
+        if "id" in col.lower():
+            df[col] = df[col].astype(str)
+    return df
 
 def guardar_maquina(nueva_maquina):
     coleccion.insert_one(nueva_maquina)
@@ -14,13 +17,15 @@ def guardar_maquina(nueva_maquina):
 def actualizar_maquina(id_maquina, nuevos_datos):
     coleccion.update_one({"id": id_maquina}, {"$set": nuevos_datos})
 
+def eliminar_maquina(id_maquina):
+    coleccion.delete_one({"id": id_maquina})
+
 def app_maquinas():
     st.subheader("🏭 Gestión de Máquinas, Sistemas y Activos")
 
     df = cargar_maquinas()
     tabs = st.tabs(["📄 Ver Activos", "🛠️ Administrar Activos"])
 
-    # --- TAB 1: VISUALIZACIÓN ---
     with tabs[0]:
         if df.empty:
             st.warning("No hay activos registrados.")
@@ -38,7 +43,6 @@ def app_maquinas():
 
             st.dataframe(df.sort_values("nombre"), use_container_width=True)
 
-    # --- TAB 2: CRUD ---
     with tabs[1]:
         st.markdown("### ➕ Agregar nuevo activo")
         with st.form("form_nuevo_activo"):
@@ -72,7 +76,7 @@ def app_maquinas():
                 }
                 guardar_maquina(nuevo)
                 st.success("✅ Activo agregado correctamente.")
-                st.experimental_rerun()
+                st.rerun()
 
         if len(df) > 0:
             st.divider()
@@ -102,4 +106,12 @@ def app_maquinas():
                 }
                 actualizar_maquina(id_sel, nuevos_datos)
                 st.success("✅ Activo actualizado correctamente.")
+                st.rerun()
+
+            st.divider()
+            st.markdown("### 🗑️ Eliminar activo")
+            id_del = st.selectbox("Seleccionar ID a eliminar", df["id"].tolist())
+            if st.button("Eliminar activo seleccionado"):
+                eliminar_maquina(id_del)
+                st.success("🗑️ Activo eliminado correctamente.")
                 st.rerun()
