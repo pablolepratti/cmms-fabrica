@@ -48,7 +48,9 @@ def app_servicios_ext():
             submitted = st.form_submit_button("Agregar servicio")
 
         if submitted:
-            if coleccion.count_documents({"id_servicio": id_servicio}) > 0:
+            if not id_servicio or not empresa or not id_activo:
+                st.error("⚠️ Completá todos los campos obligatorios: ID del servicio, Empresa y Activo.")
+            elif coleccion.count_documents({"id_servicio": id_servicio}) > 0:
                 st.error("⚠️ Ya existe un servicio con ese ID.")
             else:
                 nuevo = {
@@ -68,6 +70,7 @@ def app_servicios_ext():
                 st.experimental_rerun()
 
         if not df.empty:
+            st.divider()
             st.markdown("### ✏️ Editar servicio existente")
             id_sel = st.selectbox("Seleccionar servicio por ID", df["id_servicio"].tolist())
             datos = df[df["id_servicio"] == id_sel].iloc[0]
@@ -77,9 +80,11 @@ def app_servicios_ext():
                 empresa = st.text_input("Empresa", value=datos["empresa"])
                 fecha_realizacion = st.date_input("Fecha de realización", value=pd.to_datetime(datos["fecha_realizacion"]))
                 descripcion = st.text_area("Descripción del servicio", value=datos["descripcion"])
-                periodicidad = st.selectbox("Periodicidad", ["mensual", "bimensual", "trimestral", "anual"], index=["mensual", "bimensual", "trimestral", "anual"].index(datos["periodicidad"]))
+                periodicidad = st.selectbox("Periodicidad", ["mensual", "bimensual", "trimestral", "anual"],
+                                            index=["mensual", "bimensual", "trimestral", "anual"].index(datos["periodicidad"]))
                 proxima_fecha = st.date_input("Próxima fecha", value=pd.to_datetime(datos["proxima_fecha"]))
-                estado = st.selectbox("Estado", ["pendiente", "realizado", "vencido"], index=["pendiente", "realizado", "vencido"].index(datos["estado"]))
+                estado = st.selectbox("Estado", ["pendiente", "realizado", "vencido"],
+                                      index=["pendiente", "realizado", "vencido"].index(datos["estado"]))
                 responsable_fabrica = st.text_input("Responsable en fábrica", value=datos["responsable_fabrica"])
                 observaciones = st.text_area("Observaciones", value=datos["observaciones"])
                 update = st.form_submit_button("Actualizar")
