@@ -26,6 +26,7 @@ def app_maquinas():
     df = cargar_maquinas()
     tabs = st.tabs(["📄 Ver Activos", "🛠️ Administrar Activos"])
 
+    # TAB 1 - Visualización
     with tabs[0]:
         if df.empty:
             st.warning("No hay activos registrados.")
@@ -40,14 +41,14 @@ def app_maquinas():
                 df = df[df["sector"] == sector]
             if estado != "Todos":
                 df = df[df["estado"] == estado]
-    st.dataframe(
-        df.sort_values("nombre").drop(columns=["modelo"]),
-        use_container_width=True,
-        hide_index=True  
-    )
 
+            st.dataframe(
+                df.sort_values("nombre").drop(columns=["modelo"], errors="ignore"),
+                use_container_width=True,
+                hide_index=True
+            )
 
-
+    # TAB 2 - Administración
     with tabs[1]:
         st.markdown("### ➕ Agregar nuevo activo")
         with st.form("form_nuevo_activo"):
