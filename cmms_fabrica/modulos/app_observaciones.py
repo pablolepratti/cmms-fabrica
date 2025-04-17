@@ -4,13 +4,21 @@ from datetime import datetime
 from modulos.conexion_mongo import db
 
 def cargar_observaciones():
-    return list(db["observaciones"].find())
+    data = list(db["observaciones"].find({}, {"_id": 0}))
+    for doc in data:
+        for k in doc:
+            if "id" in k.lower():
+                doc[k] = str(doc[k])
+    return data
 
 def guardar_observacion(obs):
     db["observaciones"].insert_one(obs)
 
 def actualizar_observacion(id_obs, nuevos_datos):
     db["observaciones"].update_one({"id_obs": id_obs}, {"$set": nuevos_datos})
+
+def eliminar_observacion(id_obs):
+    db["observaciones"].delete_one({"id_obs": id_obs})
 
 def crear_tarea_automatica(id_obs, id_maquina, descripcion):
     hoy = datetime.today().strftime("%Y-%m-%d")
@@ -98,7 +106,7 @@ def app_observaciones():
                     if crear_tarea == "sí":
                         crear_tarea_automatica(id_obs, id_maquina, descripcion)
 
-                    st.experimental_rerun()
+                    st.rerun()
 
             if not df.empty:
                 st.divider()
@@ -129,5 +137,13 @@ def app_observaciones():
                     actualizar_observacion(id_sel, nuevos_datos)
                     st.success("✅ Observación actualizada correctamente.")
                     st.rerun()
+
+                st.divider()
+                st.markdown("### 🗑️ Eliminar observación")
+                id_del = st.selectbox("Seleccionar ID a eliminar", df["id_obs"].tolist())
+                if st.button("Eliminar observación seleccionada"):
+                    eliminar_observacion(id_del)
+                    st.success("🗑️ Observación eliminada correctamente.")
+                    st.rerun()
         else:
-            st.info("👁️ Solo técnicos o administradores pueden agregar o editar observaciones.")
+            st.info("👁️ Solo técnicos o administradores pueden agregar, editar o eliminar observaciones.")
