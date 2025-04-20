@@ -1,106 +1,96 @@
 import streamlit as st
 
-# 🔐 Login y cierre de sesión
+# 🟡 Login y cierre de sesión
 from modulos.app_login import login_usuario, cerrar_sesion
 from modulos.conexion_mongo import db
 
-# 🎨 Estilos responsivos
+# 🟡 Estilos responsive
 from modulos.estilos import mobile
 
-# 📋 Funciones principales
+# 🟢 Funciones principales
 from modulos.app_maquinas import app_maquinas
 from modulos.app_tareas import app_tareas
-from modulos.app_mantenimiento import app_mantenimiento
+from modulos.app_mantenimiento import app_mantenimientos
 from modulos.app_inventario import app_inventario
-from modulos.historial import log_evento
-from modulos.app_observaciones import app_observaciones
+from modulos.app_historial import historial
 from modulos.app_usuarios import app_usuarios
-from modulos.app_servicios_ext import app_servicios_ext
 from modulos.app_semana import app_semana
+from modulos.app_observaciones import app_observaciones
+from modulos.app_servicios_ext import app_servicios_ext
 from modulos.app_reportes import app_reportes
-from modulos.kpi_resumen import kpi_resumen_inicio
+from modulos.app_kpi import kpi_resumen_inicio
 from modulos.cambiar_ids_generales import cambiar_ids_generales
 
-# ⚙️ Configuración de la app
+# 📱 Estilos responsive
+mobile()
+
+# 🎨 Configuración general
 st.set_page_config(page_title="CMMS Fábrica", layout="wide")
 
 # 🔐 Login de usuario
-usuario = login_usuario()
+usuario, rol = login_usuario()
 if not usuario:
     st.stop()
 
-# ✅ Estilos móviles aplicados
-mobile()
+# 🚪 Botón de cerrar sesión
+with st.sidebar:
+    st.divider()
+    st.markdown(f"👤 **{usuario}** ({rol})")
+    st.button("Cerrar sesión", on_click=cerrar_sesion, use_container_width=True)
 
-# 📋 Menú principal
+# 📊 KPI en Inicio
 menu = [
     "🏠 Inicio",
     "📋 Máquinas",
     "📅 Tareas",
     "🛠️ Mantenimientos",
-    "🧾 Inventario",
-    "📚 Historial",
-    "🛠️ Observaciones",
-    "👥 Usuarios",
-    "⚙️ Editar usuarios",
-    "🔧 Servicios externos",
-    "📆 Semana",
-    "📈 Reportes",
-    "📊 Indicadores",
-    "✏️ Cambiar IDs manuales",
-    "🚪 Cerrar sesión"
+    "📦 Inventario",
+    "🧾 Reportes",
+    "📖 Historial",
+    "🔍 Observaciones",
+    "📆 Plan Semanal",
+    "🔧 Servicios Externos",
+    "👥 Usuarios" if rol == "admin" else None,
+    "✏️ Cambiar IDs manuales" if rol == "admin" else None
 ]
+menu = [m for m in menu if m is not None]  # Limpieza
 
-seleccion = st.sidebar.selectbox("Menú principal", menu)
+opcion = st.sidebar.selectbox("Menú principal", menu)
 
-# 🚦 Navegación
-if seleccion == "🏠 Inicio":
+# 🧠 Enrutamiento
+if opcion == "🏠 Inicio":
     st.title("Bienvenido al CMMS de la Fábrica")
     kpi_resumen_inicio()
 
-elif seleccion == "📋 Máquinas":
+elif opcion == "📋 Máquinas":
     app_maquinas()
 
-elif seleccion == "📅 Tareas":
+elif opcion == "📅 Tareas":
     app_tareas()
 
-elif seleccion == "🛠️ Mantenimientos":
+elif opcion == "🛠️ Mantenimientos":
     app_mantenimientos()
 
-elif seleccion == "🧾 Inventario":
+elif opcion == "📦 Inventario":
     app_inventario()
 
-elif seleccion == "📚 Historial":
-    app_historial()
-
-elif seleccion == "🛠️ Observaciones":
-    app_observaciones()
-
-elif seleccion == "👥 Usuarios":
-    app_usuarios(usuario.get("usuario"), usuario.get("rol"))
-
-elif seleccion == "⚙️ Editar usuarios":
-    if usuario.get("rol") == "admin":
-        app_usuarios(usuario.get("usuario"), usuario.get("rol"))
-    else:
-        st.error("🚫 Acceso denegado. Solo administradores pueden editar usuarios.")
-
-elif seleccion == "🔧 Servicios externos":
-    app_servicios_ext()
-
-elif seleccion == "📆 Semana":
-    app_semana()
-
-elif seleccion == "📈 Reportes":
+elif opcion == "🧾 Reportes":
     app_reportes()
 
-elif seleccion == "📊 Indicadores":
-    st.info("📊 Este módulo se encuentra en desarrollo.")
+elif opcion == "📖 Historial":
+    historial()
 
-elif seleccion == "✏️ Cambiar IDs manuales":
+elif opcion == "🔍 Observaciones":
+    app_observaciones()
+
+elif opcion == "📆 Plan Semanal":
+    app_semana()
+
+elif opcion == "🔧 Servicios Externos":
+    app_servicios_ext()
+
+elif opcion == "👥 Usuarios" and rol == "admin":
+    app_usuarios(usuario, rol)
+
+elif opcion == "✏️ Cambiar IDs manuales" and rol == "admin":
     cambiar_ids_generales()
-
-elif seleccion == "🚪 Cerrar sesión":
-    cerrar_sesion()
-    st.success("👋 Sesión cerrada correctamente. Recargá la app para volver a iniciar.")
-    st.stop()
