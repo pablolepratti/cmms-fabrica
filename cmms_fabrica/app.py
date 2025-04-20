@@ -10,7 +10,7 @@ from modulos.estilos import mobile
 # 📋 Funciones principales
 from modulos.app_maquinas import app_maquinas
 from modulos.app_tareas import app_tareas
-from modulos.app_mantenimiento import app_mantenimientos
+from modulos.app_mantenimientos import app_mantenimientos
 from modulos.app_inventario import app_inventario
 from modulos.app_historial import app_historial
 from modulos.app_observaciones import app_observaciones
