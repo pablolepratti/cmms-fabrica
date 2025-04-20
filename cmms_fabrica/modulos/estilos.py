@@ -1,15 +1,41 @@
 import streamlit as st
 
 def mobile():
-    """Detecta si el usuario accede desde un dispositivo móvil y ajusta el ancho de página."""
-    is_mobile = False
+    """
+    Aplica un estilo base adaptable. Por ahora, no detecta si es móvil,
+    pero puede extenderse usando JavaScript o cookies en el futuro.
+    """
+    st.markdown(
+        """
+        <style>
+            /* Estilos generales para toda la app */
+            html, body, [data-testid="stApp"] {
+                background-color: #0e1117;
+                color: white;
+            }
 
-    if st.browser.user_agent and "Mobile" in st.browser.user_agent:
-        is_mobile = True
+            /* Personalizar botones */
+            .stButton>button {
+                background-color: #2c7be5;
+                color: white;
+                border-radius: 0.5rem;
+                padding: 0.4rem 1rem;
+                font-weight: bold;
+            }
 
-    st.session_state["is_mobile"] = is_mobile
+            /* Inputs más suaves */
+            .stTextInput>div>div>input {
+                border-radius: 0.5rem;
+                padding: 0.5rem;
+                background-color: #1e222a;
+                color: white;
+            }
 
-    if is_mobile:
-        st.set_page_config(layout="centered")
-    else:
-        st.set_page_config(layout="wide")
+            /* Centrar títulos */
+            h1, h2, h3 {
+                text-align: center;
+            }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
