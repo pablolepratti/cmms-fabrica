@@ -1,86 +1,65 @@
-# 🛠️ CMMS FÁBRICA – Sistema Modular de Mantenimiento
+# 🏭 CMMS Fábrica
 
-**Autor:** Pablo Lepratti  
-**Versión:** Abril 2025  
-**Licencia:** Uso interno, técnico-operativo
+Sistema de gestión de mantenimiento computarizado (CMMS) desarrollado en Python + Streamlit + MongoDB para uso en fábricas industriales.
 
 ---
 
-## 📌 Descripción
+## 🚀 Características principales
 
-Sistema modular de mantenimiento industrial (CMMS), desarrollado en Python + Streamlit, con almacenamiento en CSV, acceso desde celular o PC y registro completo de actividad técnica y operativa.
-
----
-
-## 🎯 Objetivos
-
-- Organizar activos, tareas, inventario y observaciones técnicas
-- Registrar actividades internas y servicios tercerizados
-- Generar reportes PDF para trazabilidad y presentación
-- Ejecutar backups automáticos a Google Drive
-- Monitorear el uso de almacenamiento y autolimpiarse
+- Registro y edición de máquinas
+- Gestión de tareas de mantenimiento preventivo
+- Carga de historial y observaciones
+- Cambio de IDs manuales sin afectar la integridad de los datos
+- Conexión directa con MongoDB Atlas
+- Interfaz accesible y simple vía Streamlit
 
 ---
 
-## 📂 Estructura del Proyecto
+## 📦 Requisitos
 
-```
-cmms_fabrica/
-├── app.py                  # Interfaz principal (Streamlit)
-├── README.md               # Este archivo
-├── modulos/                # Todos los módulos funcionales
-│   ├── usuarios.py, maquinas.py, tareas.py, etc.
-├── data/                   # CSVs persistentes
-│   ├── usuarios.csv, maquinas.csv, tareas.csv, etc.
-├── reportes/               # PDF generados automáticamente
+- Python 3.10 o superior
+- MongoDB Atlas
+- Las librerías del `requirements.txt`
+
+---
+
+## 🔧 Instalación rápida
+
+```bash
+git clone https://github.com/pablolepratti/cmms-fabrica.git
+cd cmms-fabrica
+pip install -r requirements.txt
 ```
 
----
+Luego crear un archivo `.env` en la raíz:
 
-## 🧩 Funcionalidades por módulo
-
-| Módulo            | Funcionalidad principal                                        |
-|-------------------|---------------------------------------------------------------|
-| `usuarios.py`     | Login con SHA-256, control de roles                           |
-| `maquinas.py`     | Gestión de activos por sector y tipo                          |
-| `tareas.py`       | Tareas mensuales + reactivas                                  |
-| `observaciones.py`| Registro técnico diario con criticidad                        |
-| `inventario.py`   | Repuestos e insumos (uso interno o externo)                   |
-| `servicios_ext.py`| Mantenimientos tercerizados con vencimientos                  |
-| `kpi.py`          | Indicadores clave internos y externos                         |
-| `reportes.py`     | Generación de PDF                                             |
-| `historial.py`    | Registro automático de todo evento                            |
-| `backup.py`       | Backup automático a Google Drive con rclone                   |
-| `almacenamiento.py` | Autolimpieza basada en peso real de los CSVs               |
+```
+MONGO_URI=tu_url_de_mongodb
+```
 
 ---
 
-## 🧠 Tecnologías utilizadas
+## ▶️ Ejecutar el sistema
 
-- **Python 3.10+**
-- **Streamlit** (interfaz web)
-- **pandas** (manejo de datos)
-- **fpdf** (PDF)
-- **rclone** (para backups)
-- **GitHub + Render** (despliegue cloud)
+```bash
+streamlit run app.py
+```
 
 ---
 
-## 📱 Accesible desde celular
+## 🗂️ Estructura
 
-El sistema detecta si estás desde un móvil y te muestra una interfaz simplificada.
+```
+cmms-fabrica/
+│
+├── app.py                      # Menú principal
+├── requirements.txt            # Dependencias con versiones
+├── .env                        # Configuración Mongo (no se sube)
+├── modulos/                    # Módulos funcionales
+├── data/                       # Datos locales temporales
+└── README.md                   # Este archivo
+```
 
 ---
 
-## 🛡️ Seguridad
-
-- Contraseñas encriptadas (SHA-256)
-- Registro de eventos técnico-operativos en `historial.csv`
-
----
-
-## ☁️ Recomendación de despliegue
-
-- Subir este repositorio a GitHub
-- Crear Web Service en [Render.com](https://render.com/)
-- Comando de inicio: `streamlit run app.py`
+> Hecho con 💻 por Pablo D. Lepratti
