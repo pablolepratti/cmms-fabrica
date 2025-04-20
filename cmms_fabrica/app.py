@@ -18,7 +18,7 @@ from modulos.app_usuarios import app_usuarios
 from modulos.app_servicios_ext import app_servicios_ext
 from modulos.app_semana import app_semana
 from modulos.app_reportes import app_reportes
-from modulos.app_kpi import kpi_resumen_inicio
+from modulos.kpi_resumen import kpi_resumen_inicio
 from modulos.cambiar_ids_generales import cambiar_ids_generales
 
 # ⚙️ Configuración de la app
