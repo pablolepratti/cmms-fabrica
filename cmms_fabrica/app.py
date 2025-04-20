@@ -1,4 +1,6 @@
 import streamlit as st
+st.set_page_config(page_title="CMMS Fábrica", layout="wide")  
+
 
 # 🟡 Login y cierre de sesión
 from modulos.app_login import login_usuario, cerrar_sesion
@@ -24,9 +26,6 @@ from modulos.cambiar_ids_generales import cambiar_ids_generales
 
 # 📱 Estilos responsive
 mobile()
-
-# 🎨 Configuración general
-st.set_page_config(page_title="CMMS Fábrica", layout="wide")
 
 # 🔐 Login de usuario
 usuario, rol = login_usuario()
