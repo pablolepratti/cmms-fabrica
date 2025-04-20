@@ -2,3 +2,4 @@ streamlit==1.44.1
 pymongo==4.7.2
 python-dotenv==1.0.1
 pandas==2.2.3
+fpdf==1.7.2
