@@ -77,11 +77,11 @@ elif seleccion == "🛠️ Observaciones":
     app_observaciones()
 
 elif seleccion == "👥 Usuarios":
-    app_usuarios()
+    app_usuarios(usuario.get("usuario"), usuario.get("rol"))
 
 elif seleccion == "⚙️ Editar usuarios":
     if usuario.get("rol") == "admin":
-        app_usuarios()  # Podés cambiar esto por editar_usuarios() si lo separás
+        app_usuarios(usuario.get("usuario"), usuario.get("rol"))
     else:
         st.error("🚫 Acceso denegado. Solo administradores pueden editar usuarios.")
 
