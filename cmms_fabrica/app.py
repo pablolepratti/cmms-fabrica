@@ -12,7 +12,7 @@ from modulos.app_maquinas import app_maquinas
 from modulos.app_tareas import app_tareas
 from modulos.app_mantenimiento import app_mantenimiento
 from modulos.app_inventario import app_inventario
-from modulos.app_historial import app_historial
+from modulos.historial import historial
 from modulos.app_observaciones import app_observaciones
 from modulos.app_usuarios import app_usuarios
 from modulos.app_servicios_ext import app_servicios_ext
