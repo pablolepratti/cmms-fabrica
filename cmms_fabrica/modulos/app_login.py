@@ -11,23 +11,23 @@ def hash_password(password):
 def cerrar_sesion():
     st.session_state.usuario = None
     st.session_state.rol = None
+    st.success("Sesión cerrada correctamente.")
+    time.sleep(1)
     st.rerun()
 
 def login_usuario():
+    # Si ya hay un usuario logueado, no mostrar el login
+    if st.session_state.get("usuario") and st.session_state.get("rol"):
+        return st.session_state.usuario, st.session_state.rol
+
     st.markdown("## 🔐 Iniciar sesión en el CMMS")
-
-    if "usuario" not in st.session_state:
-        st.session_state.usuario = None
-
-    if "rol" not in st.session_state:
-        st.session_state.rol = None
 
     with st.form("form_login"):
         usuario = st.text_input("Usuario").strip().lower()
         password = st.text_input("Contraseña", type="password")
         ingresar = st.form_submit_button("Ingresar")
 
-    if ingresar or (usuario and password and st.session_state.get("force_login", False)):
+    if ingresar:
         if not usuario or not password:
             st.error("❗ Completa todos los campos.")
             return None, None
@@ -42,7 +42,5 @@ def login_usuario():
             st.rerun()
         else:
             st.error("❌ Usuario o contraseña incorrectos.")
-            st.session_state.force_login = False
 
-    # Devuelve el usuario y rol desde sesión (si está logueado)
-    return st.session_state.usuario, st.session_state.rol
+    return None, None
