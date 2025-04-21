@@ -31,7 +31,6 @@ def app_tareas():
             if filtro_origen != "Todos":
                 datos_filtrados = datos_filtrados[datos_filtrados["origen"] == filtro_origen]
 
-            # Intentar parsear la fecha
             if "fecha_realizacion" in datos_filtrados.columns:
                 datos_filtrados["fecha_realizacion"] = pd.to_datetime(datos_filtrados["fecha_realizacion"], errors='coerce')
 
@@ -43,13 +42,19 @@ def app_tareas():
             st.markdown("### ➕ Agregar nueva tarea")
 
             nuevo_id = f"TAR{coleccion_tareas.estimated_document_count() + 1:04d}"
-            maquinas = [m["id_maquina"] for m in coleccion_maquinas.find({}, {"_id": 0, "id_maquina": 1})]
+
+            # ⚠️ NOTA:
+            # Actualmente usamos el campo "nombre" como identificador de máquina en las tareas.
+            # Esto es temporal, ya que la colección 'maquinas' no tiene aún un campo "id_maquina".
+            # A futuro, si se agrega el campo "id_maquina", se puede cambiar esta línea a:
+            # maquinas = [m["id_maquina"] for m in coleccion_maquinas.find({}, {"_id": 0, "id_maquina": 1})]
+            maquinas = [m["nombre"] for m in coleccion_maquinas.find({}, {"_id": 0, "nombre": 1})]
 
             with st.form(key="form_tarea"):
                 st.text_input("ID de Tarea", value=nuevo_id, disabled=True)
-                id_maquina = st.selectbox("ID de Máquina", maquinas)
+                id_maquina = st.selectbox("Máquina", maquinas)
                 descripcion = st.text_area("Descripción")
-                tipo_tarea = "correctiva"  # fijo
+                tipo_tarea = "correctiva"
 
                 if rol == "produccion":
                     origen = "Producción"
@@ -89,7 +94,7 @@ def app_tareas():
                 datos_sel = tareas[tareas["id_tarea"] == id_sel].iloc[0]
 
                 with st.form("form_editar_tarea"):
-                    id_maquina = st.selectbox("ID de Máquina", maquinas, index=maquinas.index(datos_sel["id_maquina"]))
+                    id_maquina = st.selectbox("Máquina", maquinas, index=maquinas.index(datos_sel["id_maquina"]))
                     descripcion = st.text_area("Descripción", value=datos_sel["descripcion"])
                     origen = st.selectbox("Origen", ["manual", "observacion", "Producción"], index=["manual", "observacion", "Producción"].index(datos_sel["origen"]))
                     fecha_realizacion = st.date_input("Fecha de realización", value=pd.to_datetime(datos_sel["fecha_realizacion"]))
@@ -118,6 +123,5 @@ def app_tareas():
                     coleccion_tareas.delete_one({"id_tarea": id_del})
                     st.success("🗑️ Tarea eliminada correctamente.")
                     st.rerun()
-
         else:
             st.warning("⚠️ Solo usuarios con permisos pueden gestionar tareas.")
