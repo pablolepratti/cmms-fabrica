@@ -1,20 +1,19 @@
 import streamlit as st
-st.set_page_config(page_title="CMMS Fábrica", layout="wide")  
+st.set_page_config(page_title="CMMS Fábrica", layout="wide")
 
-
-# 🟡 Login y cierre de sesión
+# 🔐 Login y cierre de sesión
 from modulos.app_login import login_usuario, cerrar_sesion
 from modulos.conexion_mongo import db
 
-# 🟡 Estilos responsive
+# 💄 Estilos responsive
 from modulos.estilos import mobile
 
-# 🟢 Funciones principales
+# 🧠 Funciones principales
 from modulos.app_maquinas import app_maquinas
 from modulos.app_tareas import app_tareas
 from modulos.app_mantenimiento import app_mantenimiento
 from modulos.app_inventario import app_inventario
-from modulos.historial import log_evento
+from modulos.historial import log_evento  # <-- historial = función de logging
 from modulos.app_usuarios import app_usuarios
 from modulos.app_semana import app_semana
 from modulos.app_observaciones import app_observaciones
@@ -38,7 +37,7 @@ with st.sidebar:
     st.markdown(f"👤 **{usuario}** ({rol})")
     st.button("Cerrar sesión", on_click=cerrar_sesion, use_container_width=True)
 
-# 📊 KPI en Inicio
+# 📋 Menú lateral
 menu = [
     "🏠 Inicio",
     "📋 Máquinas",
@@ -53,11 +52,11 @@ menu = [
     "👥 Usuarios" if rol == "admin" else None,
     "✏️ Cambiar IDs manuales" if rol == "admin" else None
 ]
-menu = [m for m in menu if m is not None]  # Limpieza
+menu = [m for m in menu if m is not None]
 
 opcion = st.sidebar.selectbox("Menú principal", menu)
 
-# 🧠 Enrutamiento
+# 🧭 Enrutamiento
 if opcion == "🏠 Inicio":
     st.title("Bienvenido al CMMS de la Fábrica")
     kpi_resumen_inicio()
@@ -69,7 +68,7 @@ elif opcion == "📅 Tareas":
     app_tareas()
 
 elif opcion == "🛠️ Mantenimientos":
-    app_mantenimientos()
+    app_mantenimiento()  # ✅ corregido
 
 elif opcion == "📦 Inventario":
     app_inventario()
@@ -78,7 +77,8 @@ elif opcion == "🧾 Reportes":
     app_reportes()
 
 elif opcion == "📖 Historial":
-    historial()
+    st.warning("🔧 Función de historial aún no implementada como vista.")
+    # log_evento(...) ← si necesitás registrar acciones, ya está importado
 
 elif opcion == "🔍 Observaciones":
     app_observaciones()
