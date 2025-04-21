@@ -94,7 +94,13 @@ def app_tareas():
                 datos_sel = tareas[tareas["id_tarea"] == id_sel].iloc[0]
 
                 with st.form("form_editar_tarea"):
-                    id_maquina = st.selectbox("Máquina", maquinas, index=maquinas.index(datos_sel["id_maquina"]))
+                    # Protección contra errores si la máquina no está en la lista actual
+                    if datos_sel["id_maquina"] in maquinas:
+                        id_maquina = st.selectbox("Máquina", maquinas, index=maquinas.index(datos_sel["id_maquina"]))
+                    else:
+                        st.warning(f"⚠️ La máquina '{datos_sel['id_maquina']}' no se encuentra en la lista actual. Seleccionala de nuevo.")
+                        id_maquina = st.selectbox("Máquina", maquinas)
+
                     descripcion = st.text_area("Descripción", value=datos_sel["descripcion"])
                     origen = st.selectbox("Origen", ["manual", "observacion", "Producción"], index=["manual", "observacion", "Producción"].index(datos_sel["origen"]))
                     fecha_realizacion = st.date_input("Fecha de realización", value=pd.to_datetime(datos_sel["fecha_realizacion"]))
