@@ -1,9 +1,10 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime
+from datetime import date
 from modulos.conexion_mongo import db
 
 coleccion = db["tareas"]
+maquinas = db["maquinas"]
 
 def app_tareas():
     st.subheader("🛠️ Gestión de Tareas Correctivas")
@@ -14,9 +15,11 @@ def app_tareas():
         doc["id_tarea"] = str(doc["id_tarea"])
     tareas = pd.DataFrame(datos)
 
+    lista_maquinas = [m.get("id_maquina") for m in maquinas.find({}, {"_id": 0, "id_maquina": 1})]
+
     tabs = st.tabs(["📋 Ver tareas", "🛠️ Administrar tareas"])
 
-    # --- TAB 1: VISUALIZACIÓN ---
+    # --- TAB 1: VER ---
     with tabs[0]:
         if tareas.empty:
             st.info("No hay tareas registradas.")
@@ -30,59 +33,58 @@ def app_tareas():
             if filtro_origen != "Todos":
                 datos_filtrados = datos_filtrados[datos_filtrados["origen"] == filtro_origen]
 
-            st.dataframe(datos_filtrados.sort_values("proxima_ejecucion", ascending=True), use_container_width=True)
+            st.dataframe(datos_filtrados.sort_values("fecha_realizacion", ascending=True), use_container_width=True)
 
-    # --- TAB 2: CREACIÓN Y ELIMINACIÓN ---
+    # --- TAB 2: CREAR / EDITAR / ELIMINAR ---
     with tabs[1]:
         if rol in ["admin", "tecnico", "produccion"]:
-            st.markdown("### ➕ Agregar nueva tarea")
+            st.markdown("### ➕ Agregar o modificar tarea")
 
             nuevo_id = f"TAR{coleccion.estimated_document_count() + 1:04d}"
-            with st.form(key="form_tarea"):
-                st.text_input("ID de Tarea", value=nuevo_id, disabled=True)
-                id_maquina = st.text_input("ID de Máquina")
-                descripcion = st.text_area("Descripción")
-                tipo_tarea = "correctiva"
+            tarea_sel = st.selectbox("Seleccionar tarea existente para editar (o dejar vacío)", [""] + tareas["id_tarea"].tolist())
 
-                if rol == "produccion":
-                    origen = "Producción"
-                    st.info("⚠️ Esta tarea será registrada con origen *Producción*.")
-                else:
-                    origen = st.selectbox("Origen", ["manual", "observacion", "Producción"])
+            datos_editar = tareas[tareas["id_tarea"] == tarea_sel].to_dict("records")[0] if tarea_sel else {}
 
-                ultima_ejecucion = st.date_input("Última ejecución").strftime("%Y-%m-%d")
-                proxima_ejecucion = st.date_input("Próxima ejecución").strftime("%Y-%m-%d")
-                estado = st.selectbox("Estado", ["pendiente", "cumplida"])
-                observaciones = st.text_area("Observaciones")
+            with st.form("form_tarea"):
+                id_tarea = st.text_input("ID de Tarea", value=tarea_sel or nuevo_id, disabled=True)
+                id_maquina = st.selectbox("ID de Máquina", options=lista_maquinas, index=lista_maquinas.index(datos_editar["id_maquina"]) if datos_editar else 0)
+                descripcion = st.text_area("Descripción", value=datos_editar.get("descripcion", ""))
+                origen = st.selectbox("Origen", ["manual", "observacion", "Producción"], index=["manual", "observacion", "Producción"].index(datos_editar.get("origen", "manual")))
+                fecha_realizacion = st.date_input("Fecha de realización", value=pd.to_datetime(datos_editar.get("fecha_realizacion", date.today())))
+                estado = st.selectbox("Estado", ["pendiente", "cumplida"], index=["pendiente", "cumplida"].index(datos_editar.get("estado", "pendiente")))
+                observaciones = st.text_area("Observaciones", value=datos_editar.get("observaciones", ""))
 
                 submitted = st.form_submit_button("Guardar tarea")
 
                 if submitted:
                     if not id_maquina or not descripcion:
-                        st.error("⚠️ Debes completar los campos 'ID de Máquina' y 'Descripción'.")
+                        st.error("⚠️ Debes completar ID de máquina y descripción.")
                     else:
-                        nueva = {
-                            "id_tarea": nuevo_id,
+                        registro = {
+                            "id_tarea": id_tarea,
                             "id_maquina": id_maquina,
                             "descripcion": descripcion,
-                            "tipo_tarea": tipo_tarea,
                             "origen": origen,
-                            "ultima_ejecucion": ultima_ejecucion,
-                            "proxima_ejecucion": proxima_ejecucion,
+                            "fecha_realizacion": fecha_realizacion.strftime("%Y-%m-%d"),
                             "estado": estado,
                             "observaciones": observaciones
                         }
-                        coleccion.insert_one(nueva)
-                        st.success("✅ Tarea agregada correctamente.")
+
+                        if tarea_sel:
+                            coleccion.update_one({"id_tarea": id_tarea}, {"$set": registro})
+                            st.success("✅ Tarea actualizada.")
+                        else:
+                            coleccion.insert_one(registro)
+                            st.success("✅ Tarea agregada.")
                         st.rerun()
 
             st.divider()
-            st.markdown("### 🗑️ Eliminar tarea existente")
+            st.markdown("### 🗑️ Eliminar tarea")
             if not tareas.empty:
-                id_sel = st.selectbox("Seleccionar tarea por ID", tareas["id_tarea"].tolist())
+                id_del = st.selectbox("Seleccionar tarea por ID para eliminar", tareas["id_tarea"].tolist())
                 if st.button("Eliminar tarea seleccionada"):
-                    coleccion.delete_one({"id_tarea": id_sel})
-                    st.success("🗑️ Tarea eliminada correctamente.")
+                    coleccion.delete_one({"id_tarea": id_del})
+                    st.success("🗑️ Tarea eliminada.")
                     st.rerun()
         else:
             st.info("👁️ Solo usuarios con permisos pueden registrar o eliminar tareas.")
