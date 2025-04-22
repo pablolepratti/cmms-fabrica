@@ -25,10 +25,12 @@ def app_tareas():
 
     # TAB 1: VER
     with tabs[0]:
-        if tareas.empty:
-            st.info("No hay tareas registradas.")
-        else:
-            st.dataframe(tareas.sort_values("proxima_ejecucion", ascending=True), use_container_width=True)
+    if tareas.empty:
+        st.info("No hay tareas registradas.")
+    else:
+        if "tipo_tarea" in tareas.columns:
+            tareas = tareas.drop(columns=["tipo_tarea"])
+        st.dataframe(tareas.sort_values("proxima_ejecucion", ascending=True), use_container_width=True)
 
     # TAB 2: CRUD
     with tabs[1]:
