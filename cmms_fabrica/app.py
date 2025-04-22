@@ -12,7 +12,7 @@ from modulos.estilos import mobile
 from modulos.app_maquinas import app_maquinas
 from modulos.app_tareas import app_tareas
 from modulos.app_mantenimiento import app_mantenimiento
- from modulos import app_calibracion_instrumentos
+from modulos import app_calibracion_instrumentos
 from modulos.app_inventario import app_inventario
 from modulos.historial import log_evento  # <-- historial = función de logging
 from modulos.historial import app_historial
