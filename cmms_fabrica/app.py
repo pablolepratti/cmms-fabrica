@@ -14,6 +14,7 @@ from modulos.app_tareas import app_tareas
 from modulos.app_mantenimiento import app_mantenimiento
 from modulos.app_inventario import app_inventario
 from modulos.historial import log_evento  # <-- historial = función de logging
+from modulos.historial import app_historial
 from modulos.app_usuarios import app_usuarios
 from modulos.app_semana import app_semana
 from modulos.app_observaciones import app_observaciones
@@ -76,9 +77,8 @@ elif opcion == "📦 Inventario":
 elif opcion == "🧾 Reportes":
     app_reportes()
 
-elif opcion == "📖 Historial":
-    st.warning("🔧 Función de historial aún no implementada como vista.")
-    # log_evento(...) ← si necesitás registrar acciones, ya está importado
+elif menu == "Historial":
+    app_historial()
 
 elif opcion == "🔍 Observaciones":
     app_observaciones()
