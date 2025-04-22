@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
 from modulos.conexion_mongo import db
+import time
 
 coleccion = db["calibracion_instrumentos"]
 
@@ -48,3 +49,34 @@ def app_calibracion():
             st.write(f"**{k.replace('_', ' ').capitalize()}:** {v}")
 
         st.markdown("Este instrumento se apoya en un instructivo interno para su calibración. Consultar documentación técnica o responsable del laboratorio.")
+
+        st.markdown("---")
+        st.markdown("### 📅 Registrar nueva calibración")
+
+        nueva_fecha = st.date_input("Fecha de calibración realizada", value=datetime.today())
+
+        if st.button("Registrar calibración"):
+            # Calcular fecha próxima según frecuencia_calibracion
+            frecuencia = doc.get("frecuencia_calibracion", "").lower()
+            fecha_proxima = None
+
+            if "6 meses" in frecuencia:
+                fecha_proxima = nueva_fecha + pd.DateOffset(months=6)
+            elif "2 años" in frecuencia:
+                fecha_proxima = nueva_fecha + pd.DateOffset(years=2)
+            elif "5 años" in frecuencia:
+                fecha_proxima = nueva_fecha + pd.DateOffset(years=5)
+
+            update = {
+                "fecha_ultima": datetime.combine(nueva_fecha, datetime.min.time()),
+                "fecha_proxima": fecha_proxima
+            }
+
+            coleccion.update_one(
+                {"id_instrumento": doc["id_instrumento"]},
+                {"$set": update}
+            )
+
+            st.success(f"Calibración registrada. Próxima: {fecha_proxima.date() if fecha_proxima else 'no definida'}")
+            time.sleep(1)
+            st.rerun()
