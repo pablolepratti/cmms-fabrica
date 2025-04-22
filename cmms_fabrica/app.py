@@ -45,6 +45,7 @@ menu = [
     "📋 Máquinas",
     "📅 Tareas",
     "🛠️ Mantenimientos",
+    "📏 Calibración de Instrumentos",
     "📦 Inventario",
     "🧾 Reportes",
     "📖 Historial",
