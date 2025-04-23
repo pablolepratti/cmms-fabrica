@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import json
 from datetime import date
 from modulos.conexion_mongo import db
 
@@ -18,6 +19,21 @@ def app_tareas():
 
     datos = list(coleccion_tareas.find({}, {"_id": 0}))
     tareas = pd.DataFrame(datos)
+
+    def formatear_ejecutado_por(valor):
+        if valor is None or valor == "":
+            return "-"
+        try:
+            if isinstance(valor, str):
+                valor = json.loads(valor)
+            if isinstance(valor, dict):
+                return f"Empresa: {valor.get('empresa', '')} – Técnico: {valor.get('tecnico', '')}"
+        except:
+            return str(valor)
+        return str(valor)
+
+    if "ejecutado_por" in tareas.columns:
+        tareas["ejecutado_por"] = tareas["ejecutado_por"].apply(formatear_ejecutado_por)
 
     tabs = st.tabs(["📋 Ver tareas", "➕ Nueva / Editar / Eliminar"])
 
@@ -45,16 +61,16 @@ def app_tareas():
             externo = st.checkbox("¿Realizado por servicio externo?")
             ejecutado_por = None
             if externo:
-                st.markdown("#### 🧰 Datos del servicio externo")
-                empresa = st.text_input("Empresa externa")
-                tecnico = st.text_input("Técnico responsable")
-                contacto = st.text_input("Contacto (teléfono o mail)")
-                ejecutado_por = {
-                    "tipo": "servicio_externo",
-                    "empresa": empresa,
-                    "tecnico": tecnico,
-                    "contacto": contacto
-                }
+                with st.expander("🧰 Datos del servicio externo"):
+                    empresa = st.text_input("Empresa externa")
+                    tecnico = st.text_input("Técnico responsable")
+                    contacto = st.text_input("Contacto (teléfono o mail)")
+                    ejecutado_por = {
+                        "tipo": "servicio_externo",
+                        "empresa": empresa,
+                        "tecnico": tecnico,
+                        "contacto": contacto
+                    }
 
             submitted = st.form_submit_button("Guardar")
 
@@ -94,26 +110,30 @@ def app_tareas():
                 estado = st.selectbox("Estado", ["pendiente", "realizada"], index=["pendiente", "realizada"].index(datos_sel["estado"]))
                 observaciones = st.text_area("Observaciones", value=datos_sel["observaciones"])
 
-                ejecutado_por = datos_sel.get("ejecutado_por", None)
+                ejecutado_por_raw = datos_sel.get("ejecutado_por", None)
+                try:
+                    if isinstance(ejecutado_por_raw, str):
+                        ejecutado_por = json.loads(ejecutado_por_raw)
+                    elif isinstance(ejecutado_por_raw, dict):
+                        ejecutado_por = ejecutado_por_raw
+                    else:
+                        ejecutado_por = None
+                except:
+                    ejecutado_por = None
+
                 externo = st.checkbox("¿Realizado por servicio externo?", value=isinstance(ejecutado_por, dict))
 
                 if externo:
-                    st.markdown("#### 🧰 Datos del servicio externo")
-                    if isinstance(ejecutado_por, dict):
-                        empresa = st.text_input("Empresa externa", value=ejecutado_por.get("empresa", ""))
-                        tecnico = st.text_input("Técnico responsable", value=ejecutado_por.get("tecnico", ""))
-                        contacto = st.text_input("Contacto", value=ejecutado_por.get("contacto", ""))
-                    else:
-                        empresa = st.text_input("Empresa externa", value="")
-                        tecnico = st.text_input("Técnico responsable", value="")
-                        contacto = st.text_input("Contacto", value="")
-
-                    ejecutado_por = {
-                        "tipo": "servicio_externo",
-                        "empresa": empresa,
-                        "tecnico": tecnico,
-                        "contacto": contacto
-                    }
+                    with st.expander("🧰 Datos del servicio externo"):
+                        empresa = st.text_input("Empresa externa", value=ejecutado_por.get("empresa", "") if ejecutado_por else "")
+                        tecnico = st.text_input("Técnico responsable", value=ejecutado_por.get("tecnico", "") if ejecutado_por else "")
+                        contacto = st.text_input("Contacto", value=ejecutado_por.get("contacto", "") if ejecutado_por else "")
+                        ejecutado_por = {
+                            "tipo": "servicio_externo",
+                            "empresa": empresa,
+                            "tecnico": tecnico,
+                            "contacto": contacto
+                        }
                 else:
                     ejecutado_por = None
 
