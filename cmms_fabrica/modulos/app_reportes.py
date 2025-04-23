@@ -19,7 +19,7 @@ FUENTES = {
 class PDF(FPDF):
     def header(self):
         try:
-            self.image("logo_fabrica.png", x=10, y=8, w=30)
+            self.image("assets/logo_fabrica.png", x=10, y=8, w=30)
         except:
             pass  # Si no hay logo, que no explote
         self.set_font("Arial", "B", 14)
