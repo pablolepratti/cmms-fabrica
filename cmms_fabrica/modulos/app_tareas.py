@@ -47,7 +47,11 @@ def app_tareas():
 
     with tabs[1]:
         st.markdown("### ➕ Nueva tarea correctiva")
-        nuevo_id = f"TAR{coleccion_tareas.estimated_document_count() + 1:04d}"
+
+        # Calcular el ID nuevo asegurando que sea único
+        ids_existentes = [int(t["id_tarea"][3:]) for t in coleccion_tareas.find({}, {"_id": 0, "id_tarea": 1}) if t["id_tarea"].startswith("TAR")]
+        proximo_id = max(ids_existentes) + 1 if ids_existentes else 1
+        nuevo_id = f"TAR{proximo_id:04d}"
 
         with st.form("form_nueva_tarea"):
             st.text_input("ID de Tarea", value=nuevo_id, disabled=True)
