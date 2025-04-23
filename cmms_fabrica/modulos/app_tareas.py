@@ -42,7 +42,6 @@ def app_tareas():
             estado = st.selectbox("Estado", ["pendiente", "realizada"])
             observaciones = st.text_area("Observaciones")
 
-            # Servicio externo (opcional)
             externo = st.checkbox("¿Realizado por servicio externo?")
             ejecutado_por = None
             if externo:
@@ -96,12 +95,19 @@ def app_tareas():
                 observaciones = st.text_area("Observaciones", value=datos_sel["observaciones"])
 
                 ejecutado_por = datos_sel.get("ejecutado_por", None)
-                externo = st.checkbox("¿Realizado por servicio externo?", value=bool(ejecutado_por))
+                externo = st.checkbox("¿Realizado por servicio externo?", value=isinstance(ejecutado_por, dict))
+
                 if externo:
                     st.markdown("#### 🧰 Datos del servicio externo")
-                    empresa = st.text_input("Empresa externa", value=ejecutado_por.get("empresa", "") if ejecutado_por else "")
-                    tecnico = st.text_input("Técnico responsable", value=ejecutado_por.get("tecnico", "") if ejecutado_por else "")
-                    contacto = st.text_input("Contacto", value=ejecutado_por.get("contacto", "") if ejecutado_por else "")
+                    if isinstance(ejecutado_por, dict):
+                        empresa = st.text_input("Empresa externa", value=ejecutado_por.get("empresa", ""))
+                        tecnico = st.text_input("Técnico responsable", value=ejecutado_por.get("tecnico", ""))
+                        contacto = st.text_input("Contacto", value=ejecutado_por.get("contacto", ""))
+                    else:
+                        empresa = st.text_input("Empresa externa", value="")
+                        tecnico = st.text_input("Técnico responsable", value="")
+                        contacto = st.text_input("Contacto", value="")
+
                     ejecutado_por = {
                         "tipo": "servicio_externo",
                         "empresa": empresa,
@@ -120,12 +126,9 @@ def app_tareas():
                     "origen": origen,
                     "estado": estado,
                     "proxima_ejecucion": str(proxima),
-                    "observaciones": observaciones
+                    "observaciones": observaciones,
+                    "ejecutado_por": ejecutado_por
                 }
-                if ejecutado_por:
-                    nuevos_datos["ejecutado_por"] = ejecutado_por
-                else:
-                    nuevos_datos["ejecutado_por"] = None
 
                 coleccion_tareas.update_one({"id_tarea": id_sel}, {"$set": nuevos_datos})
                 st.success("✅ Tarea actualizada.")
