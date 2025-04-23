@@ -13,7 +13,6 @@ def cerrar_sesion():
     st.session_state.rol = None
     st.success("Sesión cerrada correctamente.")
     time.sleep(1)
-    st.rerun()
 
 def login_usuario():
     # Si ya hay un usuario logueado, no mostrar el login
