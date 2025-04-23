@@ -5,38 +5,53 @@ from fpdf import FPDF
 from datetime import datetime
 from modulos.conexion_mongo import db
 
-# Mapear colecciones reales
+# Mapeo de colecciones
 FUENTES = {
     "Tareas": db["tareas"],
     "Observaciones": db["observaciones"],
     "Servicios": db["servicios"],
     "Mantenimiento Preventivo": db["mantenimientos"],
     "Semana Laboral": db["plan_semana"],
-    "Historial": db["historial"]
+    "Historial": db["historial"],
+    "Calibraciones": db["calibraciones"]  # NUEVO
 }
 
+class PDF(FPDF):
+    def header(self):
+        try:
+            self.image("logo_fabrica.png", x=10, y=8, w=30)
+        except:
+            pass  # Si no hay logo, que no explote
+        self.set_font("Arial", "B", 14)
+        self.cell(0, 10, "Reporte del Sistema CMMS", ln=True, align="C")
+        self.ln(10)
+
+    def chapter_title(self, title):
+        self.set_font("Arial", "B", 12)
+        self.cell(0, 10, title, ln=True)
+        self.ln(2)
+
+    def chapter_body(self, df):
+        self.set_font("Arial", "B", 9)
+        for col in df.columns[:6]:
+            self.cell(32, 8, str(col)[:15], border=1)
+        self.ln()
+
+        self.set_font("Arial", "", 9)
+        for i, row in df.iterrows():
+            for val in row[:6]:
+                self.cell(32, 8, str(val)[:15], border=1)
+            self.ln()
+
 def generar_pdf(nombre_reporte, df):
-    pdf = FPDF()
+    pdf = PDF()
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
-    pdf.set_font("Arial", "B", 14)
-    pdf.cell(0, 10, f"Reporte: {nombre_reporte}", ln=True, align="C")
+    pdf.chapter_title(f"Reporte: {nombre_reporte}")
     pdf.set_font("Arial", "", 10)
     pdf.cell(0, 10, f"Generado el: {datetime.now().strftime('%Y-%m-%d %H:%M')}", ln=True)
     pdf.ln(5)
-
-    # Encabezados
-    pdf.set_font("Arial", "B", 9)
-    for col in df.columns[:6]:  # Limitar columnas por espacio
-        pdf.cell(32, 8, str(col)[:15], border=1)
-    pdf.ln()
-
-    # Filas
-    pdf.set_font("Arial", "", 9)
-    for i, row in df.iterrows():
-        for val in row[:6]:
-            pdf.cell(32, 8, str(val)[:15], border=1)
-        pdf.ln()
+    pdf.chapter_body(df)
 
     nombre_archivo = f"reporte_{nombre_reporte.lower().replace(' ', '_')}.pdf"
     path = os.path.join("reportes", nombre_archivo)
@@ -45,12 +60,11 @@ def generar_pdf(nombre_reporte, df):
     return path
 
 def mostrar_reportes():
-    st.subheader("🖨️ Reportes del Sistema CMMS")
+    st.subheader("📄 Reportes del Sistema CMMS")
 
     opcion = st.selectbox("Seleccionar fuente de datos", list(FUENTES.keys()))
     coleccion = FUENTES[opcion]
 
-    # Cargar datos desde Mongo
     datos = list(coleccion.find({}, {"_id": 0}))
     if not datos:
         st.warning("No hay datos en esta colección.")
@@ -58,7 +72,6 @@ def mostrar_reportes():
 
     df = pd.DataFrame(datos)
 
-    # 🔧 Fix tipo Arrow: convertir columnas que contengan "id" a string
     for col in df.columns:
         if "id" in col.lower():
             df[col] = df[col].astype(str)
