@@ -24,6 +24,7 @@ from modulos.app_reportes import app_reportes
 from modulos.app_kpi import app_kpi
 from modulos.kpi_resumen import kpi_resumen_inicio
 from modulos.cambiar_ids_generales import cambiar_ids_generales
+from modulos.app_tareas_tecnicas import app_tareas_tecnicas  # ⬅️ NUEVO
 
 # 📱 Estilos responsive
 mobile()
@@ -44,6 +45,7 @@ menu = [
     "🏠 Inicio",
     "📋 Máquinas",
     "📅 Tareas",
+    "📂 Tareas Técnicas Abiertas",  # ⬅️ NUEVO
     "🛠️ Mantenimientos",
     "📏 Calibración de Instrumentos",
     "📦 Inventario",
@@ -70,6 +72,9 @@ elif opcion == "📋 Máquinas":
 elif opcion == "📅 Tareas":
     app_tareas()
 
+elif opcion == "📂 Tareas Técnicas Abiertas":
+    app_tareas_tecnicas()  # ⬅️ NUEVO
+
 elif opcion == "🛠️ Mantenimientos":
     app_mantenimiento()  
 
@@ -82,7 +87,7 @@ elif opcion == "📦 Inventario":
 elif opcion == "🧾 Reportes":
     app_reportes()
 
-elif menu == "Historial":
+elif opcion == "📖 Historial":
     app_historial()
 
 elif opcion == "🔍 Observaciones":
