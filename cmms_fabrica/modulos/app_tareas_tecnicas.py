@@ -13,12 +13,14 @@ def app_tareas_tecnicas():
 
     tabs = st.tabs(["📋 Ver tareas", "➕ Nueva / Editar / Eliminar"])
 
+    # TAB 1: Ver tareas
     with tabs[0]:
         if tareas.empty:
             st.info("No hay tareas técnicas registradas.")
         else:
             st.dataframe(tareas.sort_values("ultima_actualizacion", ascending=False), use_container_width=True)
 
+    # TAB 2: Nueva / Editar / Eliminar
     with tabs[1]:
         st.markdown("### ➕ Nueva tarea técnica")
 
@@ -72,12 +74,19 @@ def app_tareas_tecnicas():
                 descripcion = st.text_area("Descripción", value=datos_sel["descripcion"])
                 equipo_asociado = st.text_input("Equipo asociado", value=datos_sel.get("equipo_asociado", ""))
                 responsable = st.text_input("Responsable", value=datos_sel.get("responsable", ""))
-                tipo = st.selectbox("Tipo", ["Compra", "Instalación", "Medición", "Planificación", "Cotización", "Otros"],
-                                    index=["Compra", "Instalación", "Medición", "Planificación", "Cotización", "Otros"].index(datos_sel.get("tipo", "Otros")))
+
+                tipos = ["Compra", "Instalación", "Medición", "Planificación", "Cotización", "Otros"]
+                valor_tipo = datos_sel.get("tipo", "Otros")
+                if valor_tipo not in tipos:
+                    tipos.insert(0, valor_tipo)
+                tipo = st.selectbox("Tipo", tipos, index=tipos.index(valor_tipo))
+
                 estado = st.selectbox("Estado", ["Abierta", "En espera", "En ejecución", "Finalizada"],
                                       index=["Abierta", "En espera", "En ejecución", "Finalizada"].index(datos_sel["estado"]))
+
                 prioridad = st.selectbox("Prioridad", ["Alta", "Media", "Baja"],
                                          index=["Alta", "Media", "Baja"].index(datos_sel["prioridad"]))
+
                 notas = st.text_area("Notas", value=datos_sel.get("notas", ""))
 
                 actualizar = st.form_submit_button("Actualizar")
