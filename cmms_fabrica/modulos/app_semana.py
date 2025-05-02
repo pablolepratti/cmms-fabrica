@@ -1,11 +1,14 @@
 import streamlit as st
 import pandas as pd
+import matplotlib.pyplot as plt
+import calplot
 from datetime import datetime, timedelta
 from modulos.conexion_mongo import db
 
 coleccion_plan = db["plan_semana"]
 coleccion_tareas = db["tareas"]
 coleccion_mantenimientos = db["mantenimientos"]
+coleccion_tecnicas = db["tareas_tecnicas"]
 
 def obtener_semana_actual():
     hoy = datetime.today()
@@ -20,15 +23,16 @@ def app_semana():
     plan = pd.DataFrame(list(coleccion_plan.find({}, {"_id": 0})))
     tareas_pendientes = pd.DataFrame(list(coleccion_tareas.find({"estado": "pendiente"}, {"_id": 0})))
     mantenimientos = pd.DataFrame(list(coleccion_mantenimientos.find({}, {"_id": 0})))
+    tecnicas_abiertas = pd.DataFrame(list(coleccion_tecnicas.find({"estado": {"$ne": "Finalizada"}}, {"_id": 0})))
 
-    # 🔧 Convertir campos 'id' a string por compatibilidad Arrow
-    for df in [plan, tareas_pendientes, mantenimientos]:
+    for df in [plan, tareas_pendientes, mantenimientos, tecnicas_abiertas]:
         for col in df.columns:
             if "id" in col.lower():
                 df[col] = df[col].astype(str)
 
-    tabs = st.tabs(["📄 Ver Semana", "🛠️ Planificar Semana"])
+    tabs = st.tabs(["📄 Ver Semana", "🛠️ Planificar Semana", "📆 Calendario Mensual"])
 
+    # TAB 1: Ver planificación
     with tabs[0]:
         st.markdown("### 📆 Semana actual")
         df_semana = plan[plan["fecha"].isin(fechas)]
@@ -47,7 +51,9 @@ def app_semana():
                 st.success("🗑️ Planificación eliminada correctamente.")
                 st.rerun()
 
+    # TAB 2: Planificar tareas correctivas, preventivas y técnicas
     with tabs[1]:
+        # Tareas correctivas
         st.markdown("### 🛠️ Agendar tareas correctivas")
 
         if tareas_pendientes.empty:
@@ -124,3 +130,63 @@ def app_semana():
                         coleccion_plan.insert_many(nuevas)
                         st.success(f"✅ {len(nuevas)} mantenimiento(s) planificados correctamente.")
                         st.rerun()
+
+        st.markdown("---")
+        st.markdown("### 🧠 Agendar tareas técnicas abiertas")
+
+        if tecnicas_abiertas.empty:
+            st.info("No hay tareas técnicas abiertas.")
+        else:
+            tecnicas_abiertas = tecnicas_abiertas.reset_index(drop=True)
+            seleccionadas_tec = st.multiselect(
+                "Seleccionar tareas técnicas a planificar",
+                tecnicas_abiertas.index,
+                format_func=lambda i: f"{tecnicas_abiertas.loc[i, 'id_tarea']} – {tecnicas_abiertas.loc[i, 'descripcion'][:40]}"
+            )
+
+            if seleccionadas_tec:
+                with st.form("form_planificar_tec"):
+                    fecha_tec = st.selectbox("Día para asignar tareas técnicas", fechas, format_func=lambda x: f"{x} ({dias_semana[fechas.index(x)]})")
+                    responsable_tec = st.text_input("Responsable para tareas técnicas")
+                    notas_tec = st.text_area("Observaciones generales para tareas técnicas")
+                    confirmar_tec = st.form_submit_button("✅ Agendar tareas técnicas seleccionadas")
+
+                if confirmar_tec:
+                    if not responsable_tec:
+                        st.error("⚠️ Debes ingresar un responsable.")
+                    else:
+                        nuevas = []
+                        for i in seleccionadas_tec:
+                            tec = tecnicas_abiertas.loc[i]
+                            nuevas.append({
+                                "fecha": fecha_tec,
+                                "dia": dias_semana[fechas.index(fecha_tec)],
+                                "actividad": f"[TECNICA] {tec['tipo']} – {tec['descripcion'][:40]}",
+                                "equipo": tec.get("equipo_asociado", "-"),
+                                "estado": "pendiente",
+                                "notas": f"ID: {tec['id_tarea']} – Responsable: {responsable_tec} – {notas_tec}"
+                            })
+                        coleccion_plan.insert_many(nuevas)
+                        st.success(f"✅ {len(nuevas)} tarea(s) técnica(s) planificadas correctamente.")
+                        st.rerun()
+
+    # TAB 3: Calendario mensual visual
+    with tabs[2]:
+        st.markdown("### 📆 Calendario mensual de planificación")
+
+        if plan.empty:
+            st.info("No hay actividades planificadas.")
+        else:
+            df_cal = plan.copy()
+            df_cal["fecha"] = pd.to_datetime(df_cal["fecha"])
+            df_cal["conteo"] = 1
+            resumen = df_cal.groupby("fecha").count()
+
+            fig, ax = calplot.calplot(
+                resumen["conteo"],
+                cmap="YlGnBu",
+                colorbar=False,
+                suptitle="Días con actividades planificadas",
+                figsize=(10, 3)
+            )
+            st.pyplot(fig)
