@@ -2,10 +2,10 @@ import streamlit as st
 import pandas as pd
 import os
 from fpdf import FPDF
-from datetime import datetime
+from datetime import datetime, date
 from modulos.conexion_mongo import db
 
-# Mapeo de colecciones
+# 🔍 Colecciones disponibles para reporte
 FUENTES = {
     "Tareas": db["tareas"],
     "Observaciones": db["observaciones"],
@@ -13,15 +13,29 @@ FUENTES = {
     "Mantenimiento Preventivo": db["mantenimientos"],
     "Semana Laboral": db["plan_semana"],
     "Historial": db["historial"],
-    "Calibraciones": db["calibraciones"]  # NUEVO
+    "Calibraciones": db["calibraciones"],
+    "Tareas Técnicas": db["tareas_tecnicas"]  # ⬅️ NUEVA
 }
 
+# 🕒 Mapeo automático del campo de fecha por colección
+CAMPOS_FECHA = {
+    "Tareas": "proxima_ejecucion",
+    "Mantenimiento Preventivo": "proxima_ejecucion",
+    "Semana Laboral": "fecha",
+    "Observaciones": "fecha",
+    "Servicios": "fecha",
+    "Historial": "fecha",
+    "Calibraciones": "fecha_inicio",
+    "Tareas Técnicas": "fecha_inicio"
+}
+
+# 🧾 Clase para generar PDF
 class PDF(FPDF):
     def header(self):
         try:
             self.image("logo_fabrica.png", x=10, y=8, w=30)
         except:
-            pass  # Si no hay logo, que no explote
+            pass
         self.set_font("Arial", "B", 14)
         self.cell(0, 10, "Reporte del Sistema CMMS", ln=True, align="C")
         self.ln(10)
@@ -38,7 +52,7 @@ class PDF(FPDF):
         self.ln()
 
         self.set_font("Arial", "", 9)
-        for i, row in df.iterrows():
+        for _, row in df.iterrows():
             for val in row[:6]:
                 self.cell(32, 8, str(val)[:15], border=1)
             self.ln()
@@ -65,18 +79,38 @@ def mostrar_reportes():
     opcion = st.selectbox("Seleccionar fuente de datos", list(FUENTES.keys()))
     coleccion = FUENTES[opcion]
 
-    datos = list(coleccion.find({}, {"_id": 0}))
+    col1, col2 = st.columns(2)
+    with col1:
+        fecha_desde = st.date_input("📅 Desde", value=date(2024, 1, 1))
+    with col2:
+        fecha_hasta = st.date_input("📅 Hasta", value=date.today())
+
+    if fecha_desde > fecha_hasta:
+        st.error("⚠️ La fecha 'desde' no puede ser posterior a la fecha 'hasta'.")
+        return
+
+    campo_fecha = CAMPOS_FECHA.get(opcion, None)
+
+    if campo_fecha:
+        datos = list(coleccion.find({
+            campo_fecha: {
+                "$gte": str(fecha_desde),
+                "$lte": str(fecha_hasta)
+            }
+        }, {"_id": 0}))
+    else:
+        datos = list(coleccion.find({}, {"_id": 0}))
+
     if not datos:
-        st.warning("No hay datos en esta colección.")
+        st.warning("No hay datos para ese rango.")
         return
 
     df = pd.DataFrame(datos)
-
     for col in df.columns:
         if "id" in col.lower():
             df[col] = df[col].astype(str)
 
-    st.dataframe(df.tail(20), use_container_width=True)
+    st.dataframe(df.sort_values(by=campo_fecha, ascending=False) if campo_fecha else df.tail(20), use_container_width=True)
 
     if st.button("📄 Generar PDF de todo el reporte"):
         archivo = generar_pdf(opcion, df)
