@@ -19,7 +19,23 @@ def app_tareas_tecnicas():
             st.info("No hay tareas técnicas registradas.")
         else:
             st.dataframe(tareas.sort_values("ultima_actualizacion", ascending=False), use_container_width=True)
-
+                        st.markdown("### ✅ Marcar tarea como finalizada")
+            tareas_abiertas = tareas[tareas["estado"] != "Finalizada"]
+            if tareas_abiertas.empty:
+                st.info("Todas las tareas ya están finalizadas.")
+            else:
+                id_finalizar = st.selectbox(
+                    "Seleccionar tarea a finalizar",
+                    tareas_abiertas["id_tarea"].tolist(),
+                    key="finalizar_id"
+                )
+                if st.button("Finalizar tarea seleccionada"):
+                    coleccion_tta.update_one(
+                        {"id_tarea": id_finalizar},
+                        {"$set": {"estado": "Finalizada", "ultima_actualizacion": str(date.today())}}
+                    )
+                    st.success(f"✅ Tarea {id_finalizar} marcada como finalizada.")
+                    st.rerun()
     # TAB 2: Nueva / Editar / Eliminar
     with tabs[1]:
         st.markdown("### ➕ Nueva tarea técnica")
