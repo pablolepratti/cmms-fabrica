@@ -1,0 +1,1 @@
+{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"}],"uuid":"f9b88b7ecd1d41d38be657a6fc6de04c","collectionName":"maquinas","type":"collection"}
