@@ -1,0 +1,11 @@
+# Ignorar archivos y carpetas sensibles o innecesarias
+.env
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite
+.DS_Store
+.vscode/
+*.zip

@@ -1,0 +1,30 @@
+
+# Archivos compilados y temporales de Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Configuración de editores
+.vscode/
+.idea/
+
+# Archivos de entorno
+.env
+.env.*
+
+# Streamlit config
+.streamlit/
+
+# Archivos de respaldo o temporales
+*.log
+*.bak
+*.tmp
+*.swp
+*.zip
+*.json
+*.xlsx
+
+# Entornos virtuales
+env/
+venv/
+ENV/
