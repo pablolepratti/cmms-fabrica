@@ -1,10 +1,7 @@
 import streamlit as st
-from pymongo import MongoClient
 from datetime import datetime
+from modulos.conexion_mongo import db
 
-# Conexión MongoDB
-client = MongoClient(st.secrets["mongo_uri"])
-db = client["cmms"]
 coleccion = db["observaciones"]
 
 st.title("👁️ Registro de Observaciones Técnicas")
