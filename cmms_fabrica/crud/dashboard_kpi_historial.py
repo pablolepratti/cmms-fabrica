@@ -7,6 +7,8 @@ from modulos.conexion_mongo import db
 
 coleccion = db["historial"]
 
+def app():
+
 st.title("📊 Dashboard de KPIs – Historial Técnico")
 
 # Filtros
@@ -62,3 +64,6 @@ st.pyplot(fig2)
 # Tabla detallada
 st.subheader("📋 Detalle de Eventos")
 st.dataframe(df[["fecha_evento", "tipo_evento", "id_activo_tecnico", "descripcion", "usuario_registro"]].sort_values("fecha_evento", ascending=False))
+
+if __name__ == "__main__":
+    app()
