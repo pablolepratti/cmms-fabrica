@@ -4,6 +4,8 @@ from modulos.conexion_mongo import db
 
 coleccion = db["servicios_externos"]
 
+def app():
+
 st.title("🏢 Proveedores y Servicios Externos")
 
 menu = ["Registrar Proveedor", "Ver Proveedores", "Editar Proveedor", "Eliminar Proveedor"]
@@ -76,3 +78,6 @@ elif choice == "Eliminar Proveedor":
     if st.button("Eliminar definitivamente"):
         coleccion.delete_one({"_id": datos["_id"]})
         st.success("Proveedor eliminado.")
+
+if __name__ == "__main__":
+    app()
