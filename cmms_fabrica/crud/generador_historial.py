@@ -1,12 +1,12 @@
 from pymongo import MongoClient
 from datetime import datetime
+from modulos.conexion_mongo import db
 
 def registrar_evento_historial(tipo_evento, id_activo, id_origen, descripcion, usuario, proveedor_externo=None, observaciones=None):
     """
     Inserta un evento consolidado en la colección historial.
     """
-    client = MongoClient()  # reemplazar con URI de producción si es necesario
-    db = client["cmms"]
+
     historial = db["historial"]
 
     evento = {
