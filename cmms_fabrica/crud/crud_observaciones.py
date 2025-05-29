@@ -4,6 +4,8 @@ from modulos.conexion_mongo import db
 
 coleccion = db["observaciones"]
 
+def app():
+
 st.title("👁️ Registro de Observaciones Técnicas")
 
 menu = ["Registrar Observación", "Ver Observaciones", "Editar Observación", "Eliminar Observación"]
@@ -80,3 +82,6 @@ elif choice == "Eliminar Observación":
     if st.button("Eliminar definitivamente"):
         coleccion.delete_one({"_id": datos["_id"]})
         st.success("Observación eliminada.")
+
+if __name__ == "__main__":
+    app()
