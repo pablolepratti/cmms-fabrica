@@ -22,7 +22,7 @@ def app():
             proveedor_externo = st.text_input("Proveedor Externo (si aplica)", value=defaults.get("proveedor_externo") if defaults else "")
             estado = st.selectbox("Estado", ["Abierta", "En proceso", "Cerrada"],
                               index=["Abierta", "En proceso", "Cerrada"].index(defaults.get("estado")) if defaults else 0)
-             usuario = st.text_input("Usuario que registra", value=defaults.get("usuario_registro") if defaults else "")
+            usuario = st.text_input("Usuario que registra", value=defaults.get("usuario_registro") if defaults else "")
             observaciones = st.text_area("Observaciones adicionales", value=defaults.get("observaciones") if defaults else "")
             submit = st.form_submit_button("Guardar Tarea Técnica")
 
