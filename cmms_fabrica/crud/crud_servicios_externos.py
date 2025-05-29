@@ -4,7 +4,7 @@ from modulos.conexion_mongo import db
 
 coleccion = db["servicios_externos"]
 
-    def app():
+def app():
     
     st.title("🏢 Proveedores y Servicios Externos")
     
