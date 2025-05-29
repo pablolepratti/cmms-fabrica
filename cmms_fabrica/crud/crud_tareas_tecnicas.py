@@ -12,7 +12,7 @@ def app():
 
     # Formulario
     def form_tecnica(defaults=None):
-         with st.form("form_tarea_tecnica"):
+        with st.form("form_tarea_tecnica"):
             id_activo = st.text_input("ID del Activo Técnico (opcional)", value=defaults.get("id_activo_tecnico") if defaults else "")
             fecha_evento = st.date_input("Fecha del Evento", value=defaults.get("fecha_evento") if defaults else datetime.today())
             descripcion = st.text_area("Descripción de la Tarea Técnica", value=defaults.get("descripcion") if defaults else "")
@@ -21,7 +21,7 @@ def app():
             responsable = st.text_input("Responsable", value=defaults.get("responsable") if defaults else "")
             proveedor_externo = st.text_input("Proveedor Externo (si aplica)", value=defaults.get("proveedor_externo") if defaults else "")
             estado = st.selectbox("Estado", ["Abierta", "En proceso", "Cerrada"],
-                              index=["Abierta", "En proceso", "Cerrada"].index(defaults.get("estado")) if defaults else 0)
+                                  index=["Abierta", "En proceso", "Cerrada"].index(defaults.get("estado")) if defaults else 0)
             usuario = st.text_input("Usuario que registra", value=defaults.get("usuario_registro") if defaults else "")
             observaciones = st.text_area("Observaciones adicionales", value=defaults.get("observaciones") if defaults else "")
             submit = st.form_submit_button("Guardar Tarea Técnica")
@@ -30,7 +30,7 @@ def app():
             data = {
                 "id_activo_tecnico": id_activo,
                 "fecha_evento": str(fecha_evento),
-                 "descripcion": descripcion,
+                "descripcion": descripcion,
                 "tipo_tecnica": tipo,
                 "responsable": responsable,
                 "proveedor_externo": proveedor_externo,
