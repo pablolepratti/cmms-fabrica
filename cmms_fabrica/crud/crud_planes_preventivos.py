@@ -4,6 +4,8 @@ from modulos.conexion_mongo import db
 
 coleccion = db["planes_preventivos"]
 
+def app():
+
 st.title("🗓️ Gestión de Planes Preventivos")
 
 menu = ["Registrar Plan", "Ver Planes", "Editar Plan", "Eliminar Plan"]
@@ -87,3 +89,6 @@ elif choice == "Eliminar Plan":
     if st.button("Eliminar definitivamente"):
         coleccion.delete_one({"_id": datos["_id"]})
         st.success("Plan eliminado.")
+
+if __name__ == "__main__":
+    app()
