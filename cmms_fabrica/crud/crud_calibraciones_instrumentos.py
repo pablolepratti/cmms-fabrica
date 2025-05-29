@@ -4,6 +4,7 @@ from modulos.conexion_mongo import db
 
 coleccion = db["calibraciones"]
 
+def app():
 st.title("🧪 Gestión de Calibraciones de Instrumentos")
 
 menu = ["Registrar Calibración", "Ver Calibraciones", "Editar Calibración", "Eliminar Calibración"]
@@ -78,3 +79,6 @@ elif choice == "Eliminar Calibración":
     if st.button("Eliminar definitivamente"):
         coleccion.delete_one({"_id": datos["_id"]})
         st.success("Calibración eliminada.")
+        
+if __name__ == "__main__":
+    app()
