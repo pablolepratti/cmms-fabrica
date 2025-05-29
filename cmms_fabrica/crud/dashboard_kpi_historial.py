@@ -3,10 +3,8 @@ from pymongo import MongoClient
 import pandas as pd
 import matplotlib.pyplot as plt
 from datetime import datetime
+from modulos.conexion_mongo import db
 
-# Conexión MongoDB
-client = MongoClient(st.secrets["mongo_uri"])
-db = client["cmms"]
 coleccion = db["historial"]
 
 st.title("📊 Dashboard de KPIs – Historial Técnico")
