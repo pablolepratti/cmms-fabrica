@@ -4,6 +4,7 @@ from modulos.conexion_mongo import db
 
 coleccion = db["tareas_tecnicas"]
 
+def app():
 st.title("📌 Gestión de Tareas Técnicas")
 
 menu = ["Registrar Tarea Técnica", "Ver Tareas", "Editar Tarea", "Eliminar Tarea"]
@@ -81,3 +82,6 @@ elif choice == "Eliminar Tarea":
     if st.button("Eliminar definitivamente"):
         coleccion.delete_one({"_id": datos["_id"]})
         st.success("Tarea técnica eliminada.")
+
+if __name__ == "__main__":
+    app()
