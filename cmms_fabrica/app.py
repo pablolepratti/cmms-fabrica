@@ -12,7 +12,7 @@ from modulos.estilos import mobile
 from modulos.app_maquinas import app_maquinas
 from modulos.app_tareas import app_tareas
 from modulos.app_mantenimiento import app_mantenimiento
-from modulos.app_calibracion_instruments import app_calibracion
+from modulos.app_calibracion_instrumentos import app_calibracion
 from modulos.app_inventario import app_inventario
 from modulos.historial import app_historial
 from modulos.app_usuarios import app_usuarios
