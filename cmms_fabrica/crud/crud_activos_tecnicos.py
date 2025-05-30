@@ -12,28 +12,37 @@ def app():
 
     # Campos comunes
     def form_activo(defaults=None):
+        opciones_tipo = ["Sistema General", "Infraestructura", "Administración", "Producción",
+                         "Logística", "Mantenimiento", "Instrumento Laboratorio", "Equipo en Cliente"]
+        opciones_estado = ["Activo", "En revisión", "Fuera de servicio"]
+
+        tipo_default = defaults.get("tipo") if defaults else None
+        estado_default = defaults.get("estado") if defaults else None
+
+        # Index seguros
+        tipo_index = opciones_tipo.index(tipo_default) if tipo_default in opciones_tipo else 0
+        estado_index = opciones_estado.index(estado_default) if estado_default in opciones_estado else 0
+
         with st.form("form_activo"):
             id_activo = st.text_input("ID del Activo Técnico", value=defaults.get("id_activo_tecnico") if defaults else "")
             nombre = st.text_input("Nombre o Descripción", value=defaults.get("nombre") if defaults else "")
             ubicacion = st.text_input("Ubicación", value=defaults.get("ubicacion") if defaults else "")
-            tipo = st.selectbox("Tipo de Activo", ["Sistema General" , "Infraestructura" , "Administracion" , "Produccion" , "Logistica" , "Mantenimiento" , "Instrumento Laboratorio" , "Equipo en Cliente"],
-                                 index=["Sistema General" , "Infraestructura" , "Administracion" , "Produccion" , "Logistica" , "Mantenimiento" , "Instrumento Laboratorio" , "Equipo en Cliente"].index(defaults.get("tipo")) if defaults else 0)
-            estado = st.selectbox("Estado", ["Activo", "En revisión", "Fuera de servicio"],
-                                  index=["Activo", "En revisión", "Fuera de servicio"].index(defaults.get("estado")) if defaults else 0)
+            tipo = st.selectbox("Tipo de Activo", opciones_tipo, index=tipo_index)
+            estado = st.selectbox("Estado", opciones_estado, index=estado_index)
             usuario = st.text_input("Usuario que registra", value=defaults.get("usuario_registro") if defaults else "")
             submit = st.form_submit_button("Guardar")
 
-        if submit:
-            data = {
-                "id_activo_tecnico": id_activo,
-                "nombre": nombre,
-                "ubicacion": ubicacion,
-                "tipo": tipo,
-                "estado": estado,
-                "usuario_registro": usuario,
-                "fecha_registro": datetime.now()
-            }
-            return data
+            if submit:
+                return {
+                    "id_activo_tecnico": id_activo,
+                    "nombre": nombre,
+                    "ubicacion": ubicacion,
+                    "tipo": tipo,
+                    "estado": estado,
+                    "usuario_registro": usuario,
+                    "fecha_registro": datetime.now()
+                }
+
         return None
 
     # Agregar
@@ -49,31 +58,38 @@ def app():
         st.subheader("📋 Lista de activos técnicos")
         activos = list(coleccion.find())
         for a in activos:
-            st.write(f"**{a['id_activo_tecnico']}** - {a['nombre']} ({a['estado']})")
+            st.write(f"**{a.get('id_activo_tecnico', '⛔ Sin ID')}** - {a.get('nombre', '')} ({a.get('estado', '-')})")
 
     # Editar
     elif choice == "Editar":
         st.subheader("✏️ Editar activo técnico")
         activos = list(coleccion.find())
-        opciones = {f"{a['id_activo_tecnico']} - {a['nombre']}": a for a in activos}
-        seleccion = st.selectbox("Seleccionar activo", list(opciones.keys()))
-        datos = opciones[seleccion]
+        opciones = {f"{a.get('id_activo_tecnico', '⛔ Sin ID')} - {a.get('nombre', '')}": a for a in activos}
+        if opciones:
+            seleccion = st.selectbox("Seleccionar activo", list(opciones.keys()))
+            datos = opciones[seleccion]
 
-        nuevos_datos = form_activo(defaults=datos)
-        if nuevos_datos:
-            coleccion.update_one({"_id": datos["_id"]}, {"$set": nuevos_datos})
-            st.success("Activo técnico actualizado correctamente.")
+            nuevos_datos = form_activo(defaults=datos)
+            if nuevos_datos:
+                coleccion.update_one({"_id": datos["_id"]}, {"$set": nuevos_datos})
+                st.success("Activo técnico actualizado correctamente.")
+        else:
+            st.info("No hay activos cargados.")
 
     # Eliminar
     elif choice == "Eliminar":
         st.subheader("🗑️ Eliminar activo técnico")
         activos = list(coleccion.find())
-        opciones = {f"{a['id_activo_tecnico']} - {a['nombre']}": a for a in activos}
-        seleccion = st.selectbox("Seleccionar activo", list(opciones.keys()))
-        datos = opciones[seleccion]
-        if st.button("Eliminar definitivamente"):
-            coleccion.delete_one({"_id": datos["_id"]})
-            st.success("Activo técnico eliminado.")
+        opciones = {f"{a.get('id_activo_tecnico', '⛔ Sin ID')} - {a.get('nombre', '')}": a for a in activos}
+        if opciones:
+            seleccion = st.selectbox("Seleccionar activo", list(opciones.keys()))
+            datos = opciones[seleccion]
+            if st.button("Eliminar definitivamente"):
+                coleccion.delete_one({"_id": datos["_id"]})
+                st.success("Activo técnico eliminado.")
+        else:
+            st.info("No hay activos cargados.")
 
 if __name__ == "__main__":
     app()
+
