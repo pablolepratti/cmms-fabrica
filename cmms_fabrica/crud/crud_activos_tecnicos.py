@@ -56,6 +56,8 @@ def app():
     # Ver
     elif choice == "Ver":
         st.subheader("📋 Lista de activos técnicos agrupados por tipo")
+       
+        st.markdown("<br><br>", unsafe_allow_html=True)
 
         activos = list(coleccion.find())
         if not activos:
