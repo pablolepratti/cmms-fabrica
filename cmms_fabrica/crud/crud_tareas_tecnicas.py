@@ -10,13 +10,13 @@ def app():
     menu = ["Registrar Tarea Técnica", "Ver Tareas", "Editar Tarea", "Eliminar Tarea"]
     choice = st.sidebar.selectbox("Acción", menu)
 
-    # Formulario
     def form_tecnica(defaults=None):
         with st.form("form_tarea_tecnica"):
+            hoy = datetime.today()
             id_activo = st.text_input("ID del Activo Técnico (opcional)", value=defaults.get("id_activo_tecnico") if defaults else "")
-            fecha_evento = st.date_input("📆 Fecha del Evento", value=defaults.get("fecha_evento") if defaults else datetime.today())
-            fecha_inicio = st.date_input("📅 Fecha de Inicio", value=defaults.get("fecha_inicio") if defaults else datetime.today())
-            fecha_actualizacion = st.date_input("🕓 Fecha de Última Actualización", value=defaults.get("fecha_actualizacion") if defaults else datetime.today())
+            fecha_evento = st.date_input("📆 Fecha del Evento", value=defaults.get("fecha_evento", hoy) if defaults else hoy)
+            fecha_inicio = st.date_input("📅 Fecha de Inicio", value=defaults.get("fecha_inicio", fecha_evento) if defaults else fecha_evento)
+            fecha_actualizacion = st.date_input("🕓 Fecha de Última Actualización", value=defaults.get("fecha_actualizacion", fecha_evento) if defaults else fecha_evento)
             descripcion = st.text_area("Descripción de la Tarea Técnica", value=defaults.get("descripcion") if defaults else "")
             tipo = st.selectbox("Tipo de Tarea Técnica", ["Presupuesto", "Gestión", "Consulta Técnica", "Otro"],
                                 index=["Presupuesto", "Gestión", "Consulta Técnica", "Otro"].index(defaults.get("tipo_tecnica")) if defaults and defaults.get("tipo_tecnica") in ["Presupuesto", "Gestión", "Consulta Técnica", "Otro"] else 0)
@@ -59,15 +59,19 @@ def app():
         st.subheader("📋 Tareas Técnicas Registradas")
         tareas = list(coleccion.find().sort("fecha_evento", -1))
         for t in tareas:
-            st.markdown(f"**{t.get('id_activo_tecnico', 'Sin ID')}** ({t['estado']}) - {t['fecha_evento']}")
-            st.write(t['descripcion'])
+            id_activo = t.get('id_activo_tecnico', 'Sin ID')
+            estado = t.get('estado', 'Sin Estado')
+            fecha = t.get('fecha_evento', 'Sin Fecha')
+            descripcion = t.get('descripcion', '')
+            st.markdown(f"**{id_activo}** ({estado}) - {fecha}")
+            st.write(descripcion)
             st.write("---")
 
     # Editar tarea
     elif choice == "Editar Tarea":
         st.subheader("✏️ Editar Tarea Técnica")
         tareas = list(coleccion.find())
-        opciones = {f"{t.get('id_activo_tecnico', 'Sin ID')} - {t['descripcion'][:30]}": t for t in tareas}
+        opciones = {f"{t.get('id_activo_tecnico', 'Sin ID')} - {t.get('descripcion', '')[:30]}": t for t in tareas}
         seleccion = st.selectbox("Seleccionar tarea", list(opciones.keys()))
         datos = opciones[seleccion]
 
@@ -80,7 +84,7 @@ def app():
     elif choice == "Eliminar Tarea":
         st.subheader("🗑️ Eliminar Tarea Técnica")
         tareas = list(coleccion.find())
-        opciones = {f"{t.get('id_activo_tecnico', 'Sin ID')} - {t['descripcion'][:30]}": t for t in tareas}
+        opciones = {f"{t.get('id_activo_tecnico', 'Sin ID')} - {t.get('descripcion', '')[:30]}": t for t in tareas}
         seleccion = st.selectbox("Seleccionar tarea", list(opciones.keys()))
         datos = opciones[seleccion]
         if st.button("Eliminar definitivamente"):
