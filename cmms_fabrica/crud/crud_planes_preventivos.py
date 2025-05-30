@@ -60,6 +60,7 @@ def app():
     # Ver planes
     elif choice == "Ver Planes":
         st.subheader("📋 Planes Preventivos Registrados")
+        st.markdown("<br><br>", unsafe_allow_html=True)
         planes = list(coleccion.find().sort("proxima_fecha", 1))
         for p in planes:
             st.markdown(f"**{p['id_plan']}** ({p['estado']}) - Próxima: {p['proxima_fecha']}")
