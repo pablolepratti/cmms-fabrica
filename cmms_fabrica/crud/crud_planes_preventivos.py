@@ -7,10 +7,10 @@ coleccion = db["planes_preventivos"]
 def app():
 
     st.title("🗓️ Gestión de Planes Preventivos")
-    
+
     menu = ["Registrar Plan", "Ver Planes", "Editar Plan", "Eliminar Plan"]
     choice = st.sidebar.selectbox("Acción", menu)
-    
+
     # Formulario de plan preventivo
     def form_plan(defaults=None):
         with st.form("form_plan_preventivo"):
@@ -29,7 +29,7 @@ def app():
             observaciones = st.text_area("Observaciones", value=defaults.get("observaciones") if defaults else "")
             usuario = st.text_input("Usuario que registra", value=defaults.get("usuario_registro") if defaults else "")
             submit = st.form_submit_button("Guardar Plan")
-    
+
         if submit:
             data = {
                 "id_plan": id_plan,
@@ -48,7 +48,7 @@ def app():
             }
             return data
         return None
-    
+
     # Registrar plan
     if choice == "Registrar Plan":
         st.subheader("➕ Nuevo Plan Preventivo")
@@ -56,17 +56,42 @@ def app():
         if data:
             coleccion.insert_one(data)
             st.success("Plan preventivo registrado correctamente.")
-    
+
     # Ver planes
     elif choice == "Ver Planes":
         st.subheader("📋 Planes Preventivos Registrados")
         st.markdown("<br><br>", unsafe_allow_html=True)
+
         planes = list(coleccion.find().sort("proxima_fecha", 1))
+        hoy = datetime.today().date()
+
         for p in planes:
-            st.markdown(f"**{p['id_plan']}** ({p['estado']}) - Próxima: {p['proxima_fecha']}")
-            st.write(p['observaciones'])
+            id_plan = p.get("id_plan", "Sin ID")
+            estado = p.get("estado", "Sin Estado")
+            proxima_fecha = p.get("proxima_fecha", "Sin Fecha")
+            observaciones = p.get("observaciones", "")
+
+            # Intentar convertir la fecha
+            try:
+                fecha_obj = datetime.strptime(proxima_fecha, "%Y-%m-%d").date() if isinstance(proxima_fecha, str) else proxima_fecha
+            except:
+                fecha_obj = None
+
+            # Determinar si está vencido
+            vencido = fecha_obj and fecha_obj < hoy
+
+            # Mostrar con estilo
+            if vencido:
+                st.markdown(
+                    f"<span style='color:red; font-weight:bold'>🚨 {id_plan} ({estado}) - VENCIDO el {proxima_fecha}</span>",
+                    unsafe_allow_html=True
+                )
+            else:
+                st.markdown(f"**{id_plan}** ({estado}) - Próxima: {proxima_fecha}")
+
+            st.write(observaciones)
             st.write("---")
-    
+
     # Editar plan
     elif choice == "Editar Plan":
         st.subheader("✏️ Editar Plan Preventivo")
@@ -74,12 +99,12 @@ def app():
         opciones = {f"{p['id_plan']} - {p['id_activo_tecnico']}": p for p in planes}
         seleccion = st.selectbox("Seleccionar plan", list(opciones.keys()))
         datos = opciones[seleccion]
-    
+
         nuevos_datos = form_plan(defaults=datos)
         if nuevos_datos:
             coleccion.update_one({"_id": datos["_id"]}, {"$set": nuevos_datos})
             st.success("Plan actualizado correctamente.")
-    
+
     # Eliminar plan
     elif choice == "Eliminar Plan":
         st.subheader("🗑️ Eliminar Plan Preventivo")
