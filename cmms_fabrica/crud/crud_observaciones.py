@@ -49,15 +49,22 @@ def app():
         if data:
             coleccion.insert_one(data)
             st.success("Observación registrada correctamente.")
-    
-    # Ver observaciones
+
+    # Ver Observaciones
     elif choice == "Ver Observaciones":
-        st.subheader("📋 Observaciones Técnicas Registradas")
-        obs = list(coleccion.find().sort("fecha_evento", -1))
-        for o in obs:
-            st.markdown(f"**{o['id_activo_tecnico']}** - {o['fecha_evento']} - {o['tipo_observacion']}")
-            st.write(o['descripcion'])
-            st.write("---")
+    st.subheader("👁️ Observaciones Técnicas Registradas")
+    observaciones = list(coleccion.find().sort("fecha_evento", -1))
+
+    for o in observaciones:
+        id_activo = o.get("id_activo_tecnico", "⛔ Sin ID")
+        fecha = o.get("fecha_evento", "Sin Fecha")
+        tipo = o.get("tipo_observacion", "Sin Tipo")
+        descripcion = o.get("descripcion", "")
+
+        st.markdown(f"**{id_activo}** - {fecha} - {tipo}")
+        st.write(descripcion)
+        st.write("---")
+
     
     # Editar
     elif choice == "Editar Observación":
