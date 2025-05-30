@@ -32,7 +32,7 @@ from crud.crud_tareas_tecnicas import app as crud_tareas_tecnicas
 from crud.crud_observaciones import app as crud_observaciones
 from crud.crud_calibraciones_instrumentos import app as crud_calibraciones
 from crud.crud_servicios_externos import app as crud_servicios
-from dashboard_kpi_historial import app as kpi_historial
+from crud.dashboard_kpi_historial import app as kpi_historial
 
 # 📱 Estilos responsive
 mobile()
