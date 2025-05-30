@@ -141,7 +141,7 @@ elif opcion == "🔍 Observaciones Técnicas":
 elif opcion == "🧪 Calibraciones":
     crud_calibraciones()
 
-elif opcion == "🏢 Servicios Técnicos":
+elif opcion == "🏢 Servicios Externos":
     crud_servicios()
 
 elif opcion == "📊 KPIs Globales":
