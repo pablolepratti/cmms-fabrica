@@ -55,10 +55,29 @@ def app():
 
     # Ver
     elif choice == "Ver":
-        st.subheader("📋 Lista de activos técnicos")
+        st.subheader("📋 Lista de activos técnicos agrupados por tipo")
+
         activos = list(coleccion.find())
-        for a in activos:
-            st.write(f"**{a.get('id_activo_tecnico', '⛔ Sin ID')}** - {a.get('nombre', '')} ({a.get('estado', '-')})")
+        if not activos:
+            st.info("No hay activos cargados.")
+        else:
+            # Agrupar por tipo
+            agrupados = {}
+            for a in activos:
+                tipo = a.get("tipo", "⛔ Sin Tipo")
+                if tipo not in agrupados:
+                    agrupados[tipo] = []
+                agrupados[tipo].append(a)
+
+            # Mostrar por grupo ordenado alfabéticamente
+            for tipo, lista in sorted(agrupados.items()):
+                st.markdown(f"### 🔹 {tipo}")
+                for a in lista:
+                    nombre = a.get("nombre", "")
+                    estado = a.get("estado", "-")
+                    id_activo = a.get("id_activo_tecnico", "⛔ Sin ID")
+                    st.markdown(f"- **{id_activo}** – {nombre} ({estado})")
+
 
     # Editar
     elif choice == "Editar":
