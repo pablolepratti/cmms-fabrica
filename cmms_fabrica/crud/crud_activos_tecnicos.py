@@ -71,7 +71,7 @@ def app():
 
             # Mostrar por grupo ordenado alfabéticamente
             for tipo, lista in sorted(agrupados.items()):
-                st.markdown(f"### 🔹 {tipo}")
+                st.markdown(f"<h4 style='text-align: left; margin-bottom: 0.5em;'>🔹 {tipo}</h4>", unsafe_allow_html=True)
                 for a in lista:
                     nombre = a.get("nombre", "")
                     estado = a.get("estado", "-")
