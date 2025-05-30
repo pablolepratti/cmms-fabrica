@@ -71,6 +71,8 @@ def app():
         if tipo_filtro != "Todos":
             tareas = [t for t in tareas if t.get("tipo_tecnica") == tipo_filtro]
 
+        st.markdown("<br><br>", unsafe_allow_html=True)
+
         # Mostrar resultados
         if tareas:
             for t in tareas:
