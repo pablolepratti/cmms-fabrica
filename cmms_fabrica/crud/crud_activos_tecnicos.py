@@ -16,8 +16,8 @@ def app():
             id_activo = st.text_input("ID del Activo Técnico", value=defaults.get("id_activo_tecnico") if defaults else "")
             nombre = st.text_input("Nombre o Descripción", value=defaults.get("nombre") if defaults else "")
             ubicacion = st.text_input("Ubicación", value=defaults.get("ubicacion") if defaults else "")
-            tipo = st.selectbox("Tipo de Activo", ["Producción", "Logística", "Infraestructura", "Laboratorio", "Frigorífico"],
-                                 index=["Producción", "Logística", "Infraestructura", "Laboratorio", "Frigorífico"].index(defaults.get("tipo")) if defaults else 0)
+            tipo = st.selectbox("Tipo de Activo", ["Sistema General" , "Infraestructura" , "Administracion" , "Produccion" , "Logistica" , "Mantenimiento" , "Instrumento Laboratorio" , "Equipo en Cliente"],
+                                 index=["Sistema General" , "Infraestructura" , "Administracion" , "Produccion" , "Logistica" , "Mantenimiento" , "Instrumento Laboratorio" , "Equipo en Cliente"].index(defaults.get("tipo")) if defaults else 0)
             estado = st.selectbox("Estado", ["Activo", "En revisión", "Fuera de servicio"],
                                   index=["Activo", "En revisión", "Fuera de servicio"].index(defaults.get("estado")) if defaults else 0)
             usuario = st.text_input("Usuario que registra", value=defaults.get("usuario_registro") if defaults else "")
