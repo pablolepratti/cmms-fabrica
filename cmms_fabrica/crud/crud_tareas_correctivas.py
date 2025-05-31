@@ -35,7 +35,18 @@ def app():
 
     def form_tarea(defaults=None):
         with st.form("form_tarea_correctiva"):
-            id_activo = st.text_input("ID del Activo Técnico", value=defaults.get("id_activo_tecnico") if defaults else "")
+
+            # Obtener activos técnicos para el selector
+            activos = list(db["activos_tecnicos"].find({}, {"_id": 0, "id_activo_tecnico": 1}))
+            ids_activos = sorted([a["id_activo_tecnico"] for a in activos if "id_activo_tecnico" in a])
+            id_default = defaults.get("id_activo_tecnico") if defaults else None
+            index_default = ids_activos.index(id_default) if id_default in ids_activos else 0 if ids_activos else -1
+
+            if ids_activos:
+                id_activo = st.selectbox("ID del Activo Técnico", ids_activos, index=index_default)
+            else:
+                id_activo = st.text_input("ID del Activo Técnico")
+
             fecha_evento = st.date_input("Fecha del Evento", value=defaults.get("fecha_evento") if defaults else datetime.today())
             descripcion_falla = st.text_area("Descripción de la Falla", value=defaults.get("descripcion_falla") if defaults else "")
             modo_falla = st.text_input("Modo de Falla", value=defaults.get("modo_falla") if defaults else "")
@@ -59,7 +70,7 @@ def app():
             submit = st.form_submit_button("Guardar Tarea")
 
         if submit:
-            data = {
+            return {
                 "id_activo_tecnico": id_activo,
                 "fecha_evento": str(fecha_evento),
                 "descripcion_falla": descripcion_falla,
@@ -77,7 +88,6 @@ def app():
                 "observaciones": observaciones,
                 "fecha_registro": datetime.now()
             }
-            return data
         return None
 
     if choice == "Registrar Falla":
@@ -103,7 +113,6 @@ def app():
 
         estados_existentes = sorted(set(t.get("estado", "Abierta") for t in tareas))
         estado_filtro = st.selectbox("Filtrar por estado", ["Todos"] + estados_existentes)
-
         texto_filtro = st.text_input("🔍 Buscar por ID, modo de falla o descripción")
 
         filtradas = []
@@ -134,11 +143,10 @@ def app():
     elif choice == "Editar Tarea":
         st.subheader("✏️ Editar Tarea Correctiva")
         tareas = list(coleccion.find())
-        opciones = {}
-        for t in tareas:
-            id_activo = t.get("id_activo_tecnico", "⛔ Sin ID")
-            desc = t.get("descripcion_falla") or t.get("descripcion") or ""
-            opciones[f"{id_activo} - {desc[:30]}"] = t
+        opciones = {
+            f"{t.get('id_activo_tecnico', '⛔ Sin ID')} - {t.get('descripcion_falla', '')[:30]}": t
+            for t in tareas
+        }
 
         seleccion = st.selectbox("Seleccionar tarea", list(opciones.keys()))
         datos = opciones[seleccion]
@@ -156,11 +164,10 @@ def app():
     elif choice == "Eliminar Tarea":
         st.subheader("🗑️ Eliminar Tarea Correctiva")
         tareas = list(coleccion.find())
-        opciones = {}
-        for t in tareas:
-            id_activo = t.get("id_activo_tecnico", "⛔ Sin ID")
-            desc = t.get("descripcion_falla") or t.get("descripcion") or ""
-            opciones[f"{id_activo} - {desc[:30]}"] = t
+        opciones = {
+            f"{t.get('id_activo_tecnico', '⛔ Sin ID')} - {t.get('descripcion_falla', '')[:30]}": t
+            for t in tareas
+        }
 
         seleccion = st.selectbox("Seleccionar tarea", list(opciones.keys()))
         datos = opciones[seleccion]
