@@ -6,7 +6,8 @@ from modulos.app_login import login_usuario, cerrar_sesion
 from modulos.conexion_mongo import db
 
 # 💄 Estilos responsive
-from modulos.estilos import mobile
+from modulos.estilos import aplicar_estilos
+
 
 # Nuevos módulos CRUD centrados en activos técnicos
 from crud.crud_activos_tecnicos import app as crud_activos_tecnicos
@@ -28,7 +29,7 @@ from modulos.cambiar_ids import app as cambiar_ids
 from modulos.app_reportes import app as app_reportes
 
 # 📱 Estilos responsive
-mobile()
+aplicar_estilos()
 
 # 🔐 Login de usuario
 usuario, rol = login_usuario()
