@@ -46,7 +46,6 @@ menu = [
     "🏢 Servicios Técnicos",
     "📊 KPIs Globales",
     "👥 Usuarios" if rol == "admin" else None,
-    "✏️ Cambiar IDs manuales" if rol == "admin" else None,
 ]
 menu = [m for m in menu if m is not None]
 
