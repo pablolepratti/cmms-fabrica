@@ -77,25 +77,44 @@ def app():
 
     elif choice == "Ver Observaciones":
         st.subheader("👁️ Observaciones Técnicas por Activo Técnico")
-        st.markdown("<br>", unsafe_allow_html=True)
 
         observaciones = list(coleccion.find().sort("fecha_evento", -1))
 
-        if observaciones:
-            activos = sorted(set(str(o.get("id_activo_tecnico") or "⛔ Sin ID") for o in observaciones))
-            for activo in activos:
-                st.markdown(f"### 🏷️ Activo Técnico: `{activo}`")
-                observaciones_activo = [o for o in observaciones if str(o.get("id_activo_tecnico") or "⛔ Sin ID") == activo]
-                for o in observaciones_activo:
-                    fecha = o.get("fecha_evento", "Sin Fecha")
-                    tipo = o.get("tipo_observacion", "Sin Tipo")
-                    estado = o.get("estado", "Sin Estado")
-                    descripcion = o.get("descripcion", "")
-                    st.markdown(f"- 📅 **{fecha}** | 🔍 **Tipo:** {tipo} | 🛠️ **Estado:** {estado}")
-                    st.write(descripcion)
-                st.markdown("---")
-        else:
+        if not observaciones:
             st.info("No hay observaciones registradas.")
+            return
+
+        estados_existentes = sorted(set(o.get("estado", "Pendiente") for o in observaciones))
+        estado_filtro = st.selectbox("Filtrar por estado", ["Todos"] + estados_existentes)
+
+        texto_filtro = st.text_input("🔍 Buscar por ID, tipo o texto")
+
+        # Aplicar filtros
+        filtradas = []
+        for o in observaciones:
+            coincide_estado = (estado_filtro == "Todos") or (o.get("estado") == estado_filtro)
+            coincide_texto = texto_filtro.lower() in o.get("id_activo_tecnico", "").lower() or \
+                             texto_filtro.lower() in o.get("descripcion", "").lower() or \
+                             texto_filtro.lower() in o.get("tipo_observacion", "").lower()
+            if coincide_estado and coincide_texto:
+                filtradas.append(o)
+
+        if not filtradas:
+            st.warning("No se encontraron observaciones con esos filtros.")
+            return
+
+        activos = sorted(set(str(o.get("id_activo_tecnico") or "⛔ Sin ID") for o in filtradas))
+        for activo in activos:
+            st.markdown(f"### 🏷️ Activo Técnico: `{activo}`")
+            observaciones_activo = [o for o in filtradas if str(o.get("id_activo_tecnico") or "⛔ Sin ID") == activo]
+            for o in observaciones_activo:
+                fecha = o.get("fecha_evento", "Sin Fecha")
+                tipo = o.get("tipo_observacion", "Sin Tipo")
+                estado = o.get("estado", "Sin Estado")
+                descripcion = o.get("descripcion", "")
+                st.markdown(f"- 📅 **{fecha}** | 🔍 **Tipo:** {tipo} | 🛠️ **Estado:** {estado}")
+                st.write(descripcion)
+            st.markdown("---")
 
     elif choice == "Editar Observación":
         st.subheader("✏️ Editar Observación Técnica")
