@@ -47,6 +47,7 @@ def app():
     # Procesamiento
     df["fecha_evento"] = pd.to_datetime(df["fecha_evento"])
     df["mes"] = df["fecha_evento"].dt.to_period("M")
+    df["usuario_registro"] = df.get("usuario_registro", df.get("usuario", "desconocido"))
 
     # KPIs Principales
     st.header("📌 Indicadores Clave")
@@ -57,9 +58,9 @@ def app():
 
     # Gráfico: Eventos por tipo
     st.subheader("📈 Eventos por Tipo")
-    tipo_counts = df["tipo_evento"].value_counts()
+    tipo_counts = df["tipo_evento"].value_counts().sort_index()
     fig1, ax1 = plt.subplots()
-    tipo_counts.plot(kind="bar", ax=ax1, color="skyblue")
+    tipo_counts.plot(kind="bar", ax=ax1, color="skyblue", edgecolor="black")
     ax1.set_ylabel("Cantidad")
     ax1.set_xlabel("Tipo de Evento")
     ax1.set_title("Eventos registrados por tipo")
@@ -71,11 +72,13 @@ def app():
     fig2, ax2 = plt.subplots()
     mensual.plot(ax=ax2, marker="o")
     ax2.set_ylabel("Cantidad")
+    ax2.set_xlabel("Mes")
     ax2.set_title("Evolución mensual por tipo de evento")
+    ax2.legend(title="Tipo de Evento", loc="upper left")
     st.pyplot(fig2)
 
     # Tabla detallada
-    st.subheader("📋 Detalle de Eventos")
+    st.subheader("📋 Detalle de Eventos Técnicos")
     st.dataframe(df[[
         "fecha_evento", "tipo_evento", "id_activo_tecnico",
         "descripcion", "usuario_registro"
