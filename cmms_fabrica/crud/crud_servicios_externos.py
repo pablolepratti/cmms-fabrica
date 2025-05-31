@@ -1,17 +1,37 @@
+"""
+🏢 CRUD de Servicios Externos – CMMS Fábrica
+
+Este módulo permite registrar, visualizar, editar y eliminar proveedores técnicos o servicios externos utilizados en la fábrica.
+Cada cambio se documenta automáticamente en la colección `historial`.
+
+✅ Normas aplicables:
+- ISO 9001:2015 (Evaluación de proveedores y trazabilidad de servicios)
+- ISO 55001 (Gestión de activos con terceros, contratos y mantenimiento)
+"""
+
 import streamlit as st
 from datetime import datetime
 from modulos.conexion_mongo import db
 
 coleccion = db["servicios_externos"]
+historial = db["historial"]
+
+def registrar_evento_historial(evento):
+    historial.insert_one({
+        "tipo_evento": evento["tipo_evento"],
+        "id_activo_tecnico": None,
+        "descripcion": evento.get("descripcion", ""),
+        "usuario": evento.get("usuario", "sistema"),
+        "fecha_evento": datetime.now(),
+        "modulo": "servicios_externos"
+    })
 
 def app():
-    
     st.title("🏢 Proveedores y Servicios Externos")
-    
+
     menu = ["Registrar Proveedor", "Ver Proveedores", "Editar Proveedor", "Eliminar Proveedor"]
-    choice = st.sidebar.selectbox("Acción", menu)
-    
-    # Formulario proveedor externo
+    choice = st.sidebar.radio("Acción", menu)
+
     def form_proveedor(defaults=None):
         with st.form("form_proveedor_externo"):
             id_proveedor = st.text_input("ID del Proveedor", value=defaults.get("id_proveedor") if defaults else f"PROV_{int(datetime.now().timestamp())}")
@@ -22,7 +42,7 @@ def app():
             correo = st.text_input("Correo electrónico", value=defaults.get("correo") if defaults else "")
             observaciones = st.text_area("Observaciones", value=defaults.get("observaciones") if defaults else "")
             submit = st.form_submit_button("Guardar Proveedor")
-    
+
         if submit:
             data = {
                 "id_proveedor": id_proveedor,
@@ -36,16 +56,18 @@ def app():
             }
             return data
         return None
-    
-    # Registrar nuevo
+
     if choice == "Registrar Proveedor":
         st.subheader("➕ Nuevo Proveedor Técnico")
         data = form_proveedor()
         if data:
             coleccion.insert_one(data)
+            registrar_evento_historial({
+                "tipo_evento": "Alta de proveedor externo",
+                "descripcion": f"Se registró a {data['nombre']} ({data['especialidad']})"
+            })
             st.success("Proveedor registrado correctamente.")
-    
-    # Ver proveedores
+
     elif choice == "Ver Proveedores":
         st.subheader("📋 Servicios Externos Registrados")
         proveedores = list(coleccion.find().sort("nombre", 1))
@@ -54,21 +76,22 @@ def app():
             st.write(f"Contacto: {p['contacto']} | Tel: {p['telefono']} | Correo: {p['correo']}")
             st.write(p.get("observaciones", ""))
             st.write("---")
-    
-    # Editar proveedor
+
     elif choice == "Editar Proveedor":
         st.subheader("✏️ Editar Proveedor Técnico")
         proveedores = list(coleccion.find())
         opciones = {f"{p['id_proveedor']} - {p['nombre']}": p for p in proveedores}
         seleccion = st.selectbox("Seleccionar proveedor", list(opciones.keys()))
         datos = opciones[seleccion]
-    
         nuevos_datos = form_proveedor(defaults=datos)
         if nuevos_datos:
             coleccion.update_one({"_id": datos["_id"]}, {"$set": nuevos_datos})
+            registrar_evento_historial({
+                "tipo_evento": "Edición de proveedor externo",
+                "descripcion": f"Se actualizó proveedor {nuevos_datos['nombre']}"
+            })
             st.success("Proveedor actualizado correctamente.")
-    
-    # Eliminar proveedor
+
     elif choice == "Eliminar Proveedor":
         st.subheader("🗑️ Eliminar Proveedor Técnico")
         proveedores = list(coleccion.find())
@@ -77,6 +100,10 @@ def app():
         datos = opciones[seleccion]
         if st.button("Eliminar definitivamente"):
             coleccion.delete_one({"_id": datos["_id"]})
+            registrar_evento_historial({
+                "tipo_evento": "Baja de proveedor externo",
+                "descripcion": f"Se eliminó al proveedor {datos['nombre']}"
+            })
             st.success("Proveedor eliminado.")
 
 if __name__ == "__main__":
