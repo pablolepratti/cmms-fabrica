@@ -1,17 +1,37 @@
+"""
+🧪 CRUD de Calibraciones de Instrumentos – CMMS Fábrica
+
+Este módulo permite registrar, visualizar, editar y eliminar calibraciones realizadas sobre instrumentos.
+Registra automáticamente cada calibración en la colección `historial` para trazabilidad completa.
+
+✅ Normas aplicables:
+- ISO/IEC 17025 (Requisitos generales para la competencia de los laboratorios de ensayo y calibración)
+- ISO 9001:2015 (Control de mediciones y trazabilidad en procesos)
+"""
+
 import streamlit as st
 from datetime import datetime
 from modulos.conexion_mongo import db
 
 coleccion = db["calibraciones"]
+historial = db["historial"]
+
+def registrar_evento_historial(evento):
+    historial.insert_one({
+        "tipo_evento": evento["tipo_evento"],
+        "id_activo_tecnico": evento.get("id_activo_tecnico"),
+        "descripcion": evento.get("descripcion", ""),
+        "usuario": evento.get("usuario"),
+        "fecha_evento": datetime.now(),
+        "modulo": "calibraciones"
+    })
 
 def app():
-        
     st.title("🧪 Gestión de Calibraciones de Instrumentos")
-    
+
     menu = ["Registrar Calibración", "Ver Calibraciones", "Editar Calibración", "Eliminar Calibración"]
-    choice = st.sidebar.selectbox("Acción", menu)
-    
-    # Formulario de calibración
+    choice = st.sidebar.radio("Acción", menu)
+
     def form_calibracion(defaults=None):
         with st.form("form_calibracion"):
             id_activo = st.text_input("ID del Instrumento", value=defaults.get("id_activo_tecnico") if defaults else "")
@@ -24,7 +44,7 @@ def app():
             observaciones = st.text_area("Observaciones", value=defaults.get("observaciones") if defaults else "")
             usuario = st.text_input("Usuario que registra", value=defaults.get("usuario_registro") if defaults else "")
             submit = st.form_submit_button("Guardar Calibración")
-    
+
         if submit:
             data = {
                 "id_activo_tecnico": id_activo,
@@ -39,16 +59,20 @@ def app():
             }
             return data
         return None
-    
-    # Registrar calibración
+
     if choice == "Registrar Calibración":
         st.subheader("➕ Nueva Calibración")
         data = form_calibracion()
         if data:
             coleccion.insert_one(data)
+            registrar_evento_historial({
+                "tipo_evento": "Registro de calibración",
+                "id_activo_tecnico": data["id_activo_tecnico"],
+                "usuario": data["usuario_registro"],
+                "descripcion": f"Calibración registrada con resultado '{data['resultado']}'"
+            })
             st.success("Calibración registrada correctamente.")
-    
-    # Ver calibraciones
+
     elif choice == "Ver Calibraciones":
         st.subheader("📋 Calibraciones Registradas")
         calibraciones = list(coleccion.find().sort("fecha_calibracion", -1))
@@ -56,21 +80,25 @@ def app():
             st.markdown(f"**{c['id_activo_tecnico']}** ({c['resultado']}) - {c['fecha_calibracion']}")
             st.write(c['observaciones'])
             st.write("---")
-    
-    # Editar calibración
+
     elif choice == "Editar Calibración":
         st.subheader("✏️ Editar Calibración")
         calibraciones = list(coleccion.find())
         opciones = {f"{c['id_activo_tecnico']} - {c['fecha_calibracion']}": c for c in calibraciones}
         seleccion = st.selectbox("Seleccionar calibración", list(opciones.keys()))
         datos = opciones[seleccion]
-    
+
         nuevos_datos = form_calibracion(defaults=datos)
         if nuevos_datos:
             coleccion.update_one({"_id": datos["_id"]}, {"$set": nuevos_datos})
+            registrar_evento_historial({
+                "tipo_evento": "Edición de calibración",
+                "id_activo_tecnico": nuevos_datos["id_activo_tecnico"],
+                "usuario": nuevos_datos["usuario_registro"],
+                "descripcion": f"Se editó la calibración del instrumento '{nuevos_datos['id_activo_tecnico']}'"
+            })
             st.success("Calibración actualizada correctamente.")
-    
-    # Eliminar calibración
+
     elif choice == "Eliminar Calibración":
         st.subheader("🗑️ Eliminar Calibración")
         calibraciones = list(coleccion.find())
@@ -79,7 +107,13 @@ def app():
         datos = opciones[seleccion]
         if st.button("Eliminar definitivamente"):
             coleccion.delete_one({"_id": datos["_id"]})
+            registrar_evento_historial({
+                "tipo_evento": "Baja de calibración",
+                "id_activo_tecnico": datos.get("id_activo_tecnico"),
+                "usuario": datos.get("usuario_registro", "desconocido"),
+                "descripcion": f"Se eliminó la calibración del instrumento '{datos.get('id_activo_tecnico', '')}'"
+            })
             st.success("Calibración eliminada.")
-        
+
 if __name__ == "__main__":
     app()
