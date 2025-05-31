@@ -1,23 +1,50 @@
+"""
+🛠️ CRUD de Tareas Correctivas – CMMS Fábrica
+
+Este módulo permite registrar, visualizar, editar y eliminar tareas correctivas originadas por fallas en activos técnicos.
+Registra automáticamente en la colección `historial` cada evento para asegurar trazabilidad y análisis posterior.
+
+✅ Normas aplicables:
+- ISO 14224 (Clasificación de modos de falla y datos de mantenimiento)
+- ISO 55001 (Gestión del ciclo de vida del activo – correctivos incluidos)
+- ISO 9001:2015 (Gestión de no conformidades, análisis de causa raíz y acciones correctivas)
+"""
+
 import streamlit as st
 from datetime import datetime
 from modulos.conexion_mongo import db
 
 coleccion = db["tareas_correctivas"]
+historial = db["historial"]
 
-def app():    
+def registrar_evento_historial(evento):
+    historial.insert_one({
+        "tipo_evento": evento["tipo_evento"],
+        "id_activo_tecnico": evento.get("id_activo_tecnico"),
+        "descripcion": evento.get("descripcion", ""),
+        "usuario": evento.get("usuario", "sistema"),
+        "fecha_evento": datetime.now(),
+        "modulo": "tareas_correctivas"
+    })
 
+def app():
     st.title("🛠️ Gestión de Tareas Correctivas")
-    
+
     menu = ["Registrar Falla", "Ver Tareas", "Editar Tarea", "Eliminar Tarea"]
-    choice = st.sidebar.selectbox("Acción", menu)
-    
+    choice = st.sidebar.radio("Acción", menu)
+
     def form_tarea(defaults=None):
         with st.form("form_tarea_correctiva"):
             id_activo = st.text_input("ID del Activo Técnico", value=defaults.get("id_activo_tecnico") if defaults else "")
             fecha_evento = st.date_input("Fecha del Evento", value=defaults.get("fecha_evento") if defaults else datetime.today())
             descripcion_falla = st.text_area("Descripción de la Falla", value=defaults.get("descripcion_falla") if defaults else "")
             modo_falla = st.text_input("Modo de Falla", value=defaults.get("modo_falla") if defaults else "")
+            
             rca_requerido = st.checkbox("¿Requiere Análisis de Causa Raíz?", value=defaults.get("rca_requerido") if defaults else False)
+            if rca_requerido:
+                st.info("📌 El análisis de causa raíz (RCA) busca identificar el origen real del problema para evitar que se repita. "
+                        "Se recomienda usar métodos como 5 Porqués, Ishikawa o AMFE. Documentá la causa, el método y las acciones derivadas.")
+
             rca_completado = st.checkbox("RCA Completado", value=defaults.get("rca_completado") if defaults else False)
             causa_raiz = st.text_input("Causa Raíz", value=defaults.get("causa_raiz") if defaults else "")
             metodo_rca = st.text_input("Método RCA", value=defaults.get("metodo_rca") if defaults else "")
@@ -53,15 +80,19 @@ def app():
             return data
         return None
 
-    # Registrar nueva tarea
     if choice == "Registrar Falla":
         st.subheader("➕ Nueva Tarea Correctiva")
         data = form_tarea()
         if data:
             coleccion.insert_one(data)
+            registrar_evento_historial({
+                "tipo_evento": "Alta de tarea correctiva",
+                "id_activo_tecnico": data["id_activo_tecnico"],
+                "usuario": data["usuario_registro"],
+                "descripcion": f"Tarea registrada por falla: {data['descripcion_falla'][:60]}..."
+            })
             st.success("Tarea correctiva registrada correctamente.")
 
-    # Ver tareas existentes
     elif choice == "Ver Tareas":
         st.subheader("📋 Tareas Correctivas Registradas")
         tareas = list(coleccion.find().sort("fecha_evento", -1))
@@ -76,11 +107,9 @@ def app():
             st.write(descripcion)
             st.write("---")
 
-    # Editar tarea existente
     elif choice == "Editar Tarea":
         st.subheader("✏️ Editar Tarea Correctiva")
         tareas = list(coleccion.find())
-
         opciones = {}
         for t in tareas:
             id_activo = t.get("id_activo_tecnico", "⛔ Sin ID")
@@ -89,17 +118,20 @@ def app():
 
         seleccion = st.selectbox("Seleccionar tarea", list(opciones.keys()))
         datos = opciones[seleccion]
-
         nuevos_datos = form_tarea(defaults=datos)
         if nuevos_datos:
             coleccion.update_one({"_id": datos["_id"]}, {"$set": nuevos_datos})
+            registrar_evento_historial({
+                "tipo_evento": "Edición de tarea correctiva",
+                "id_activo_tecnico": nuevos_datos["id_activo_tecnico"],
+                "usuario": nuevos_datos["usuario_registro"],
+                "descripcion": f"Tarea editada: {nuevos_datos['descripcion_falla'][:60]}..."
+            })
             st.success("Tarea actualizada correctamente.")
 
-    # Eliminar tarea
     elif choice == "Eliminar Tarea":
         st.subheader("🗑️ Eliminar Tarea Correctiva")
         tareas = list(coleccion.find())
-
         opciones = {}
         for t in tareas:
             id_activo = t.get("id_activo_tecnico", "⛔ Sin ID")
@@ -108,9 +140,14 @@ def app():
 
         seleccion = st.selectbox("Seleccionar tarea", list(opciones.keys()))
         datos = opciones[seleccion]
-
         if st.button("Eliminar definitivamente"):
             coleccion.delete_one({"_id": datos["_id"]})
+            registrar_evento_historial({
+                "tipo_evento": "Baja de tarea correctiva",
+                "id_activo_tecnico": datos.get("id_activo_tecnico"),
+                "usuario": datos.get("usuario_registro", "desconocido"),
+                "descripcion": f"Se eliminó tarea: {datos.get('descripcion_falla', '')[:60]}..."
+            })
             st.success("Tarea eliminada.")
 
 if __name__ == "__main__":
