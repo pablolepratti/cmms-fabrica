@@ -1,4 +1,4 @@
-"""
+'''
 📌 CRUD de Tareas Técnicas – CMMS Fábrica
 
 Este módulo permite registrar, visualizar, editar y eliminar tareas técnicas de gestión, presupuestos u otras intervenciones no correctivas ni preventivas.
@@ -7,7 +7,7 @@ Se registran automáticamente en la colección `historial` para trazabilidad.
 ✅ Normas aplicables:
 - ISO 9001:2015 (Control de tareas técnicas, presupuestos, acciones de soporte)
 - ISO 55001 (Gestión de mantenimiento y soporte técnico como parte del ciclo de vida del activo)
-"""
+'''
 
 import streamlit as st
 from datetime import datetime
@@ -117,6 +117,34 @@ def app():
                 st.markdown(f"- 📅 **{fecha}** | 📋 **Tipo:** {tipo} | 🛠️ **Estado:** {estado}")
                 st.write(descripcion)
             st.markdown("---")
+
+        # ✅ Finalizar tarea técnica desde la vista
+        st.markdown("### ✅ Finalizar Tarea Técnica")
+        tareas_abiertas = [t for t in filtradas if t.get("estado") != "Cerrada"]
+
+        if not tareas_abiertas:
+            st.info("Todas las tareas ya están finalizadas.")
+        else:
+            opciones = {f"{t['id_activo_tecnico']} - {t['descripcion'][:30]}": t for t in tareas_abiertas}
+            seleccion = st.selectbox("Seleccionar tarea a finalizar", list(opciones.keys()))
+            datos = opciones[seleccion]
+
+            if st.button("Marcar como finalizada"):
+                coleccion.update_one(
+                    {"_id": datos["_id"]},
+                    {"$set": {
+                        "estado": "Cerrada",
+                        "fecha_actualizacion": datetime.now(),
+                        "observaciones": datos.get("observaciones", "") + " | Finalizada vía dashboard"
+                    }}
+                )
+                registrar_evento_historial({
+                    "id_activo_tecnico": datos["id_activo_tecnico"],
+                    "usuario": datos["usuario_registro"],
+                    "descripcion": f"Tarea marcada como finalizada: {datos['descripcion'][:60]}..."
+                })
+                st.success("Tarea marcada como finalizada.")
+                st.rerun()
 
     elif choice == "Editar Tarea":
         st.subheader("✏️ Editar Tarea Técnica")
