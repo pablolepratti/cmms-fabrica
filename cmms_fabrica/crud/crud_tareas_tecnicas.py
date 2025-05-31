@@ -82,10 +82,11 @@ def app():
             st.success("Tarea técnica registrada correctamente.")
 
     elif choice == "Ver Tareas":
-        st.subheader("📋 Tareas Técnicas Registradas")
+        st.subheader("📋 Tareas Técnicas por Activo Técnico")
+        st.markdown("<br>", unsafe_allow_html=True)
 
-        estado_filtro = st.selectbox("Filtrar por Estado", ["Todos", "Abierta", "En proceso", "Cerrada"])
-        tipo_filtro = st.selectbox("Filtrar por Tipo de Tarea", ["Todos", "Presupuesto", "Gestión", "Consulta Técnica", "Otro"])
+        estado_filtro = st.selectbox("📌 Filtrar por Estado", ["Todos", "Abierta", "En proceso", "Cerrada"])
+        tipo_filtro = st.selectbox("📂 Filtrar por Tipo", ["Todos", "Presupuesto", "Gestión", "Consulta Técnica", "Otro"])
 
         tareas = list(coleccion.find().sort("fecha_evento", -1))
 
@@ -94,18 +95,19 @@ def app():
         if tipo_filtro != "Todos":
             tareas = [t for t in tareas if t.get("tipo_tecnica") == tipo_filtro]
 
-        st.markdown("<br><br>", unsafe_allow_html=True)
-
         if tareas:
-            for t in tareas:
-                id_activo = t.get('id_activo_tecnico', 'Sin ID')
-                estado = t.get('estado', 'Sin Estado')
-                tipo = t.get('tipo_tecnica', 'Sin Tipo')
-                fecha = t.get('fecha_evento', 'Sin Fecha')
-                descripcion = t.get('descripcion', '')
-                st.markdown(f"**{id_activo}** ({estado} / {tipo}) - {fecha}")
-                st.write(descripcion)
-                st.write("---")
+            activos = sorted(set(str(t.get("id_activo_tecnico") or "⛔ Sin ID") for t in tareas))
+            for activo in activos:
+                st.markdown(f"### 🏷️ Activo Técnico: `{activo}`")
+                tareas_activo = [t for t in tareas if str(t.get("id_activo_tecnico") or "⛔ Sin ID") == activo]
+                for t in tareas_activo:
+                    fecha = t.get("fecha_evento", "Sin Fecha")
+                    estado = t.get("estado", "Sin Estado")
+                    tipo = t.get("tipo_tecnica", "Sin Tipo")
+                    descripcion = t.get("descripcion", "")
+                    st.markdown(f"- 📅 **{fecha}** | 📋 **Tipo:** {tipo} | 🛠️ **Estado:** {estado}")
+                    st.write(descripcion)
+                st.markdown("---")
         else:
             st.info("No hay tareas técnicas que coincidan con los filtros seleccionados.")
 
