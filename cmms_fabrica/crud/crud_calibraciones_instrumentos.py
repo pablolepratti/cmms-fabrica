@@ -74,17 +74,30 @@ def app():
             st.success("Calibración registrada correctamente.")
 
     elif choice == "Ver Calibraciones":
-        st.subheader("📋 Calibraciones Registradas")
+        st.subheader("📋 Calibraciones por Activo Técnico")
+        st.markdown("<br>", unsafe_allow_html=True)
+
         calibraciones = list(coleccion.find().sort("fecha_calibracion", -1))
-        for c in calibraciones:
-            st.markdown(f"**{c['id_activo_tecnico']}** ({c['resultado']}) - {c['fecha_calibracion']}")
-            st.write(c['observaciones'])
-            st.write("---")
+
+        if calibraciones:
+            activos = sorted(set(str(c.get("id_activo_tecnico") or "⛔ Sin ID") for c in calibraciones))
+            for activo in activos:
+                st.markdown(f"### 🏷️ Instrumento: `{activo}`")
+                calibraciones_activo = [c for c in calibraciones if str(c.get("id_activo_tecnico") or "⛔ Sin ID") == activo]
+                for c in calibraciones_activo:
+                    fecha = c.get("fecha_calibracion", "Sin Fecha")
+                    resultado = c.get("resultado", "Sin Resultado")
+                    observaciones = c.get("observaciones", "")
+                    st.markdown(f"- 📅 **{fecha}** | 🧪 **Resultado:** {resultado}")
+                    st.write(observaciones)
+                st.markdown("---")
+        else:
+            st.info("No hay calibraciones registradas.")
 
     elif choice == "Editar Calibración":
         st.subheader("✏️ Editar Calibración")
         calibraciones = list(coleccion.find())
-        opciones = {f"{c['id_activo_tecnico']} - {c['fecha_calibracion']}": c for c in calibraciones}
+        opciones = {f"{c.get('id_activo_tecnico', 'Sin ID')} - {c.get('fecha_calibracion', 'Sin Fecha')}": c for c in calibraciones}
         seleccion = st.selectbox("Seleccionar calibración", list(opciones.keys()))
         datos = opciones[seleccion]
 
@@ -102,7 +115,7 @@ def app():
     elif choice == "Eliminar Calibración":
         st.subheader("🗑️ Eliminar Calibración")
         calibraciones = list(coleccion.find())
-        opciones = {f"{c['id_activo_tecnico']} - {c['fecha_calibracion']}": c for c in calibraciones}
+        opciones = {f"{c.get('id_activo_tecnico', 'Sin ID')} - {c.get('fecha_calibracion', 'Sin Fecha')}": c for c in calibraciones}
         seleccion = st.selectbox("Seleccionar calibración", list(opciones.keys()))
         datos = opciones[seleccion]
         if st.button("Eliminar definitivamente"):
