@@ -52,7 +52,7 @@ def app():
             }
             return data
         return None
-    
+
     # Registrar nueva tarea
     if choice == "Registrar Falla":
         st.subheader("➕ Nueva Tarea Correctiva")
@@ -80,7 +80,13 @@ def app():
     elif choice == "Editar Tarea":
         st.subheader("✏️ Editar Tarea Correctiva")
         tareas = list(coleccion.find())
-        opciones = {f"{t.get('id_activo_tecnico', '⛔ Sin ID')} - {t.get('descripcion_falla', '')[:30] or t.get('descripcion', '')[:30]}": t for t in tareas}
+
+        opciones = {}
+        for t in tareas:
+            id_activo = t.get("id_activo_tecnico", "⛔ Sin ID")
+            desc = t.get("descripcion_falla") or t.get("descripcion") or ""
+            opciones[f"{id_activo} - {desc[:30]}"] = t
+
         seleccion = st.selectbox("Seleccionar tarea", list(opciones.keys()))
         datos = opciones[seleccion]
 
@@ -93,9 +99,16 @@ def app():
     elif choice == "Eliminar Tarea":
         st.subheader("🗑️ Eliminar Tarea Correctiva")
         tareas = list(coleccion.find())
-        opciones = {f"{t.get('id_activo_tecnico', '⛔ Sin ID')} - {t.get('descripcion_falla', '')[:30] or t.get('descripcion', '')[:30]}": t for t in tareas}
+
+        opciones = {}
+        for t in tareas:
+            id_activo = t.get("id_activo_tecnico", "⛔ Sin ID")
+            desc = t.get("descripcion_falla") or t.get("descripcion") or ""
+            opciones[f"{id_activo} - {desc[:30]}"] = t
+
         seleccion = st.selectbox("Seleccionar tarea", list(opciones.keys()))
         datos = opciones[seleccion]
+
         if st.button("Eliminar definitivamente"):
             coleccion.delete_one({"_id": datos["_id"]})
             st.success("Tarea eliminada.")
