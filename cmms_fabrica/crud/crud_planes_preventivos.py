@@ -85,42 +85,59 @@ def app():
 
     elif choice == "Ver Planes":
         st.subheader("📋 Planes Preventivos por Activo Técnico")
-        st.markdown("<br>", unsafe_allow_html=True)
 
         planes = list(coleccion.find().sort("proxima_fecha", 1))
         hoy = datetime.today().date()
 
-        if planes:
-            activos = sorted(set(str(p.get("id_activo_tecnico") or "⛔ Sin ID") for p in planes))
-            for activo in activos:
-                st.markdown(f"### 🏷️ Activo Técnico: `{activo}`")
-                planes_activo = [p for p in planes if str(p.get("id_activo_tecnico") or "⛔ Sin ID") == activo]
-
-                for p in planes_activo:
-                    id_plan = p.get("id_plan", "Sin ID")
-                    estado = p.get("estado", "Sin Estado")
-                    proxima_fecha = p.get("proxima_fecha", "Sin Fecha")
-                    observaciones = p.get("observaciones", "")
-
-                    try:
-                        fecha_obj = datetime.strptime(proxima_fecha, "%Y-%m-%d").date() if isinstance(proxima_fecha, str) else proxima_fecha
-                    except:
-                        fecha_obj = None
-
-                    vencido = fecha_obj and fecha_obj < hoy
-
-                    if vencido:
-                        st.markdown(
-                            f"<span style='color:red; font-weight:bold'>🚨 {id_plan} ({estado}) - VENCIDO el {proxima_fecha}</span>",
-                            unsafe_allow_html=True
-                        )
-                    else:
-                        st.markdown(f"**{id_plan}** ({estado}) - Próxima: {proxima_fecha}")
-
-                    st.write(observaciones)
-                st.markdown("---")
-        else:
+        if not planes:
             st.info("No hay planes preventivos registrados.")
+            return
+
+        estados_existentes = sorted(set(p.get("estado", "Activo") for p in planes))
+        estado_filtro = st.selectbox("Filtrar por estado del plan", ["Todos"] + estados_existentes)
+        texto_filtro = st.text_input("🔍 Buscar por ID de activo, ID de plan o texto")
+
+        # Aplicar filtros
+        filtrados = []
+        for p in planes:
+            coincide_estado = (estado_filtro == "Todos") or (p.get("estado") == estado_filtro)
+            coincide_texto = texto_filtro.lower() in p.get("id_activo_tecnico", "").lower() or \
+                             texto_filtro.lower() in p.get("id_plan", "").lower() or \
+                             texto_filtro.lower() in p.get("observaciones", "").lower()
+            if coincide_estado and coincide_texto:
+                filtrados.append(p)
+
+        if not filtrados:
+            st.warning("No se encontraron planes con esos filtros.")
+            return
+
+        activos = sorted(set(str(p.get("id_activo_tecnico") or "⛔ Sin ID") for p in filtrados))
+        for activo in activos:
+            st.markdown(f"### 🏷️ Activo Técnico: `{activo}`")
+            planes_activo = [p for p in filtrados if str(p.get("id_activo_tecnico") or "⛔ Sin ID") == activo]
+
+            for p in planes_activo:
+                id_plan = p.get("id_plan", "Sin ID")
+                estado = p.get("estado", "Sin Estado")
+                proxima_fecha = p.get("proxima_fecha", "Sin Fecha")
+                observaciones = p.get("observaciones", "")
+
+                try:
+                    fecha_obj = datetime.strptime(proxima_fecha, "%Y-%m-%d").date() if isinstance(proxima_fecha, str) else proxima_fecha
+                except:
+                    fecha_obj = None
+
+                vencido = fecha_obj and fecha_obj < hoy
+
+                if vencido:
+                    st.markdown(
+                        f"<span style='color:red; font-weight:bold'>🚨 {id_plan} ({estado}) - VENCIDO el {proxima_fecha}</span>",
+                        unsafe_allow_html=True
+                    )
+                else:
+                    st.markdown(f"**{id_plan}** ({estado}) - Próxima: {proxima_fecha}")
+                st.write(observaciones)
+            st.markdown("---")
 
     elif choice == "Editar Plan":
         st.subheader("✏️ Editar Plan Preventivo")
