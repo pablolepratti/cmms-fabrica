@@ -93,15 +93,17 @@ def app():
     # Procesamiento de DataFrame
     df = pd.DataFrame(datos)
     df["fecha_evento"] = pd.to_datetime(df["fecha_evento"])
+    df["usuario_registro"] = df.get("usuario_registro", df.get("usuario", "desconocido"))
+
     columnas = ["fecha_evento", "tipo_evento", "id_activo_tecnico", "descripcion", "usuario_registro"]
 
     st.markdown("### 📊 Vista Previa del Reporte")
     st.dataframe(df[columnas].sort_values("fecha_evento", ascending=False), use_container_width=True)
 
     if st.button("📄 Generar PDF del reporte"):
-        # Limpiar caracteres no soportados
+        nombre_base = id_activo if id_activo else "historial"
         df_clean = df[columnas].applymap(lambda x: str(x).encode('ascii', 'ignore').decode('ascii') if isinstance(x, str) else x)
-        archivo = generar_pdf(df_clean, "historial")
+        archivo = generar_pdf(df_clean, nombre_base)
         with open(archivo, "rb") as f:
             st.download_button(
                 label="⬇️ Descargar PDF",
