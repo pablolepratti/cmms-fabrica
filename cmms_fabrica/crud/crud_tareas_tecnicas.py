@@ -1,14 +1,36 @@
+"""
+📌 CRUD de Tareas Técnicas – CMMS Fábrica
+
+Este módulo permite registrar, visualizar, editar y eliminar tareas técnicas de gestión, presupuestos u otras intervenciones no correctivas ni preventivas.
+Se registran automáticamente en la colección `historial` para trazabilidad.
+
+✅ Normas aplicables:
+- ISO 9001:2015 (Control de tareas técnicas, presupuestos, acciones de soporte)
+- ISO 55001 (Gestión de mantenimiento y soporte técnico como parte del ciclo de vida del activo)
+"""
+
 import streamlit as st
 from datetime import datetime
 from modulos.conexion_mongo import db
 
 coleccion = db["tareas_tecnicas"]
+historial = db["historial"]
+
+def registrar_evento_historial(evento):
+    historial.insert_one({
+        "tipo_evento": evento["tipo_evento"],
+        "id_activo_tecnico": evento.get("id_activo_tecnico", ""),
+        "descripcion": evento.get("descripcion", ""),
+        "usuario": evento.get("usuario", "sistema"),
+        "fecha_evento": datetime.now(),
+        "modulo": "tareas_tecnicas"
+    })
 
 def app():
     st.title("📌 Gestión de Tareas Técnicas")
 
     menu = ["Registrar Tarea Técnica", "Ver Tareas", "Editar Tarea", "Eliminar Tarea"]
-    choice = st.sidebar.selectbox("Acción", menu)
+    choice = st.sidebar.radio("Acción", menu)
 
     def form_tecnica(defaults=None):
         with st.form("form_tarea_tecnica"):
@@ -46,26 +68,27 @@ def app():
             return data
         return None
 
-    # Registrar
     if choice == "Registrar Tarea Técnica":
         st.subheader("➕ Nueva Tarea Técnica")
         data = form_tecnica()
         if data:
             coleccion.insert_one(data)
+            registrar_evento_historial({
+                "tipo_evento": "Alta de tarea técnica",
+                "id_activo_tecnico": data["id_activo_tecnico"],
+                "usuario": data["usuario_registro"],
+                "descripcion": f"Tarea registrada: {data['descripcion'][:60]}..."
+            })
             st.success("Tarea técnica registrada correctamente.")
 
-    # Ver tareas
     elif choice == "Ver Tareas":
         st.subheader("📋 Tareas Técnicas Registradas")
 
-        # Filtros
         estado_filtro = st.selectbox("Filtrar por Estado", ["Todos", "Abierta", "En proceso", "Cerrada"])
         tipo_filtro = st.selectbox("Filtrar por Tipo de Tarea", ["Todos", "Presupuesto", "Gestión", "Consulta Técnica", "Otro"])
 
-        # Traer todas las tareas
         tareas = list(coleccion.find().sort("fecha_evento", -1))
 
-        # Aplicar filtros
         if estado_filtro != "Todos":
             tareas = [t for t in tareas if t.get("estado") == estado_filtro]
         if tipo_filtro != "Todos":
@@ -73,7 +96,6 @@ def app():
 
         st.markdown("<br><br>", unsafe_allow_html=True)
 
-        # Mostrar resultados
         if tareas:
             for t in tareas:
                 id_activo = t.get('id_activo_tecnico', 'Sin ID')
@@ -87,20 +109,23 @@ def app():
         else:
             st.info("No hay tareas técnicas que coincidan con los filtros seleccionados.")
 
-    # Editar tarea
     elif choice == "Editar Tarea":
         st.subheader("✏️ Editar Tarea Técnica")
         tareas = list(coleccion.find())
         opciones = {f"{t.get('id_activo_tecnico', 'Sin ID')} - {t.get('descripcion', '')[:30]}": t for t in tareas}
         seleccion = st.selectbox("Seleccionar tarea", list(opciones.keys()))
         datos = opciones[seleccion]
-
         nuevos_datos = form_tecnica(defaults=datos)
         if nuevos_datos:
             coleccion.update_one({"_id": datos["_id"]}, {"$set": nuevos_datos})
+            registrar_evento_historial({
+                "tipo_evento": "Edición de tarea técnica",
+                "id_activo_tecnico": nuevos_datos["id_activo_tecnico"],
+                "usuario": nuevos_datos["usuario_registro"],
+                "descripcion": f"Tarea técnica editada: {nuevos_datos['descripcion'][:60]}..."
+            })
             st.success("Tarea técnica actualizada correctamente.")
 
-    # Eliminar tarea
     elif choice == "Eliminar Tarea":
         st.subheader("🗑️ Eliminar Tarea Técnica")
         tareas = list(coleccion.find())
@@ -109,6 +134,12 @@ def app():
         datos = opciones[seleccion]
         if st.button("Eliminar definitivamente"):
             coleccion.delete_one({"_id": datos["_id"]})
+            registrar_evento_historial({
+                "tipo_evento": "Baja de tarea técnica",
+                "id_activo_tecnico": datos.get("id_activo_tecnico", ""),
+                "usuario": datos.get("usuario_registro", "desconocido"),
+                "descripcion": f"Se eliminó tarea: {datos.get('descripcion', '')[:60]}..."
+            })
             st.success("Tarea técnica eliminada.")
 
 if __name__ == "__main__":
