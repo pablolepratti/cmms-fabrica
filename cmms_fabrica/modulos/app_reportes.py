@@ -59,7 +59,6 @@ def generar_excel(df, nombre):
     output = BytesIO()
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
         df.to_excel(writer, sheet_name="Historial", index=False)
-        writer.save()
     output.seek(0)
     return output
 
