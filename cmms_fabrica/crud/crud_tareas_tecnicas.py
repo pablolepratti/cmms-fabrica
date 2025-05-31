@@ -83,33 +83,42 @@ def app():
 
     elif choice == "Ver Tareas":
         st.subheader("📋 Tareas Técnicas por Activo Técnico")
-        st.markdown("<br>", unsafe_allow_html=True)
+
+        tareas = list(coleccion.find().sort("fecha_evento", -1))
+        if not tareas:
+            st.info("No hay tareas técnicas registradas.")
+            return
 
         estado_filtro = st.selectbox("📌 Filtrar por Estado", ["Todos", "Abierta", "En proceso", "Cerrada"])
         tipo_filtro = st.selectbox("📂 Filtrar por Tipo", ["Todos", "Presupuesto", "Gestión", "Consulta Técnica", "Otro"])
+        texto_filtro = st.text_input("🔍 Buscar por ID, tipo o descripción")
 
-        tareas = list(coleccion.find().sort("fecha_evento", -1))
+        filtradas = []
+        for t in tareas:
+            coincide_estado = estado_filtro == "Todos" or t.get("estado") == estado_filtro
+            coincide_tipo = tipo_filtro == "Todos" or t.get("tipo_tecnica") == tipo_filtro
+            coincide_texto = texto_filtro.lower() in t.get("id_activo_tecnico", "").lower() or \
+                             texto_filtro.lower() in t.get("descripcion", "").lower() or \
+                             texto_filtro.lower() in t.get("tipo_tecnica", "").lower()
+            if coincide_estado and coincide_tipo and coincide_texto:
+                filtradas.append(t)
 
-        if estado_filtro != "Todos":
-            tareas = [t for t in tareas if t.get("estado") == estado_filtro]
-        if tipo_filtro != "Todos":
-            tareas = [t for t in tareas if t.get("tipo_tecnica") == tipo_filtro]
+        if not filtradas:
+            st.warning("No se encontraron tareas técnicas con esos filtros.")
+            return
 
-        if tareas:
-            activos = sorted(set(str(t.get("id_activo_tecnico") or "⛔ Sin ID") for t in tareas))
-            for activo in activos:
-                st.markdown(f"### 🏷️ Activo Técnico: `{activo}`")
-                tareas_activo = [t for t in tareas if str(t.get("id_activo_tecnico") or "⛔ Sin ID") == activo]
-                for t in tareas_activo:
-                    fecha = t.get("fecha_evento", "Sin Fecha")
-                    estado = t.get("estado", "Sin Estado")
-                    tipo = t.get("tipo_tecnica", "Sin Tipo")
-                    descripcion = t.get("descripcion", "")
-                    st.markdown(f"- 📅 **{fecha}** | 📋 **Tipo:** {tipo} | 🛠️ **Estado:** {estado}")
-                    st.write(descripcion)
-                st.markdown("---")
-        else:
-            st.info("No hay tareas técnicas que coincidan con los filtros seleccionados.")
+        activos = sorted(set(str(t.get("id_activo_tecnico") or "⛔ Sin ID") for t in filtradas))
+        for activo in activos:
+            st.markdown(f"### 🏷️ Activo Técnico: `{activo}`")
+            tareas_activo = [t for t in filtradas if str(t.get("id_activo_tecnico") or "⛔ Sin ID") == activo]
+            for t in tareas_activo:
+                fecha = t.get("fecha_evento", "Sin Fecha")
+                estado = t.get("estado", "Sin Estado")
+                tipo = t.get("tipo_tecnica", "Sin Tipo")
+                descripcion = t.get("descripcion", "")
+                st.markdown(f"- 📅 **{fecha}** | 📋 **Tipo:** {tipo} | 🛠️ **Estado:** {estado}")
+                st.write(descripcion)
+            st.markdown("---")
 
     elif choice == "Editar Tarea":
         st.subheader("✏️ Editar Tarea Técnica")
