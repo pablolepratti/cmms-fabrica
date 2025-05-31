@@ -2,7 +2,7 @@
 📄 Módulo de Reportes Técnicos – CMMS Fábrica
 
 Este módulo permite consultar y exportar reportes en PDF a partir de la colección `historial`.
-Filtrado por tipo de evento y rango de fechas.
+Filtrado por tipo de evento, rango de fechas y activo técnico.
 
 ✅ Normas aplicables:
 - ISO 9001:2015 (Trazabilidad documental y registros)
@@ -57,17 +57,23 @@ def generar_pdf(df, nombre):
 def app():
     st.title("📄 Reportes Técnicos del CMMS")
 
+    # Filtros
     with st.sidebar:
         st.markdown("### 📅 Filtros")
         fecha_desde = st.date_input("Desde", value=date(2024, 1, 1))
         fecha_hasta = st.date_input("Hasta", value=date.today())
         tipo_evento = st.multiselect("Tipo de Evento", ["preventiva", "correctiva", "tecnica", "observacion", "calibracion"],
                                      default=["preventiva", "correctiva", "tecnica", "observacion", "calibracion"])
+        filtrar_activo = st.checkbox("Filtrar por activo técnico")
+        id_activo = ""
+        if filtrar_activo:
+            id_activo = st.text_input("ID del activo técnico")
 
     if fecha_desde > fecha_hasta:
         st.error("⚠️ La fecha 'desde' no puede ser posterior a la fecha 'hasta'.")
         return
 
+    # Construcción del query
     query = {
         "fecha_evento": {
             "$gte": datetime.combine(fecha_desde, datetime.min.time()),
@@ -76,15 +82,20 @@ def app():
         "tipo_evento": {"$in": tipo_evento}
     }
 
+    if filtrar_activo and id_activo:
+        query["id_activo_tecnico"] = id_activo
+
     datos = list(coleccion.find(query, {"_id": 0}))
     if not datos:
         st.warning("No se encontraron datos para ese período.")
         return
 
+    # Procesamiento de DataFrame
     df = pd.DataFrame(datos)
     df["fecha_evento"] = pd.to_datetime(df["fecha_evento"])
     columnas = ["fecha_evento", "tipo_evento", "id_activo_tecnico", "descripcion", "usuario_registro"]
 
+    st.markdown("### 📊 Vista Previa del Reporte")
     st.dataframe(df[columnas].sort_values("fecha_evento", ascending=False), use_container_width=True)
 
     if st.button("📄 Generar PDF del reporte"):
