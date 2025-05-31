@@ -95,6 +95,7 @@ def app():
 
     elif choice == "Ver Tareas":
         st.subheader("📋 Tareas Correctivas por Activo Técnico")
+        st.markdown("<br>", unsafe_allow_html=True)
         tareas = list(coleccion.find().sort("fecha_evento", -1))
 
         if tareas:
