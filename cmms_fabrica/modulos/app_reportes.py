@@ -1,7 +1,7 @@
 """
 📄 Módulo de Reportes Técnicos – CMMS Fábrica
 
-Este módulo permite consultar y exportar reportes en PDF a partir de la colección `historial`.
+Este módulo permite consultar y exportar reportes en PDF y Excel a partir de la colección `historial`.
 Filtrado por tipo de evento, rango de fechas y activo técnico.
 
 ✅ Normas aplicables:
@@ -15,6 +15,7 @@ from fpdf import FPDF
 from datetime import datetime, date
 from modulos.conexion_mongo import db
 import os
+from io import BytesIO
 
 coleccion = db["historial"]
 
@@ -53,6 +54,14 @@ def generar_pdf(df, nombre):
     ruta = f"reportes/reporte_{nombre.lower().replace(' ', '_')}.pdf"
     pdf.output(ruta)
     return ruta
+
+def generar_excel(df, nombre):
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, sheet_name="Historial", index=False)
+        writer.save()
+    output.seek(0)
+    return output
 
 def app():
     st.title("📄 Reportes Técnicos del CMMS")
@@ -93,23 +102,40 @@ def app():
     # Procesamiento de DataFrame
     df = pd.DataFrame(datos)
     df["fecha_evento"] = pd.to_datetime(df["fecha_evento"])
-    df["usuario_registro"] = df.get("usuario_registro", df.get("usuario", "desconocido"))
+    if "usuario_registro" not in df.columns and "usuario" in df.columns:
+        df["usuario_registro"] = df["usuario"]
+    elif "usuario_registro" not in df.columns:
+        df["usuario_registro"] = "desconocido"
 
     columnas = ["fecha_evento", "tipo_evento", "id_activo_tecnico", "descripcion", "usuario_registro"]
 
     st.markdown("### 📊 Vista Previa del Reporte")
     st.dataframe(df[columnas].sort_values("fecha_evento", ascending=False), use_container_width=True)
 
-    if st.button("📄 Generar PDF del reporte"):
-        nombre_base = id_activo if id_activo else "historial"
-        df_clean = df[columnas].applymap(lambda x: str(x).encode('ascii', 'ignore').decode('ascii') if isinstance(x, str) else x)
-        archivo = generar_pdf(df_clean, nombre_base)
-        with open(archivo, "rb") as f:
+    col1, col2 = st.columns(2)
+
+    with col1:
+        if st.button("📄 Generar PDF del reporte"):
+            nombre_base = id_activo if id_activo else "historial"
+            df_clean = df[columnas].applymap(lambda x: str(x).encode('ascii', 'ignore').decode('ascii') if isinstance(x, str) else x)
+            archivo = generar_pdf(df_clean, nombre_base)
+            with open(archivo, "rb") as f:
+                st.download_button(
+                    label="⬇️ Descargar PDF",
+                    data=f,
+                    file_name=os.path.basename(archivo),
+                    mime="application/pdf"
+                )
+
+    with col2:
+        if st.button("📥 Descargar Excel del reporte"):
+            nombre_base = id_activo if id_activo else "historial"
+            excel_buffer = generar_excel(df[columnas], nombre_base)
             st.download_button(
-                label="⬇️ Descargar PDF",
-                data=f,
-                file_name=os.path.basename(archivo),
-                mime="application/pdf"
+                label="⬇️ Descargar Excel",
+                data=excel_buffer,
+                file_name=f"reporte_{nombre_base}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
 
 if __name__ == "__main__":
