@@ -94,18 +94,23 @@ def app():
             st.success("Tarea correctiva registrada correctamente.")
 
     elif choice == "Ver Tareas":
-        st.subheader("📋 Tareas Correctivas Registradas")
+        st.subheader("📋 Tareas Correctivas por Activo Técnico")
         tareas = list(coleccion.find().sort("fecha_evento", -1))
 
-        for t in tareas:
-            id_activo = t.get("id_activo_tecnico", "⛔ Sin ID")
-            estado = t.get("estado", "Sin Estado")
-            fecha = t.get("fecha_evento") or t.get("fecha_reporte", "Sin Fecha")
-            descripcion = t.get("descripcion_falla") or t.get("descripcion", "")
-
-            st.markdown(f"**{id_activo}** ({estado}) - {fecha}")
-            st.write(descripcion)
-            st.write("---")
+        if tareas:
+            activos = sorted(set(t.get("id_activo_tecnico", "⛔ Sin ID") for t in tareas))
+            for activo in activos:
+                st.markdown(f"### 🏷️ Activo Técnico: `{activo}`")
+                tareas_activo = [t for t in tareas if t.get("id_activo_tecnico") == activo]
+                for t in tareas_activo:
+                    fecha = t.get("fecha_evento") or t.get("fecha_reporte", "Sin Fecha")
+                    estado = t.get("estado", "Sin Estado")
+                    descripcion = t.get("descripcion_falla") or t.get("descripcion", "")
+                    st.markdown(f"- 📅 **{fecha}** | 🛠️ **Estado:** {estado}")
+                    st.write(f"{descripcion}")
+                st.markdown("---")
+        else:
+            st.info("No hay tareas registradas.")
 
     elif choice == "Editar Tarea":
         st.subheader("✏️ Editar Tarea Correctiva")
