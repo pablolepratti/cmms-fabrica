@@ -29,9 +29,17 @@ def registrar_evento_historial(evento):
 def form_tecnica(defaults=None):
     with st.form("form_tarea_tecnica"):
         hoy = datetime.today()
-        id_activo = st.text_input("ID del Activo Técnico (opcional)", value=defaults.get("id_activo_tecnico") if defaults else "")
+
+        # 🔽 Selectbox dinámico para IDs de activos técnicos
+        lista_ids = [d["id_activo"] for d in db["activos_tecnicos"].find({}, {"_id": 0, "id_activo": 1})]
+        lista_ids = sorted(lista_ids)
+        lista_ids.insert(0, "")  # Para permitir vacío si es opcional
+
+        id_activo_default = defaults.get("id_activo_tecnico") if defaults else ""
+        id_activo = st.selectbox("ID del Activo Técnico (opcional)", options=lista_ids, index=lista_ids.index(id_activo_default) if id_activo_default in lista_ids else 0)
+
         fecha_evento = st.date_input("📆 Fecha del Evento", value=defaults.get("fecha_evento", hoy) if defaults else hoy)
-        fecha_inicio = st.date_input("📅 Fecha de Inicio", value=defaults.get("fecha_inicio", fecha_evento) if defaults else fecha_evento)
+        fecha_inicio = st.date_input("🗕️ Fecha de Inicio", value=defaults.get("fecha_inicio", fecha_evento) if defaults else fecha_evento)
         fecha_actualizacion = st.date_input("🕓 Fecha de Última Actualización", value=defaults.get("fecha_actualizacion", fecha_evento) if defaults else fecha_evento)
         descripcion = st.text_area("Descripción de la Tarea Técnica", value=defaults.get("descripcion") if defaults else "")
         tipo = st.selectbox("Tipo de Tarea Técnica", ["Presupuesto", "Gestión", "Consulta Técnica", "Otro"],
