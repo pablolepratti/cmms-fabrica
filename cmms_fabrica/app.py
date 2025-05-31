@@ -21,6 +21,9 @@ from crud.dashboard_kpi_historial import app as kpi_historial
 # Módulo de usuarios (admin)
 from modulos.app_usuarios import app_usuarios
 
+# Cambiar IDs
+from modulos.cambiar_ids import app as cambiar_ids
+
 # Reportes técnicos
 from modulos.app_reportes import app as app_reportes
 
@@ -50,6 +53,7 @@ menu = [
     "🏢 Servicios Técnicos",
     "📊 KPIs Globales",
     "📄 Reportes Técnicos",
+    "🆔 Cambiar IDs manuales",
     "👥 Usuarios" if rol == "admin" else None,
 ]
 menu = [m for m in menu if m is not None]
