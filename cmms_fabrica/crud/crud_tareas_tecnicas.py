@@ -18,7 +18,7 @@ historial = db["historial"]
 
 def registrar_evento_historial(evento):
     historial.insert_one({
-        "tipo_evento": evento["tipo_evento"],
+        "tipo_evento": "tecnica",
         "id_activo_tecnico": evento.get("id_activo_tecnico", ""),
         "descripcion": evento.get("descripcion", ""),
         "usuario": evento.get("usuario", "sistema"),
@@ -26,47 +26,46 @@ def registrar_evento_historial(evento):
         "modulo": "tareas_tecnicas"
     })
 
+def form_tecnica(defaults=None):
+    with st.form("form_tarea_tecnica"):
+        hoy = datetime.today()
+        id_activo = st.text_input("ID del Activo Técnico (opcional)", value=defaults.get("id_activo_tecnico") if defaults else "")
+        fecha_evento = st.date_input("📆 Fecha del Evento", value=defaults.get("fecha_evento", hoy) if defaults else hoy)
+        fecha_inicio = st.date_input("📅 Fecha de Inicio", value=defaults.get("fecha_inicio", fecha_evento) if defaults else fecha_evento)
+        fecha_actualizacion = st.date_input("🕓 Fecha de Última Actualización", value=defaults.get("fecha_actualizacion", fecha_evento) if defaults else fecha_evento)
+        descripcion = st.text_area("Descripción de la Tarea Técnica", value=defaults.get("descripcion") if defaults else "")
+        tipo = st.selectbox("Tipo de Tarea Técnica", ["Presupuesto", "Gestión", "Consulta Técnica", "Otro"],
+                            index=["Presupuesto", "Gestión", "Consulta Técnica", "Otro"].index(defaults.get("tipo_tecnica")) if defaults and defaults.get("tipo_tecnica") in ["Presupuesto", "Gestión", "Consulta Técnica", "Otro"] else 0)
+        responsable = st.text_input("Responsable", value=defaults.get("responsable") if defaults else "")
+        proveedor_externo = st.text_input("Proveedor Externo (si aplica)", value=defaults.get("proveedor_externo") if defaults else "")
+        estado = st.selectbox("Estado", ["Abierta", "En proceso", "Cerrada"],
+                              index=["Abierta", "En proceso", "Cerrada"].index(defaults.get("estado")) if defaults and defaults.get("estado") in ["Abierta", "En proceso", "Cerrada"] else 0)
+        usuario = st.text_input("Usuario que registra", value=defaults.get("usuario_registro") if defaults else "")
+        observaciones = st.text_area("Observaciones adicionales", value=defaults.get("observaciones") if defaults else "")
+        submit = st.form_submit_button("Guardar Tarea Técnica")
+
+    if submit:
+        return {
+            "id_activo_tecnico": id_activo,
+            "fecha_evento": str(fecha_evento),
+            "fecha_inicio": str(fecha_inicio),
+            "fecha_actualizacion": str(fecha_actualizacion),
+            "descripcion": descripcion,
+            "tipo_tecnica": tipo,
+            "responsable": responsable,
+            "proveedor_externo": proveedor_externo,
+            "estado": estado,
+            "usuario_registro": usuario,
+            "observaciones": observaciones,
+            "fecha_registro": datetime.now()
+        }
+    return None
+
 def app():
     st.title("📌 Gestión de Tareas Técnicas")
 
     menu = ["Registrar Tarea Técnica", "Ver Tareas", "Editar Tarea", "Eliminar Tarea"]
     choice = st.sidebar.radio("Acción", menu)
-
-    def form_tecnica(defaults=None):
-        with st.form("form_tarea_tecnica"):
-            hoy = datetime.today()
-            id_activo = st.text_input("ID del Activo Técnico (opcional)", value=defaults.get("id_activo_tecnico") if defaults else "")
-            fecha_evento = st.date_input("📆 Fecha del Evento", value=defaults.get("fecha_evento", hoy) if defaults else hoy)
-            fecha_inicio = st.date_input("📅 Fecha de Inicio", value=defaults.get("fecha_inicio", fecha_evento) if defaults else fecha_evento)
-            fecha_actualizacion = st.date_input("🕓 Fecha de Última Actualización", value=defaults.get("fecha_actualizacion", fecha_evento) if defaults else fecha_evento)
-            descripcion = st.text_area("Descripción de la Tarea Técnica", value=defaults.get("descripcion") if defaults else "")
-            tipo = st.selectbox("Tipo de Tarea Técnica", ["Presupuesto", "Gestión", "Consulta Técnica", "Otro"],
-                                index=["Presupuesto", "Gestión", "Consulta Técnica", "Otro"].index(defaults.get("tipo_tecnica")) if defaults and defaults.get("tipo_tecnica") in ["Presupuesto", "Gestión", "Consulta Técnica", "Otro"] else 0)
-            responsable = st.text_input("Responsable", value=defaults.get("responsable") if defaults else "")
-            proveedor_externo = st.text_input("Proveedor Externo (si aplica)", value=defaults.get("proveedor_externo") if defaults else "")
-            estado = st.selectbox("Estado", ["Abierta", "En proceso", "Cerrada"],
-                                  index=["Abierta", "En proceso", "Cerrada"].index(defaults.get("estado")) if defaults and defaults.get("estado") in ["Abierta", "En proceso", "Cerrada"] else 0)
-            usuario = st.text_input("Usuario que registra", value=defaults.get("usuario_registro") if defaults else "")
-            observaciones = st.text_area("Observaciones adicionales", value=defaults.get("observaciones") if defaults else "")
-            submit = st.form_submit_button("Guardar Tarea Técnica")
-
-        if submit:
-            data = {
-                "id_activo_tecnico": id_activo,
-                "fecha_evento": str(fecha_evento),
-                "fecha_inicio": str(fecha_inicio),
-                "fecha_actualizacion": str(fecha_actualizacion),
-                "descripcion": descripcion,
-                "tipo_tecnica": tipo,
-                "responsable": responsable,
-                "proveedor_externo": proveedor_externo,
-                "estado": estado,
-                "usuario_registro": usuario,
-                "observaciones": observaciones,
-                "fecha_registro": datetime.now()
-            }
-            return data
-        return None
 
     if choice == "Registrar Tarea Técnica":
         st.subheader("➕ Nueva Tarea Técnica")
@@ -74,7 +73,6 @@ def app():
         if data:
             coleccion.insert_one(data)
             registrar_evento_historial({
-                "tipo_evento": "Alta de tarea técnica",
                 "id_activo_tecnico": data["id_activo_tecnico"],
                 "usuario": data["usuario_registro"],
                 "descripcion": f"Tarea registrada: {data['descripcion'][:60]}..."
@@ -97,9 +95,9 @@ def app():
         for t in tareas:
             coincide_estado = estado_filtro == "Todos" or t.get("estado") == estado_filtro
             coincide_tipo = tipo_filtro == "Todos" or t.get("tipo_tecnica") == tipo_filtro
-            coincide_texto = texto_filtro.lower() in t.get("id_activo_tecnico", "").lower() or \
-                             texto_filtro.lower() in t.get("descripcion", "").lower() or \
-                             texto_filtro.lower() in t.get("tipo_tecnica", "").lower()
+            coincide_texto = texto_filtro.lower() in str(t.get("id_activo_tecnico", "")).lower() or \
+                             texto_filtro.lower() in str(t.get("descripcion", "")).lower() or \
+                             texto_filtro.lower() in str(t.get("tipo_tecnica", "")).lower()
             if coincide_estado and coincide_tipo and coincide_texto:
                 filtradas.append(t)
 
@@ -130,7 +128,6 @@ def app():
         if nuevos_datos:
             coleccion.update_one({"_id": datos["_id"]}, {"$set": nuevos_datos})
             registrar_evento_historial({
-                "tipo_evento": "Edición de tarea técnica",
                 "id_activo_tecnico": nuevos_datos["id_activo_tecnico"],
                 "usuario": nuevos_datos["usuario_registro"],
                 "descripcion": f"Tarea técnica editada: {nuevos_datos['descripcion'][:60]}..."
@@ -146,7 +143,6 @@ def app():
         if st.button("Eliminar definitivamente"):
             coleccion.delete_one({"_id": datos["_id"]})
             registrar_evento_historial({
-                "tipo_evento": "Baja de tarea técnica",
                 "id_activo_tecnico": datos.get("id_activo_tecnico", ""),
                 "usuario": datos.get("usuario_registro", "desconocido"),
                 "descripcion": f"Se eliminó tarea: {datos.get('descripcion', '')[:60]}..."
