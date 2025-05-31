@@ -8,7 +8,6 @@ Registra automáticamente los eventos en la colección `historial` para trazabil
 - ISO 14224 (Información sobre confiabilidad y mantenimiento de activos)
 - ISO 55000 (Gestión de activos)
 - ISO 9001:2015 (Trazabilidad y control documental en mantenimiento)
-
 """
 
 import streamlit as st
@@ -81,15 +80,31 @@ def app():
             st.success("Activo técnico agregado correctamente.")
 
     elif choice == "Ver":
-        st.subheader("📋 Lista de activos técnicos agrupados por tipo")
-        st.markdown("<br><br>", unsafe_allow_html=True)
+        st.subheader("📋 Lista de activos técnicos filtrable")
 
         activos = list(coleccion.find())
         if not activos:
             st.info("No hay activos cargados.")
+            return
+
+        tipos_existentes = sorted(set([a.get("tipo", "⛔ Sin Tipo") for a in activos]))
+        tipo_filtro = st.selectbox("Filtrar por tipo de activo", ["Todos"] + tipos_existentes)
+
+        texto_filtro = st.text_input("🔍 Buscar por nombre o ID")
+
+        # Aplicar filtros
+        filtrados = []
+        for a in activos:
+            coincide_tipo = (tipo_filtro == "Todos") or (a.get("tipo") == tipo_filtro)
+            coincide_texto = texto_filtro.lower() in a.get("nombre", "").lower() or texto_filtro.lower() in a.get("id_activo_tecnico", "").lower()
+            if coincide_tipo and coincide_texto:
+                filtrados.append(a)
+
+        if not filtrados:
+            st.warning("No se encontraron activos con esos filtros.")
         else:
             agrupados = {}
-            for a in activos:
+            for a in filtrados:
                 tipo = a.get("tipo", "⛔ Sin Tipo")
                 agrupados.setdefault(tipo, []).append(a)
 
