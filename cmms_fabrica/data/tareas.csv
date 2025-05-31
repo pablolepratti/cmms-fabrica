@@ -1,4 +1,0 @@
-id_tarea,id_maquina,descripcion,tipo_tarea,origen,ultima_ejecucion,proxima_ejecucion,estado,observaciones
-T001,COMP_SCHULZ,Verificar nivel de aceite y purgar condensado,mantenimiento,mensual,2025-03-15,2025-04-15,pendiente,
-T002,BOMBA_INCENDIO,Prueba de arranque semanal y control visual,mantenimiento,mensual,2025-03-18,2025-04-18,pendiente,
-T003,RED_AIRE,Verificar estado de cañerías y pérdidas,inspección,mensual,2025-03-20,2025-04-20,pendiente,

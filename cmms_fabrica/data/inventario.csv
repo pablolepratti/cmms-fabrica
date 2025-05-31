@@ -1,4 +1,0 @@
-id_item,descripcion,tipo,cantidad,unidad,ubicacion,destino,uso_destino,maquina_compatible,stock_minimo,proveedor,ultima_actualizacion,observaciones
-REP_001,Correa BXS 81,repuesto,2,unidades,Estante A3,Técnica - maquina - COMP_SCHULZ,interno,COMP_SCHULZ,1,Correas del Sur,2025-04-15,Usar solo si la otra se rompe
-INS_001,Grasa Caplex M-2 ATOX,insumo,10,cartuchos,Estante medio,Técnica - sistema - RED_AIRE,interno,varios,3,Lubricantes Pardo,2025-04-14,Grado alimenticio
-INS_002,Cinta térmica selladora,insumo,25,rollos,Depósito Logística,Externo - cliente - EMPRESA_X,externo,-,5,Insumos Flex,2025-04-14,Se entrega por contrato

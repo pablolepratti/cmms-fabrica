@@ -1,2 +1,0 @@
-id_servicio,id_activo,empresa,fecha_realizacion,descripcion,periodicidad,proxima_fecha,estado,responsable_fabrica,observaciones
-SERV_001,COMP_ATLAS,Compresores S.A.,2025-03-12,Mantenimiento bimensual estándar,bimensual,2025-05-12,realizado,pablo,Todo en condiciones
