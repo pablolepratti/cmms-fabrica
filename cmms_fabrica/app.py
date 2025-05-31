@@ -49,7 +49,7 @@ menu = [
 ]
 menu = [m for m in menu if m is not None]
 
-opcion = st.sidebar.selectbox("Menú principal", menu)
+opcion = st.sidebar.radio("Menú principal", menu)
 
 # 🧭 Enrutamiento
 if opcion == "🏠 Inicio":
