@@ -1,17 +1,38 @@
+"""
+🗓️ CRUD de Planes Preventivos – CMMS Fábrica
+
+Este módulo permite registrar, visualizar, editar y eliminar planes preventivos asociados a activos técnicos.
+Cada acción se registra en la colección `historial` para trazabilidad operativa y auditorías.
+
+✅ Normas aplicables:
+- ISO 55001 (Gestión del ciclo de vida del activo)
+- ISO 9001:2015 (Gestión de planificación, ejecución y control)
+- ISO 14224 (Mantenimiento preventivo documentado y rastreable)
+"""
+
 import streamlit as st
 from datetime import datetime
 from modulos.conexion_mongo import db
 
 coleccion = db["planes_preventivos"]
+historial = db["historial"]
+
+def registrar_evento_historial(evento):
+    historial.insert_one({
+        "tipo_evento": evento["tipo_evento"],
+        "id_activo_tecnico": evento.get("id_activo_tecnico"),
+        "descripcion": evento.get("descripcion", ""),
+        "usuario": evento.get("usuario"),
+        "fecha_evento": datetime.now(),
+        "modulo": "planes_preventivos"
+    })
 
 def app():
-
     st.title("🗓️ Gestión de Planes Preventivos")
 
     menu = ["Registrar Plan", "Ver Planes", "Editar Plan", "Eliminar Plan"]
-    choice = st.sidebar.selectbox("Acción", menu)
+    choice = st.sidebar.radio("Acción", menu)
 
-    # Formulario de plan preventivo
     def form_plan(defaults=None):
         with st.form("form_plan_preventivo"):
             id_plan = st.text_input("ID del Plan", value=defaults.get("id_plan") if defaults else "")
@@ -49,15 +70,19 @@ def app():
             return data
         return None
 
-    # Registrar plan
     if choice == "Registrar Plan":
         st.subheader("➕ Nuevo Plan Preventivo")
         data = form_plan()
         if data:
             coleccion.insert_one(data)
+            registrar_evento_historial({
+                "tipo_evento": "Alta de plan preventivo",
+                "id_activo_tecnico": data["id_activo_tecnico"],
+                "usuario": data["usuario_registro"],
+                "descripcion": f"Plan '{data['id_plan']}' registrado con frecuencia {data['frecuencia']} {data['unidad_frecuencia']}"
+            })
             st.success("Plan preventivo registrado correctamente.")
 
-    # Ver planes
     elif choice == "Ver Planes":
         st.subheader("📋 Planes Preventivos Registrados")
         st.markdown("<br><br>", unsafe_allow_html=True)
@@ -71,16 +96,13 @@ def app():
             proxima_fecha = p.get("proxima_fecha", "Sin Fecha")
             observaciones = p.get("observaciones", "")
 
-            # Intentar convertir la fecha
             try:
                 fecha_obj = datetime.strptime(proxima_fecha, "%Y-%m-%d").date() if isinstance(proxima_fecha, str) else proxima_fecha
             except:
                 fecha_obj = None
 
-            # Determinar si está vencido
             vencido = fecha_obj and fecha_obj < hoy
 
-            # Mostrar con estilo
             if vencido:
                 st.markdown(
                     f"<span style='color:red; font-weight:bold'>🚨 {id_plan} ({estado}) - VENCIDO el {proxima_fecha}</span>",
@@ -92,20 +114,23 @@ def app():
             st.write(observaciones)
             st.write("---")
 
-    # Editar plan
     elif choice == "Editar Plan":
         st.subheader("✏️ Editar Plan Preventivo")
         planes = list(coleccion.find())
         opciones = {f"{p['id_plan']} - {p['id_activo_tecnico']}": p for p in planes}
         seleccion = st.selectbox("Seleccionar plan", list(opciones.keys()))
         datos = opciones[seleccion]
-
         nuevos_datos = form_plan(defaults=datos)
         if nuevos_datos:
             coleccion.update_one({"_id": datos["_id"]}, {"$set": nuevos_datos})
+            registrar_evento_historial({
+                "tipo_evento": "Edición de plan preventivo",
+                "id_activo_tecnico": nuevos_datos["id_activo_tecnico"],
+                "usuario": nuevos_datos["usuario_registro"],
+                "descripcion": f"Plan '{nuevos_datos['id_plan']}' fue editado"
+            })
             st.success("Plan actualizado correctamente.")
 
-    # Eliminar plan
     elif choice == "Eliminar Plan":
         st.subheader("🗑️ Eliminar Plan Preventivo")
         planes = list(coleccion.find())
@@ -114,6 +139,12 @@ def app():
         datos = opciones[seleccion]
         if st.button("Eliminar definitivamente"):
             coleccion.delete_one({"_id": datos["_id"]})
+            registrar_evento_historial({
+                "tipo_evento": "Baja de plan preventivo",
+                "id_activo_tecnico": datos.get("id_activo_tecnico"),
+                "usuario": datos.get("usuario_registro", "desconocido"),
+                "descripcion": f"Se eliminó el plan '{datos.get('id_plan', '')}'"
+            })
             st.success("Plan eliminado.")
 
 if __name__ == "__main__":
