@@ -76,16 +76,26 @@ def app():
             st.success("Observación registrada correctamente.")
 
     elif choice == "Ver Observaciones":
-        st.subheader("👁️ Observaciones Técnicas Registradas")
+        st.subheader("👁️ Observaciones Técnicas por Activo Técnico")
+        st.markdown("<br>", unsafe_allow_html=True)
+
         observaciones = list(coleccion.find().sort("fecha_evento", -1))
-        for o in observaciones:
-            id_activo = o.get("id_activo_tecnico", "⛔ Sin ID")
-            fecha = o.get("fecha_evento", "Sin Fecha")
-            tipo = o.get("tipo_observacion", "Sin Tipo")
-            descripcion = o.get("descripcion", "")
-            st.markdown(f"**{id_activo}** - {fecha} - {tipo}")
-            st.write(descripcion)
-            st.write("---")
+
+        if observaciones:
+            activos = sorted(set(str(o.get("id_activo_tecnico") or "⛔ Sin ID") for o in observaciones))
+            for activo in activos:
+                st.markdown(f"### 🏷️ Activo Técnico: `{activo}`")
+                observaciones_activo = [o for o in observaciones if str(o.get("id_activo_tecnico") or "⛔ Sin ID") == activo]
+                for o in observaciones_activo:
+                    fecha = o.get("fecha_evento", "Sin Fecha")
+                    tipo = o.get("tipo_observacion", "Sin Tipo")
+                    estado = o.get("estado", "Sin Estado")
+                    descripcion = o.get("descripcion", "")
+                    st.markdown(f"- 📅 **{fecha}** | 🔍 **Tipo:** {tipo} | 🛠️ **Estado:** {estado}")
+                    st.write(descripcion)
+                st.markdown("---")
+        else:
+            st.info("No hay observaciones registradas.")
 
     elif choice == "Editar Observación":
         st.subheader("✏️ Editar Observación Técnica")
