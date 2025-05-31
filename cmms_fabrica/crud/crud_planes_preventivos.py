@@ -84,35 +84,43 @@ def app():
             st.success("Plan preventivo registrado correctamente.")
 
     elif choice == "Ver Planes":
-        st.subheader("📋 Planes Preventivos Registrados")
-        st.markdown("<br><br>", unsafe_allow_html=True)
+        st.subheader("📋 Planes Preventivos por Activo Técnico")
+        st.markdown("<br>", unsafe_allow_html=True)
 
         planes = list(coleccion.find().sort("proxima_fecha", 1))
         hoy = datetime.today().date()
 
-        for p in planes:
-            id_plan = p.get("id_plan", "Sin ID")
-            estado = p.get("estado", "Sin Estado")
-            proxima_fecha = p.get("proxima_fecha", "Sin Fecha")
-            observaciones = p.get("observaciones", "")
+        if planes:
+            activos = sorted(set(str(p.get("id_activo_tecnico") or "⛔ Sin ID") for p in planes))
+            for activo in activos:
+                st.markdown(f"### 🏷️ Activo Técnico: `{activo}`")
+                planes_activo = [p for p in planes if str(p.get("id_activo_tecnico") or "⛔ Sin ID") == activo]
 
-            try:
-                fecha_obj = datetime.strptime(proxima_fecha, "%Y-%m-%d").date() if isinstance(proxima_fecha, str) else proxima_fecha
-            except:
-                fecha_obj = None
+                for p in planes_activo:
+                    id_plan = p.get("id_plan", "Sin ID")
+                    estado = p.get("estado", "Sin Estado")
+                    proxima_fecha = p.get("proxima_fecha", "Sin Fecha")
+                    observaciones = p.get("observaciones", "")
 
-            vencido = fecha_obj and fecha_obj < hoy
+                    try:
+                        fecha_obj = datetime.strptime(proxima_fecha, "%Y-%m-%d").date() if isinstance(proxima_fecha, str) else proxima_fecha
+                    except:
+                        fecha_obj = None
 
-            if vencido:
-                st.markdown(
-                    f"<span style='color:red; font-weight:bold'>🚨 {id_plan} ({estado}) - VENCIDO el {proxima_fecha}</span>",
-                    unsafe_allow_html=True
-                )
-            else:
-                st.markdown(f"**{id_plan}** ({estado}) - Próxima: {proxima_fecha}")
+                    vencido = fecha_obj and fecha_obj < hoy
 
-            st.write(observaciones)
-            st.write("---")
+                    if vencido:
+                        st.markdown(
+                            f"<span style='color:red; font-weight:bold'>🚨 {id_plan} ({estado}) - VENCIDO el {proxima_fecha}</span>",
+                            unsafe_allow_html=True
+                        )
+                    else:
+                        st.markdown(f"**{id_plan}** ({estado}) - Próxima: {proxima_fecha}")
+
+                    st.write(observaciones)
+                st.markdown("---")
+        else:
+            st.info("No hay planes preventivos registrados.")
 
     elif choice == "Editar Plan":
         st.subheader("✏️ Editar Plan Preventivo")
