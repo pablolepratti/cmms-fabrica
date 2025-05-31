@@ -11,7 +11,6 @@ def app():
     menu = ["Registrar Falla", "Ver Tareas", "Editar Tarea", "Eliminar Tarea"]
     choice = st.sidebar.selectbox("Acción", menu)
     
-    # Formulario de carga de tarea correctiva
     def form_tarea(defaults=None):
         with st.form("form_tarea_correctiva"):
             id_activo = st.text_input("ID del Activo Técnico", value=defaults.get("id_activo_tecnico") if defaults else "")
@@ -27,11 +26,11 @@ def app():
             responsable = st.text_input("Responsable de la Reparación", value=defaults.get("responsable") if defaults else "")
             proveedor_externo = st.text_input("Proveedor Externo (si aplica)", value=defaults.get("proveedor_externo") if defaults else "")
             estado = st.selectbox("Estado", ["Abierta", "En proceso", "Cerrada"],
-                                  index=["Abierta", "En proceso", "Cerrada"].index(defaults.get("estado")) if defaults else 0)
+                                  index=["Abierta", "En proceso", "Cerrada"].index(defaults.get("estado")) if defaults and defaults.get("estado") in ["Abierta", "En proceso", "Cerrada"] else 0)
             usuario = st.text_input("Usuario que registra", value=defaults.get("usuario_registro") if defaults else "")
             observaciones = st.text_area("Observaciones adicionales", value=defaults.get("observaciones") if defaults else "")
             submit = st.form_submit_button("Guardar Tarea")
-    
+
         if submit:
             data = {
                 "id_activo_tecnico": id_activo,
@@ -61,34 +60,40 @@ def app():
         if data:
             coleccion.insert_one(data)
             st.success("Tarea correctiva registrada correctamente.")
-    
+
     # Ver tareas existentes
     elif choice == "Ver Tareas":
         st.subheader("📋 Tareas Correctivas Registradas")
         tareas = list(coleccion.find().sort("fecha_evento", -1))
+
         for t in tareas:
-            st.markdown(f"**{t['id_activo_tecnico']}** ({t['estado']}) - {t['fecha_evento']}")
-            st.write(t['descripcion_falla'])
+            id_activo = t.get("id_activo_tecnico", "⛔ Sin ID")
+            estado = t.get("estado", "Sin Estado")
+            fecha = t.get("fecha_evento") or t.get("fecha_reporte", "Sin Fecha")
+            descripcion = t.get("descripcion_falla") or t.get("descripcion", "")
+
+            st.markdown(f"**{id_activo}** ({estado}) - {fecha}")
+            st.write(descripcion)
             st.write("---")
-    
+
     # Editar tarea existente
     elif choice == "Editar Tarea":
         st.subheader("✏️ Editar Tarea Correctiva")
         tareas = list(coleccion.find())
-        opciones = {f"{t['id_activo_tecnico']} - {t['descripcion_falla'][:30]}": t for t in tareas}
+        opciones = {f"{t.get('id_activo_tecnico', '⛔ Sin ID')} - {t.get('descripcion_falla', '')[:30] or t.get('descripcion', '')[:30]}": t for t in tareas}
         seleccion = st.selectbox("Seleccionar tarea", list(opciones.keys()))
         datos = opciones[seleccion]
-    
+
         nuevos_datos = form_tarea(defaults=datos)
         if nuevos_datos:
             coleccion.update_one({"_id": datos["_id"]}, {"$set": nuevos_datos})
             st.success("Tarea actualizada correctamente.")
-    
+
     # Eliminar tarea
     elif choice == "Eliminar Tarea":
         st.subheader("🗑️ Eliminar Tarea Correctiva")
         tareas = list(coleccion.find())
-        opciones = {f"{t['id_activo_tecnico']} - {t['descripcion_falla'][:30]}": t for t in tareas}
+        opciones = {f"{t.get('id_activo_tecnico', '⛔ Sin ID')} - {t.get('descripcion_falla', '')[:30] or t.get('descripcion', '')[:30]}": t for t in tareas}
         seleccion = st.selectbox("Seleccionar tarea", list(opciones.keys()))
         datos = opciones[seleccion]
         if st.button("Eliminar definitivamente"):
