@@ -22,7 +22,7 @@ coleccion = db["historial"]
 class PDF(FPDF):
     def header(self):
         self.set_font("Arial", "B", 14)
-        self.cell(0, 10, "📄 Reporte de Eventos Técnicos", ln=True, align="C")
+        self.cell(0, 10, "Reporte de Eventos Técnicos", ln=True, align="C")
         self.ln(5)
 
     def chapter_title(self, title):
@@ -39,14 +39,15 @@ class PDF(FPDF):
         self.set_font("Arial", "", 9)
         for _, row in df.iterrows():
             for val in row[:5]:
-                self.cell(38, 8, str(val)[:18], border=1)
+                clean_val = str(val).encode('ascii', 'ignore').decode('ascii')
+                self.cell(38, 8, clean_val[:18], border=1)
             self.ln()
 
 def generar_pdf(df, nombre):
     pdf = PDF()
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
-    pdf.chapter_title(f"Reporte generado el {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+    pdf.chapter_title("Reporte generado el " + datetime.now().strftime("%Y-%m-%d %H:%M"))
     pdf.chapter_body(df)
     os.makedirs("reportes", exist_ok=True)
     ruta = f"reportes/reporte_{nombre.lower().replace(' ', '_')}.pdf"
@@ -83,15 +84,18 @@ def app():
     df = pd.DataFrame(datos)
     df["fecha_evento"] = pd.to_datetime(df["fecha_evento"])
     columnas = ["fecha_evento", "tipo_evento", "id_activo_tecnico", "descripcion", "usuario_registro"]
+
     st.dataframe(df[columnas].sort_values("fecha_evento", ascending=False), use_container_width=True)
 
     if st.button("📄 Generar PDF del reporte"):
-        archivo = generar_pdf(df[columnas], "historial")
+        # Limpiar caracteres no soportados
+        df_clean = df[columnas].applymap(lambda x: str(x).encode('ascii', 'ignore').decode('ascii') if isinstance(x, str) else x)
+        archivo = generar_pdf(df_clean, "historial")
         with open(archivo, "rb") as f:
             st.download_button(
                 label="⬇️ Descargar PDF",
                 data=f,
-                file_name=archivo.split("/")[-1],
+                file_name=os.path.basename(archivo),
                 mime="application/pdf"
             )
 
