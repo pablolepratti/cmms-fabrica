@@ -1,16 +1,39 @@
+"""
+🔧 CRUD de Activos Técnicos – CMMS Fábrica
+
+Este módulo permite la gestión completa de activos técnicos (agregar, ver, editar, eliminar).
+Registra automáticamente los eventos en la colección `historial` para trazabilidad completa.
+
+✅ Normas aplicables:
+- ISO 14224 (Información sobre confiabilidad y mantenimiento de activos)
+- ISO 55000 (Gestión de activos)
+- ISO 9001:2015 (Trazabilidad y control documental en mantenimiento)
+
+"""
+
 import streamlit as st
 from datetime import datetime
 from modulos.conexion_mongo import db
 
 coleccion = db["activos_tecnicos"]
+historial = db["historial"]
+
+def registrar_evento_historial(evento):
+    historial.insert_one({
+        "tipo_evento": evento["tipo_evento"],
+        "id_activo_tecnico": evento.get("id_activo_tecnico"),
+        "descripcion": evento.get("descripcion", ""),
+        "usuario": evento.get("usuario"),
+        "fecha_evento": datetime.now(),
+        "modulo": "activos_tecnicos"
+    })
 
 def app():
     st.title("🔧 Gestión de Activos Técnicos")
 
     menu = ["Agregar", "Ver", "Editar", "Eliminar"]
-    choice = st.sidebar.selectbox("Acción", menu)
+    choice = st.sidebar.radio("Acción", menu)
 
-    # Campos comunes
     def form_activo(defaults=None):
         opciones_tipo = ["Sistema General", "Infraestructura", "Administración", "Producción",
                          "Logística", "Mantenimiento", "Instrumento Laboratorio", "Equipo en Cliente"]
@@ -19,7 +42,6 @@ def app():
         tipo_default = defaults.get("tipo") if defaults else None
         estado_default = defaults.get("estado") if defaults else None
 
-        # Index seguros
         tipo_index = opciones_tipo.index(tipo_default) if tipo_default in opciones_tipo else 0
         estado_index = opciones_estado.index(estado_default) if estado_default in opciones_estado else 0
 
@@ -45,33 +67,32 @@ def app():
 
         return None
 
-    # Agregar
     if choice == "Agregar":
         st.subheader("➕ Agregar nuevo activo técnico")
         data = form_activo()
         if data:
             coleccion.insert_one(data)
+            registrar_evento_historial({
+                "tipo_evento": "Alta de activo técnico",
+                "id_activo_tecnico": data["id_activo_tecnico"],
+                "usuario": data["usuario_registro"],
+                "descripcion": f"Se dio de alta el activo '{data['nombre']}'"
+            })
             st.success("Activo técnico agregado correctamente.")
 
-    # Ver
     elif choice == "Ver":
         st.subheader("📋 Lista de activos técnicos agrupados por tipo")
-       
         st.markdown("<br><br>", unsafe_allow_html=True)
 
         activos = list(coleccion.find())
         if not activos:
             st.info("No hay activos cargados.")
         else:
-            # Agrupar por tipo
             agrupados = {}
             for a in activos:
                 tipo = a.get("tipo", "⛔ Sin Tipo")
-                if tipo not in agrupados:
-                    agrupados[tipo] = []
-                agrupados[tipo].append(a)
+                agrupados.setdefault(tipo, []).append(a)
 
-            # Mostrar por grupo ordenado alfabéticamente
             for tipo, lista in sorted(agrupados.items()):
                 st.markdown(f"<h4 style='text-align: left; margin-bottom: 0.5em;'>🔹 {tipo}</h4>", unsafe_allow_html=True)
                 for a in lista:
@@ -80,8 +101,6 @@ def app():
                     id_activo = a.get("id_activo_tecnico", "⛔ Sin ID")
                     st.markdown(f"- **{id_activo}** – {nombre} ({estado})")
 
-
-    # Editar
     elif choice == "Editar":
         st.subheader("✏️ Editar activo técnico")
         activos = list(coleccion.find())
@@ -93,11 +112,16 @@ def app():
             nuevos_datos = form_activo(defaults=datos)
             if nuevos_datos:
                 coleccion.update_one({"_id": datos["_id"]}, {"$set": nuevos_datos})
+                registrar_evento_historial({
+                    "tipo_evento": "Edición de activo técnico",
+                    "id_activo_tecnico": nuevos_datos["id_activo_tecnico"],
+                    "usuario": nuevos_datos["usuario_registro"],
+                    "descripcion": f"Se editó el activo '{nuevos_datos['nombre']}'"
+                })
                 st.success("Activo técnico actualizado correctamente.")
         else:
             st.info("No hay activos cargados.")
 
-    # Eliminar
     elif choice == "Eliminar":
         st.subheader("🗑️ Eliminar activo técnico")
         activos = list(coleccion.find())
@@ -107,10 +131,15 @@ def app():
             datos = opciones[seleccion]
             if st.button("Eliminar definitivamente"):
                 coleccion.delete_one({"_id": datos["_id"]})
+                registrar_evento_historial({
+                    "tipo_evento": "Baja de activo técnico",
+                    "id_activo_tecnico": datos.get("id_activo_tecnico"),
+                    "usuario": datos.get("usuario_registro", "desconocido"),
+                    "descripcion": f"Se eliminó el activo '{datos.get('nombre', '')}'"
+                })
                 st.success("Activo técnico eliminado.")
         else:
             st.info("No hay activos cargados.")
 
 if __name__ == "__main__":
     app()
-
