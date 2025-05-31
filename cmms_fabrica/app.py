@@ -18,7 +18,11 @@ from crud.crud_calibraciones_instrumentos import app as crud_calibraciones
 from crud.crud_servicios_externos import app as crud_servicios
 from crud.dashboard_kpi_historial import app as kpi_historial
 
+# Módulo de usuarios (admin)
 from modulos.app_usuarios import app_usuarios
+
+# Reportes técnicos
+from modulos.app_reportes import app as app_reportes
 
 # 📱 Estilos responsive
 mobile()
@@ -34,7 +38,7 @@ with st.sidebar:
     st.markdown(f"👤 **{usuario}** ({rol})")
     st.button("Cerrar sesión", on_click=cerrar_sesion, use_container_width=True)
 
-# 📋 Menú lateral (solo CMMS nuevo)
+# 📋 Menú lateral (CMMS nuevo completo)
 menu = [
     "🏠 Inicio",
     "🧱 Activos Técnicos",
@@ -45,6 +49,7 @@ menu = [
     "🧪 Calibraciones",
     "🏢 Servicios Técnicos",
     "📊 KPIs Globales",
+    "📄 Reportes Técnicos",
     "👥 Usuarios" if rol == "admin" else None,
 ]
 menu = [m for m in menu if m is not None]
@@ -79,6 +84,9 @@ elif opcion == "🏢 Servicios Técnicos":
 
 elif opcion == "📊 KPIs Globales":
     kpi_historial()
+
+elif opcion == "📄 Reportes Técnicos":
+    app_reportes()
 
 elif opcion == "👥 Usuarios" and rol == "admin":
     app_usuarios(usuario, rol)
