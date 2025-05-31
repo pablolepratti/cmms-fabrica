@@ -19,7 +19,6 @@ from crud.crud_servicios_externos import app as crud_servicios
 from crud.dashboard_kpi_historial import app as kpi_historial
 
 from modulos.app_usuarios import app_usuarios
-from modulos.cambiar_ids_generales import cambiar_ids_generales
 
 # 📱 Estilos responsive
 mobile()
@@ -84,6 +83,3 @@ elif opcion == "📊 KPIs Globales":
 
 elif opcion == "👥 Usuarios" and rol == "admin":
     app_usuarios(usuario, rol)
-
-elif opcion == "✏️ Cambiar IDs manuales" and rol == "admin":
-    cambiar_ids_generales()
