@@ -93,5 +93,8 @@ elif opcion == "📊 KPIs Globales":
 elif opcion == "📄 Reportes Técnicos":
     app_reportes()
 
+elif opcion == "🆔 Cambiar IDs manuales":
+    cambiar_ids()
+
 elif opcion == "👥 Usuarios" and rol == "admin":
     app_usuarios(usuario, rol)
