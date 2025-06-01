@@ -27,78 +27,60 @@ def registrar_evento_historial(evento):
         "modulo": "tareas_correctivas"
     })
 
+def form_tarea(defaults=None):
+    with st.form("form_tarea_correctiva"):
+
+        activos = list(db["activos_tecnicos"].find({}, {"_id": 0, "id_activo_tecnico": 1}))
+        ids_activos = sorted([a["id_activo_tecnico"] for a in activos if "id_activo_tecnico" in a])
+        id_default = defaults.get("id_activo_tecnico") if defaults else None
+        index_default = ids_activos.index(id_default) if id_default in ids_activos else 0 if ids_activos else -1
+
+        id_activo = st.selectbox("ID del Activo Técnico", ids_activos, index=index_default) if ids_activos else st.text_input("ID del Activo Técnico")
+
+        fecha_evento = st.date_input("Fecha del Evento", value=defaults.get("fecha_evento") if defaults else datetime.today())
+        descripcion_falla = st.text_area("Descripción de la Falla", value=defaults.get("descripcion_falla") if defaults else "")
+        modo_falla = st.text_input("Modo de Falla", value=defaults.get("modo_falla") if defaults else "")
+        
+        rca_requerido = st.checkbox("¿Requiere Análisis de Causa Raíz?", value=defaults.get("rca_requerido") if defaults else False)
+        rca_completado = st.checkbox("RCA Completado", value=defaults.get("rca_completado") if defaults else False)
+        causa_raiz = st.text_input("Causa Raíz", value=defaults.get("causa_raiz") if defaults else "")
+        metodo_rca = st.text_input("Método RCA", value=defaults.get("metodo_rca") if defaults else "")
+        acciones_rca = st.text_area("Acciones Derivadas del RCA", value=defaults.get("acciones_rca") if defaults else "")
+        usuario_rca = st.text_input("Usuario Responsable del RCA", value=defaults.get("usuario_rca") if defaults else "")
+        responsable = st.text_input("Responsable de la Reparación", value=defaults.get("responsable") if defaults else "")
+        proveedor_externo = st.text_input("Proveedor Externo (si aplica)", value=defaults.get("proveedor_externo") if defaults else "")
+        estado = st.selectbox("Estado", ["Abierta", "En proceso", "Cerrada"],
+                              index=["Abierta", "En proceso", "Cerrada"].index(defaults.get("estado")) if defaults and defaults.get("estado") in ["Abierta", "En proceso", "Cerrada"] else 0)
+        usuario = st.text_input("Usuario que registra", value=defaults.get("usuario_registro") if defaults else "")
+        observaciones = st.text_area("Observaciones adicionales", value=defaults.get("observaciones") if defaults else "")
+        submit = st.form_submit_button("Guardar Tarea")
+
+    if submit:
+        return {
+            "id_activo_tecnico": id_activo,
+            "fecha_evento": str(fecha_evento),
+            "descripcion_falla": descripcion_falla,
+            "modo_falla": modo_falla,
+            "rca_requerido": rca_requerido,
+            "rca_completado": rca_completado,
+            "causa_raiz": causa_raiz,
+            "metodo_rca": metodo_rca,
+            "acciones_rca": acciones_rca,
+            "usuario_rca": usuario_rca,
+            "responsable": responsable,
+            "proveedor_externo": proveedor_externo,
+            "estado": estado,
+            "usuario_registro": usuario,
+            "observaciones": observaciones,
+            "fecha_registro": datetime.now()
+        }
+    return None
+
 def app():
     st.title("🛠️ Gestión de Tareas Correctivas")
 
     menu = ["Registrar Falla", "Ver Tareas", "Editar Tarea", "Eliminar Tarea"]
     choice = st.sidebar.radio("Acción", menu)
-
-    def form_tarea(defaults=None):
-        with st.form("form_tarea_correctiva"):
-
-            # Obtener activos técnicos con jerarquía
-            activos = list(db["activos_tecnicos"].find({}, {"_id": 0, "id_activo_tecnico": 1, "pertenece_a": 1}))
-            id_map = {
-                a["id_activo_tecnico"]: (
-                    f"{a['id_activo_tecnico']} (pertenece a {a['pertenece_a']})" if a.get("pertenece_a")
-                    else a["id_activo_tecnico"]
-                )
-                for a in activos if "id_activo_tecnico" in a
-            }
-            ids_visibles = sorted(id_map.values())
-
-            id_default = defaults.get("id_activo_tecnico") if defaults else None
-            label_default = id_map.get(id_default, id_default)
-            index_default = ids_visibles.index(label_default) if label_default in ids_visibles else 0 if ids_visibles else -1
-
-            if ids_visibles:
-                seleccion_visible = st.selectbox("ID del Activo Técnico", ids_visibles, index=index_default)
-                id_activo = next((k for k, v in id_map.items() if v == seleccion_visible), seleccion_visible)
-            else:
-                id_activo = st.text_input("ID del Activo Técnico")
-
-            fecha_evento = st.date_input("Fecha del Evento", value=defaults.get("fecha_evento") if defaults else datetime.today())
-            descripcion_falla = st.text_area("Descripción de la Falla", value=defaults.get("descripcion_falla") if defaults else "")
-            modo_falla = st.text_input("Modo de Falla", value=defaults.get("modo_falla") if defaults else "")
-            
-            rca_requerido = st.checkbox("¿Requiere Análisis de Causa Raíz?", value=defaults.get("rca_requerido") if defaults else False)
-            if rca_requerido:
-                st.info("📌 El análisis de causa raíz (RCA) busca identificar el origen real del problema para evitar que se repita. "
-                        "Se recomienda usar métodos como 5 Porqués, Ishikawa o AMFE. Documentá la causa, el método y las acciones derivadas.")
-
-            rca_completado = st.checkbox("RCA Completado", value=defaults.get("rca_completado") if defaults else False)
-            causa_raiz = st.text_input("Causa Raíz", value=defaults.get("causa_raiz") if defaults else "")
-            metodo_rca = st.text_input("Método RCA", value=defaults.get("metodo_rca") if defaults else "")
-            acciones_rca = st.text_area("Acciones Derivadas del RCA", value=defaults.get("acciones_rca") if defaults else "")
-            usuario_rca = st.text_input("Usuario Responsable del RCA", value=defaults.get("usuario_rca") if defaults else "")
-            responsable = st.text_input("Responsable de la Reparación", value=defaults.get("responsable") if defaults else "")
-            proveedor_externo = st.text_input("Proveedor Externo (si aplica)", value=defaults.get("proveedor_externo") if defaults else "")
-            estado = st.selectbox("Estado", ["Abierta", "En proceso", "Cerrada"],
-                                  index=["Abierta", "En proceso", "Cerrada"].index(defaults.get("estado")) if defaults and defaults.get("estado") in ["Abierta", "En proceso", "Cerrada"] else 0)
-            usuario = st.text_input("Usuario que registra", value=defaults.get("usuario_registro") if defaults else "")
-            observaciones = st.text_area("Observaciones adicionales", value=defaults.get("observaciones") if defaults else "")
-            submit = st.form_submit_button("Guardar Tarea")
-
-        if submit:
-            return {
-                "id_activo_tecnico": id_activo,
-                "fecha_evento": str(fecha_evento),
-                "descripcion_falla": descripcion_falla,
-                "modo_falla": modo_falla,
-                "rca_requerido": rca_requerido,
-                "rca_completado": rca_completado,
-                "causa_raiz": causa_raiz,
-                "metodo_rca": metodo_rca,
-                "acciones_rca": acciones_rca,
-                "usuario_rca": usuario_rca,
-                "responsable": responsable,
-                "proveedor_externo": proveedor_externo,
-                "estado": estado,
-                "usuario_registro": usuario,
-                "observaciones": observaciones,
-                "fecha_registro": datetime.now()
-            }
-        return None
 
     if choice == "Registrar Falla":
         st.subheader("➕ Nueva Tarea Correctiva")
@@ -143,21 +125,20 @@ def app():
             st.markdown(f"### 🏷️ Activo Técnico: `{activo}`")
             tareas_activo = [t for t in filtradas if t.get("id_activo_tecnico") == activo]
             for t in tareas_activo:
-                fecha = t.get("fecha_evento") or t.get("fecha_reporte", "Sin Fecha")
+                fecha = t.get("fecha_evento", "Sin Fecha")
                 estado = t.get("estado", "Sin Estado")
                 descripcion = t.get("descripcion_falla") or t.get("descripcion", "")
                 st.markdown(f"- 📅 **{fecha}** | 🛠️ **Estado:** {estado}")
-                st.write(f"{descripcion}")
+                st.write(descripcion)
             st.markdown("---")
 
     elif choice == "Editar Tarea":
         st.subheader("✏️ Editar Tarea Correctiva")
-        tareas = list(coleccion.find())
+        tareas = [t for t in coleccion.find() if t]
         opciones = {
             f"{t.get('id_activo_tecnico', '⛔ Sin ID')} - {t.get('descripcion_falla', '')[:30]}": t
-            for t in tareas
+            for t in tareas if isinstance(t, dict)
         }
-
         seleccion = st.selectbox("Seleccionar tarea", list(opciones.keys()))
         datos = opciones[seleccion]
         nuevos_datos = form_tarea(defaults=datos)
@@ -173,12 +154,11 @@ def app():
 
     elif choice == "Eliminar Tarea":
         st.subheader("🗑️ Eliminar Tarea Correctiva")
-        tareas = list(coleccion.find())
+        tareas = [t for t in coleccion.find() if t]
         opciones = {
             f"{t.get('id_activo_tecnico', '⛔ Sin ID')} - {t.get('descripcion_falla', '')[:30]}": t
-            for t in tareas
+            for t in tareas if isinstance(t, dict)
         }
-
         seleccion = st.selectbox("Seleccionar tarea", list(opciones.keys()))
         datos = opciones[seleccion]
         if st.button("Eliminar definitivamente"):
@@ -193,4 +173,3 @@ def app():
 
 if __name__ == "__main__":
     app()
-
