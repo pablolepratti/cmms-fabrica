@@ -18,6 +18,7 @@ import os
 from io import BytesIO
 
 coleccion = db["historial"]
+activos_tecnicos = db["activos_tecnicos"]
 
 # 🧾 Clase PDF simplificada
 class PDF(FPDF):
@@ -72,10 +73,14 @@ def app():
         fecha_hasta = st.date_input("Hasta", value=date.today())
         tipo_evento = st.multiselect("Tipo de Evento", ["preventiva", "correctiva", "tecnica", "observacion", "calibracion"],
                                      default=["preventiva", "correctiva", "tecnica", "observacion", "calibracion"])
-        filtrar_activo = st.checkbox("Filtrar por activo técnico")
-        id_activo = ""
-        if filtrar_activo:
-            id_activo = st.text_input("ID del activo técnico")
+
+        activos = list(activos_tecnicos.find({}, {"_id": 0, "id_activo_tecnico": 1, "pertenece_a": 1}))
+        opciones = ["Todos"] + sorted([
+            f"{a['id_activo_tecnico']} (pertenece a {a['pertenece_a']})" if a.get("pertenece_a") else a["id_activo_tecnico"]
+            for a in activos
+        ])
+        seleccion = st.selectbox("Activo Técnico (con subactivos)", opciones)
+        id_activo = seleccion.split(" ")[0] if seleccion != "Todos" else None
 
     if fecha_desde > fecha_hasta:
         st.error("⚠️ La fecha 'desde' no puede ser posterior a la fecha 'hasta'.")
@@ -90,8 +95,11 @@ def app():
         "tipo_evento": {"$in": tipo_evento}
     }
 
-    if filtrar_activo and id_activo:
-        query["id_activo_tecnico"] = id_activo
+    if id_activo:
+        subactivos = [a["id_activo_tecnico"] for a in activos if a.get("pertenece_a") == id_activo]
+        ids_filtrados = [id_activo] + subactivos
+        query["id_activo_tecnico"] = {"$in": ids_filtrados}
+        st.sidebar.success(f"Incluyendo {len(subactivos)} subactivo(s) de '{id_activo}'")
 
     datos = list(coleccion.find(query, {"_id": 0}))
     if not datos:
