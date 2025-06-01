@@ -134,7 +134,7 @@ def app():
 
     elif choice == "Editar Tarea":
         st.subheader("✏️ Editar Tarea Correctiva")
-        tareas = [t for t in coleccion.find() if t]
+        tareas = list(coleccion.find())
         opciones = {
             f"{t.get('id_activo_tecnico', '⛔ Sin ID')} - {t.get('descripcion_falla', '')[:30]}": t
             for t in tareas if isinstance(t, dict)
@@ -154,12 +154,14 @@ def app():
                         "descripcion": f"Tarea editada: {nuevos_datos['descripcion_falla'][:60]}..."
                     })
                     st.success("Tarea actualizada correctamente.")
+            else:
+                st.warning("La tarea seleccionada no fue encontrada.")
         else:
             st.info("No hay tareas disponibles para editar.")
 
     elif choice == "Eliminar Tarea":
         st.subheader("🗑️ Eliminar Tarea Correctiva")
-        tareas = [t for t in coleccion.find() if t]
+        tareas = list(coleccion.find())
         opciones = {
             f"{t.get('id_activo_tecnico', '⛔ Sin ID')} - {t.get('descripcion_falla', '')[:30]}": t
             for t in tareas if isinstance(t, dict)
