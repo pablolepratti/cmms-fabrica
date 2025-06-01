@@ -36,14 +36,24 @@ def app():
     def form_tarea(defaults=None):
         with st.form("form_tarea_correctiva"):
 
-            # Obtener activos técnicos para el selector
-            activos = list(db["activos_tecnicos"].find({}, {"_id": 0, "id_activo_tecnico": 1}))
-            ids_activos = sorted([a["id_activo_tecnico"] for a in activos if "id_activo_tecnico" in a])
-            id_default = defaults.get("id_activo_tecnico") if defaults else None
-            index_default = ids_activos.index(id_default) if id_default in ids_activos else 0 if ids_activos else -1
+            # Obtener activos técnicos con jerarquía
+            activos = list(db["activos_tecnicos"].find({}, {"_id": 0, "id_activo_tecnico": 1, "pertenece_a": 1}))
+            id_map = {
+                a["id_activo_tecnico"]: (
+                    f"{a['id_activo_tecnico']} (pertenece a {a['pertenece_a']})" if a.get("pertenece_a")
+                    else a["id_activo_tecnico"]
+                )
+                for a in activos if "id_activo_tecnico" in a
+            }
+            ids_visibles = sorted(id_map.values())
 
-            if ids_activos:
-                id_activo = st.selectbox("ID del Activo Técnico", ids_activos, index=index_default)
+            id_default = defaults.get("id_activo_tecnico") if defaults else None
+            label_default = id_map.get(id_default, id_default)
+            index_default = ids_visibles.index(label_default) if label_default in ids_visibles else 0 if ids_visibles else -1
+
+            if ids_visibles:
+                seleccion_visible = st.selectbox("ID del Activo Técnico", ids_visibles, index=index_default)
+                id_activo = next((k for k, v in id_map.items() if v == seleccion_visible), seleccion_visible)
             else:
                 id_activo = st.text_input("ID del Activo Técnico")
 
@@ -183,3 +193,4 @@ def app():
 
 if __name__ == "__main__":
     app()
+
