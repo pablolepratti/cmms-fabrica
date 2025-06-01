@@ -1,3 +1,15 @@
+"""
+📊 Dashboard de KPIs – Historial Técnico – CMMS Fábrica
+
+Este módulo presenta indicadores clave de mantenimiento y soporte técnico a partir de la colección historial,
+que consolida eventos preventivos, correctivos, técnicos, observaciones y calibraciones.
+
+✅ Normas aplicables:
+- ISO 55001 (Indicadores de gestión de mantenimiento alineados al ciclo de vida del activo)
+- ISO 14224 (Clasificación y análisis de eventos técnicos)
+- ISO 9001:2015 (Control y seguimiento de procesos mediante indicadores de desempeño)
+"""
+
 import streamlit as st
 from pymongo import MongoClient
 import pandas as pd
