@@ -1,11 +1,13 @@
 """
 👁️ CRUD de Observaciones Técnicas – CMMS Fábrica
 
-Este módulo permite registrar, visualizar, editar y eliminar observaciones técnicas asociadas a activos.
+Este módulo permite registrar, visualizar, editar y eliminar observaciones técnicas asociadas a activos técnicos.
+Soporta activos jerárquicos mediante el campo `pertenece_a`, reflejando relaciones funcionales.
 Registra automáticamente cada evento en la colección `historial` para trazabilidad completa.
 
 ✅ Normas aplicables:
 - ISO 14224 (Información sobre mantenimiento y confiabilidad de activos)
+- ISO 55001 (Gestión de activos físicos y jerarquía funcional)
 - ISO 9001:2015 (Gestión de calidad, observaciones y acciones correctivas)
 """
 
@@ -34,14 +36,31 @@ def app():
     choice = st.sidebar.radio("Acción", menu)
 
     def form_observacion(defaults=None):
-        ids_activos = [d["id_activo_tecnico"] for d in activos.find({}, {"_id": 0, "id_activo_tecnico": 1})]
-        if not ids_activos:
+        activos_lista = list(activos.find({}, {"_id": 0, "id_activo_tecnico": 1, "nombre": 1, "pertenece_a": 1}))
+        if not activos_lista:
             st.warning("⚠️ No hay activos técnicos registrados.")
             return None
 
+        opciones = []
+        map_id = {}
+        for a in activos_lista:
+            label = f"{a['id_activo_tecnico']} - {a.get('nombre', '')}"
+            if "pertenece_a" in a:
+                label += f" (pertenece a {a['pertenece_a']})"
+            opciones.append(label)
+            map_id[label] = a["id_activo_tecnico"]
+
+        activo_default = None
+        if defaults and defaults.get("id_activo_tecnico"):
+            for k, v in map_id.items():
+                if v == defaults["id_activo_tecnico"]:
+                    activo_default = k
+                    break
+
         with st.form("form_observacion"):
-            id_activo = st.selectbox("ID del Activo Técnico", ids_activos,
-                                     index=ids_activos.index(defaults["id_activo_tecnico"]) if defaults and defaults.get("id_activo_tecnico") in ids_activos else 0)
+            id_activo_label = st.selectbox("ID del Activo Técnico", opciones, index=opciones.index(activo_default) if activo_default else 0)
+            id_activo = map_id[id_activo_label]
+
             fecha_evento = st.date_input("Fecha del Evento", value=defaults.get("fecha_evento") if defaults else datetime.today())
             descripcion = st.text_area("Descripción de la Observación", value=defaults.get("descripcion") if defaults else "")
             tipo = st.selectbox("Tipo de Observación", ["Advertencia", "Hallazgo", "Ruido", "Otro"],
@@ -93,7 +112,6 @@ def app():
 
         estados_existentes = sorted(set(o.get("estado", "Pendiente") for o in observaciones))
         estado_filtro = st.selectbox("Filtrar por estado", ["Todos"] + estados_existentes)
-
         texto_filtro = st.text_input("🔍 Buscar por ID, tipo o texto")
 
         filtradas = []
@@ -157,3 +175,4 @@ def app():
 
 if __name__ == "__main__":
     app()
+
