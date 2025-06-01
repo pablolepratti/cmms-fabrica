@@ -18,6 +18,7 @@ import time
 
 coleccion = db["calibraciones"]
 historial = db["historial"]
+activos = db["activos_tecnicos"]
 
 def registrar_evento_historial(evento):
     historial.insert_one({
@@ -30,13 +31,20 @@ def registrar_evento_historial(evento):
     })
 
 def form_calibracion(defaults=None):
+    # Obtener IDs disponibles desde la base
+    ids_activos = [d["id_activo_tecnico"] for d in activos.find({}, {"_id": 0, "id_activo_tecnico": 1})]
+    if not ids_activos:
+        st.warning("⚠️ No hay activos técnicos registrados.")
+        return None
+
     with st.form("form_calibracion"):
-        id_activo = st.text_input("ID del Instrumento", value=defaults.get("id_activo_tecnico") if defaults else "")
+        id_activo = st.selectbox("ID del Instrumento", ids_activos,
+                                 index=ids_activos.index(defaults["id_activo_tecnico"]) if defaults and defaults.get("id_activo_tecnico") in ids_activos else 0)
         fecha_cal = st.date_input("Fecha de Calibración", value=defaults.get("fecha_calibracion") if defaults else datetime.today())
         responsable = st.text_input("Responsable de Calibración", value=defaults.get("responsable") if defaults else "")
         proveedor = st.text_input("Proveedor Externo (si aplica)", value=defaults.get("proveedor_externo") if defaults else "")
         resultado = st.selectbox("Resultado", ["Correcta", "Desviación leve", "Desviación crítica"],
-                                  index=["Correcta", "Desviación leve", "Desviación crítica"].index(defaults.get("resultado")) if defaults else 0)
+                                 index=["Correcta", "Desviación leve", "Desviación crítica"].index(defaults.get("resultado")) if defaults else 0)
         acciones = st.text_area("Acciones Derivadas", value=defaults.get("acciones") if defaults else "")
         observaciones = st.text_area("Observaciones", value=defaults.get("observaciones") if defaults else "")
         prox = st.date_input("Fecha Próxima Calibración", value=defaults.get("fecha_proxima") if defaults else datetime.today() + timedelta(days=180))
