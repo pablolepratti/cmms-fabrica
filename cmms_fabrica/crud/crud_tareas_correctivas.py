@@ -139,18 +139,23 @@ def app():
             f"{t.get('id_activo_tecnico', '⛔ Sin ID')} - {t.get('descripcion_falla', '')[:30]}": t
             for t in tareas if isinstance(t, dict)
         }
-        seleccion = st.selectbox("Seleccionar tarea", list(opciones.keys()))
-        datos = opciones[seleccion]
-        nuevos_datos = form_tarea(defaults=datos)
-        if nuevos_datos:
-            coleccion.update_one({"_id": datos["_id"]}, {"$set": nuevos_datos})
-            registrar_evento_historial({
-                "tipo_evento": "Edición de tarea correctiva",
-                "id_activo_tecnico": nuevos_datos["id_activo_tecnico"],
-                "usuario": nuevos_datos["usuario_registro"],
-                "descripcion": f"Tarea editada: {nuevos_datos['descripcion_falla'][:60]}..."
-            })
-            st.success("Tarea actualizada correctamente.")
+
+        if opciones:
+            seleccion = st.selectbox("Seleccionar tarea", list(opciones.keys()))
+            datos = opciones.get(seleccion)
+            if datos:
+                nuevos_datos = form_tarea(defaults=datos)
+                if nuevos_datos:
+                    coleccion.update_one({"_id": datos["_id"]}, {"$set": nuevos_datos})
+                    registrar_evento_historial({
+                        "tipo_evento": "Edición de tarea correctiva",
+                        "id_activo_tecnico": nuevos_datos["id_activo_tecnico"],
+                        "usuario": nuevos_datos["usuario_registro"],
+                        "descripcion": f"Tarea editada: {nuevos_datos['descripcion_falla'][:60]}..."
+                    })
+                    st.success("Tarea actualizada correctamente.")
+        else:
+            st.info("No hay tareas disponibles para editar.")
 
     elif choice == "Eliminar Tarea":
         st.subheader("🗑️ Eliminar Tarea Correctiva")
@@ -159,17 +164,21 @@ def app():
             f"{t.get('id_activo_tecnico', '⛔ Sin ID')} - {t.get('descripcion_falla', '')[:30]}": t
             for t in tareas if isinstance(t, dict)
         }
-        seleccion = st.selectbox("Seleccionar tarea", list(opciones.keys()))
-        datos = opciones[seleccion]
-        if st.button("Eliminar definitivamente"):
-            coleccion.delete_one({"_id": datos["_id"]})
-            registrar_evento_historial({
-                "tipo_evento": "Baja de tarea correctiva",
-                "id_activo_tecnico": datos.get("id_activo_tecnico"),
-                "usuario": datos.get("usuario_registro", "desconocido"),
-                "descripcion": f"Se eliminó tarea: {datos.get('descripcion_falla', '')[:60]}..."
-            })
-            st.success("Tarea eliminada.")
+
+        if opciones:
+            seleccion = st.selectbox("Seleccionar tarea", list(opciones.keys()))
+            datos = opciones.get(seleccion)
+            if datos and st.button("Eliminar definitivamente"):
+                coleccion.delete_one({"_id": datos["_id"]})
+                registrar_evento_historial({
+                    "tipo_evento": "Baja de tarea correctiva",
+                    "id_activo_tecnico": datos.get("id_activo_tecnico"),
+                    "usuario": datos.get("usuario_registro", "desconocido"),
+                    "descripcion": f"Se eliminó tarea: {datos.get('descripcion_falla', '')[:60]}..."
+                })
+                st.success("Tarea eliminada.")
+        else:
+            st.info("No hay tareas disponibles para eliminar.")
 
 if __name__ == "__main__":
     app()
