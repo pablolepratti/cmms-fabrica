@@ -41,6 +41,7 @@ def app():
             telefono = st.text_input("Teléfono", value=defaults.get("telefono") if defaults else "")
             correo = st.text_input("Correo electrónico", value=defaults.get("correo") if defaults else "")
             observaciones = st.text_area("Observaciones", value=defaults.get("observaciones") if defaults else "")
+            usuario = st.text_input("Usuario que registra", value=defaults.get("usuario_registro") if defaults else "")
             submit = st.form_submit_button("Guardar Proveedor")
 
         if submit:
@@ -52,6 +53,7 @@ def app():
                 "telefono": telefono,
                 "correo": correo,
                 "observaciones": observaciones,
+                "usuario_registro": usuario,
                 "fecha_registro": datetime.now()
             }
             return data
@@ -64,7 +66,8 @@ def app():
             coleccion.insert_one(data)
             registrar_evento_historial({
                 "tipo_evento": "Alta de proveedor externo",
-                "descripcion": f"Se registró a {data['nombre']} ({data['especialidad']})"
+                "descripcion": f"Se registró a {data['nombre']} ({data['especialidad']})",
+                "usuario": data["usuario_registro"]
             })
             st.success("Proveedor registrado correctamente.")
 
@@ -88,7 +91,8 @@ def app():
             coleccion.update_one({"_id": datos["_id"]}, {"$set": nuevos_datos})
             registrar_evento_historial({
                 "tipo_evento": "Edición de proveedor externo",
-                "descripcion": f"Se actualizó proveedor {nuevos_datos['nombre']}"
+                "descripcion": f"Se actualizó proveedor {nuevos_datos['nombre']}",
+                "usuario": nuevos_datos["usuario_registro"]
             })
             st.success("Proveedor actualizado correctamente.")
 
@@ -102,7 +106,8 @@ def app():
             coleccion.delete_one({"_id": datos["_id"]})
             registrar_evento_historial({
                 "tipo_evento": "Baja de proveedor externo",
-                "descripcion": f"Se eliminó al proveedor {datos['nombre']}"
+                "descripcion": f"Se eliminó al proveedor {datos['nombre']}",
+                "usuario": datos.get("usuario_registro", "desconocido")
             })
             st.success("Proveedor eliminado.")
 
