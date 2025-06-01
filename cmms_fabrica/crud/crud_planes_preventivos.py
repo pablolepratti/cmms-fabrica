@@ -17,6 +17,7 @@ from modulos.conexion_mongo import db
 
 coleccion = db["planes_preventivos"]
 historial = db["historial"]
+activos = db["activos_tecnicos"]
 
 def registrar_evento_historial(evento):
     historial.insert_one({
@@ -38,10 +39,7 @@ def app():
         with st.form("form_plan_preventivo"):
             id_plan = st.text_input("ID del Plan", value=defaults.get("id_plan") if defaults else "")
 
-            # Conexión local de activos técnicos
-            activos = db["activos_tecnicos"]
             activos_lista = list(activos.find({}, {"_id": 0, "id_activo_tecnico": 1, "nombre": 1, "pertenece_a": 1}))
-
             opciones = []
             map_id = {}
             for a in activos_lista:
