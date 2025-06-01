@@ -14,6 +14,7 @@ import streamlit as st
 from pymongo import MongoClient
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 from datetime import datetime
 from modulos.conexion_mongo import db
 
@@ -24,7 +25,7 @@ def app():
     
     # Filtros
     st.sidebar.header("📅 Filtros")
-    fecha_inicio = st.sidebar.date_input("Desde", value=datetime(2024, 1, 1))
+    fecha_inicio = st.sidebar.date_input("Desde", value=datetime(2025, 1, 1))
     fecha_fin = st.sidebar.date_input("Hasta", value=datetime.today())
     tipo_evento = st.sidebar.multiselect("Tipo de Evento", ["preventiva", "correctiva", "tecnica", "observacion", "calibracion"],
                                          default=["preventiva", "correctiva", "tecnica", "observacion", "calibracion"])
@@ -69,12 +70,22 @@ def app():
     # Gráfico: Evolución mensual
     st.subheader("📆 Evolución Mensual de Eventos")
     mensual = df.groupby(["mes", "tipo_evento"]).size().unstack(fill_value=0)
+    mensual.index = mensual.index.to_timestamp()  # Convertir Period a Timestamp para graficar
+
     fig2, ax2 = plt.subplots()
     mensual.plot(ax=ax2, marker="o")
+
     ax2.set_ylabel("Cantidad")
     ax2.set_xlabel("Mes")
     ax2.set_title("Evolución mensual por tipo de evento")
     ax2.legend(title="Tipo de Evento", loc="upper left")
+
+    # Limitar a 2025 y mejorar etiquetas
+    ax2.set_xlim([pd.Timestamp("2025-01-01"), pd.Timestamp("2025-12-31")])
+    ax2.xaxis.set_major_locator(mdates.MonthLocator())
+    ax2.xaxis.set_major_formatter(mdates.DateFormatter("%b"))  # Ej: Jan, Feb, etc.
+    ax2.tick_params(axis='x', rotation=0)
+
     st.pyplot(fig2)
 
     # Tabla detallada
