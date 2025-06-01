@@ -16,6 +16,7 @@ from modulos.conexion_mongo import db
 
 coleccion = db["planes_preventivos"]
 historial = db["historial"]
+activos = db["activos_tecnicos"]
 
 def registrar_evento_historial(evento):
     historial.insert_one({
@@ -36,7 +37,13 @@ def app():
     def form_plan(defaults=None):
         with st.form("form_plan_preventivo"):
             id_plan = st.text_input("ID del Plan", value=defaults.get("id_plan") if defaults else "")
-            id_activo = st.text_input("ID del Activo Técnico", value=defaults.get("id_activo_tecnico") if defaults else "")
+
+            # Selectbox dinámico para ID de activos técnicos
+            ids_activos = [d["id_activo_tecnico"] for d in activos.find({}, {"_id": 0, "id_activo_tecnico": 1})]
+            ids_activos = sorted(ids_activos)
+            id_activo_default = defaults.get("id_activo_tecnico") if defaults else ""
+            id_activo = st.selectbox("ID del Activo Técnico", ids_activos, index=ids_activos.index(id_activo_default) if id_activo_default in ids_activos else 0)
+
             frecuencia = st.number_input("Frecuencia", min_value=1, value=defaults.get("frecuencia") if defaults else 30)
             unidad = st.selectbox("Unidad de Frecuencia", ["días", "semanas", "meses"],
                                   index=["días", "semanas", "meses"].index(defaults.get("unidad_frecuencia")) if defaults else 2)
@@ -97,7 +104,6 @@ def app():
         estado_filtro = st.selectbox("Filtrar por estado del plan", ["Todos"] + estados_existentes)
         texto_filtro = st.text_input("🔍 Buscar por ID de activo, ID de plan o texto")
 
-        # Aplicar filtros
         filtrados = []
         for p in planes:
             coincide_estado = (estado_filtro == "Todos") or (p.get("estado") == estado_filtro)
