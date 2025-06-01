@@ -30,13 +30,22 @@ def form_tecnica(defaults=None):
     with st.form("form_tarea_tecnica"):
         hoy = datetime.today()
 
-        # 🔽 Selectbox dinámico para IDs de activos técnicos
-        lista_ids = [d["id_activo"] for d in db["activos_tecnicos"].find({}, {"_id": 0, "id_activo": 1})]
-        lista_ids = sorted(lista_ids)
-        lista_ids.insert(0, "")  # Para permitir vacío si es opcional
+        # 🔽 Selectbox dinámico con jerarquía (pertenece_a)
+        activos = list(db["activos_tecnicos"].find({}, {"_id": 0, "id_activo_tecnico": 1, "pertenece_a": 1}))
+        id_map = {
+            a["id_activo_tecnico"]: (
+                f"{a['id_activo_tecnico']} (pertenece a {a['pertenece_a']})" if a.get("pertenece_a")
+                else a["id_activo_tecnico"]
+            )
+            for a in activos if "id_activo_tecnico" in a
+        }
+        ids_visibles = [""] + sorted(id_map.values())  # Permitimos vacío
+        id_default = defaults.get("id_activo_tecnico") if defaults else ""
+        label_default = id_map.get(id_default, id_default)
+        index_default = ids_visibles.index(label_default) if label_default in ids_visibles else 0
 
-        id_activo_default = defaults.get("id_activo_tecnico") if defaults else ""
-        id_activo = st.selectbox("ID del Activo Técnico (opcional)", options=lista_ids, index=lista_ids.index(id_activo_default) if id_activo_default in lista_ids else 0)
+        seleccion_visible = st.selectbox("ID del Activo Técnico (opcional)", ids_visibles, index=index_default)
+        id_activo = next((k for k, v in id_map.items() if v == seleccion_visible), seleccion_visible) if seleccion_visible else ""
 
         fecha_evento = st.date_input("📆 Fecha del Evento", value=defaults.get("fecha_evento", hoy) if defaults else hoy)
         fecha_inicio = st.date_input("🗕️ Fecha de Inicio", value=defaults.get("fecha_inicio", fecha_evento) if defaults else fecha_evento)
@@ -187,3 +196,4 @@ def app():
 
 if __name__ == "__main__":
     app()
+
