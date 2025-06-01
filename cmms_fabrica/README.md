@@ -1,6 +1,6 @@
 # 🏭 CMMS Fábrica – Versión 3.4
 
-**Computerized Maintenance Management System (CMMS)** desarrollado en contexto real de fábrica, centrado en activos técnicos y trazabilidad total.
+**Computerized Maintenance Management System (CMMS)** desarrollado en contexto real de fábrica, centrado en activos técnicos, jerarquía funcional y trazabilidad total.
 
 🔧 Organiza tareas correctivas, preventivas, técnicas, observaciones, calibraciones y servicios externos.  
 📊 Compatible con auditorías, revisiones operativas y planificación de mantenimiento a corto y largo plazo.
@@ -10,13 +10,15 @@
 ## 🚀 Características Principales
 
 - ✅ **Activo técnico como eje central** (`activos_tecnicos`)
-- ✅ **CRUDs funcionales por tipo de tarea**
-- ✅ **Trazabilidad automática** (todo queda registrado en `historial`)
-- ✅ **Login con roles (admin / técnico)**
+- ✅ **Jerarquía funcional** (`pertenece_a`) para agrupar sistemas y subactivos
+- ✅ **CRUDs completos por tipo de tarea**
+- ✅ **Trazabilidad automática**: todo queda registrado en la colección `historial`
+- ✅ **Login con gestión de usuarios y roles (admin / técnico)**
 - ✅ **Dashboard de KPIs técnico-operativos**
-- ✅ **Estilo visual oscuro y responsive**
-- ✅ **Almacenamiento en MongoDB (conexión en `conexion_mongo.py`)**
-- ✅ **Alineado con normas ISO 55001, 9001:2015, 14224**
+- ✅ **Exportación de reportes técnicos (PDF y Excel)**
+- ✅ **Visual oscuro y responsive en Streamlit**
+- ✅ **Base de datos MongoDB conectada vía `conexion_mongo.py`**
+- ✅ **Alineado con normas ISO 55001, 9001:2015 y 14224**
 
 ---
 
@@ -24,8 +26,8 @@
 
 ```bash
 cmms-fabrica/
-├── app.py                      # Lanzador principal (menú general)
-├── crud/                       # CRUDs actualizados (v3.4)
+├── app.py                          # Lanzador principal (menú general)
+├── crud/                           # CRUDs principales (v3.4)
 │   ├── crud_activos_tecnicos.py
 │   ├── crud_tareas_correctivas.py
 │   ├── crud_planes_preventivos.py
@@ -34,15 +36,58 @@ cmms-fabrica/
 │   ├── crud_calibraciones.py
 │   ├── crud_servicios_externos.py
 │   └── dashboard_kpi_historial.py
-├── modulos/                    # Módulos heredados (en transición)
+├── modulos/                        # Módulos complementarios y de sistema
 │   ├── app_login.py
 │   ├── app_usuarios.py
 │   ├── app_reportes.py
 │   ├── conexion_mongo.py
-│   ├── cambiar_ids.py
-│   └── estilos.py
-├── docs/                       # Documentación y estructura de fábrica
-├── activos/                    # Carpeta técnica por máquina (checklists, fotos, planos)
-├── reportes/                   # PDFs generados
-└── requirements.txt            # Dependencias
+│   ├── cambiar_ids.py              # Se eliminará tras la transición completa
+│   ├── estilos.py
+│   └── generador_historial.py
+├── activos/                        # Carpeta técnica por activo (checklists, fotos, planos)
+├── docs/                           # Documentación e instructivos
+├── reportes/                       # PDFs generados por el sistema
+└── requirements.txt                # Dependencias Python
+```
 
+---
+
+## 📌 Normas Aplicadas
+
+Este CMMS está alineado con:
+
+- **ISO 55001** → Gestión de activos físicos a lo largo de su ciclo de vida  
+- **ISO 14224** → Estructura de datos y análisis de fallas en mantenimiento industrial  
+- **ISO 9001:2015** → Gestión de calidad, trazabilidad documental y acciones correctivas
+
+---
+
+## 🛠️ Cómo Ejecutarlo
+
+1. Clonar este repositorio
+2. Crear un entorno virtual (opcional pero recomendado)
+3. Instalar dependencias:
+
+```bash
+pip install -r requirements.txt
+```
+
+4. Iniciar la aplicación con:
+
+```bash
+streamlit run app.py
+```
+
+5. Conectar a tu base de datos MongoDB (configurado en `modulos/conexion_mongo.py`)
+
+---
+
+## 📬 Contacto
+
+**Desarrollado por:** Pablo Lepratti  
+📧 pablolepratti@gmail.com
+🔗 Proyecto en contexto real de mantenimiento industrial – Uruguay
+
+---
+
+> *“Este sistema nació para organizar el mantenimiento en planta, pero creció como una herramienta robusta, trazable y adaptable a nuevas fábricas.”*
