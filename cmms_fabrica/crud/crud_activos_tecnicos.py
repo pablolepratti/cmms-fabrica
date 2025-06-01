@@ -50,7 +50,15 @@ def app():
             ubicacion = st.text_input("Ubicación", value=defaults.get("ubicacion") if defaults else "")
             tipo = st.selectbox("Tipo de Activo", opciones_tipo, index=tipo_index)
             estado = st.selectbox("Estado", opciones_estado, index=estado_index)
-            pertenece_a = st.text_input("Pertenece a (ID de otro activo técnico)", value=defaults.get("pertenece_a") if defaults else "")
+
+            # Selectbox dinámico para jerarquía funcional
+            activos_existentes = list(coleccion.find({}, {"_id": 0, "id_activo_tecnico": 1}))
+            ids_disponibles = sorted([a["id_activo_tecnico"] for a in activos_existentes if a.get("id_activo_tecnico") != id_activo])
+            ids_disponibles.insert(0, "")  # permitir vacío
+            valor_default = defaults.get("pertenece_a") if defaults else ""
+            index_default = ids_disponibles.index(valor_default) if valor_default in ids_disponibles else 0
+            pertenece_a = st.selectbox("Pertenece a (opcional)", options=ids_disponibles, index=index_default)
+
             usuario = st.text_input("Usuario que registra", value=defaults.get("usuario_registro") if defaults else "")
             submit = st.form_submit_button("Guardar")
 
@@ -95,7 +103,6 @@ def app():
         tipo_filtro = st.selectbox("Filtrar por tipo de activo", ["Todos"] + tipos_existentes)
         texto_filtro = st.text_input("🔍 Buscar por nombre o ID")
 
-        # Aplicar filtros
         filtrados = []
         for a in activos:
             coincide_tipo = (tipo_filtro == "Todos") or (a.get("tipo") == tipo_filtro)
@@ -162,4 +169,3 @@ def app():
 
 if __name__ == "__main__":
     app()
-
