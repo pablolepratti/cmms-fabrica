@@ -1,15 +1,3 @@
-"""
-📊 Dashboard de KPIs – Historial Técnico – CMMS Fábrica
-
-Este módulo presenta indicadores clave de mantenimiento y soporte técnico a partir de la colección `historial`,
-que consolida eventos preventivos, correctivos, técnicos, observaciones y calibraciones.
-
-✅ Normas aplicables:
-- ISO 55001 (Indicadores de gestión de mantenimiento alineados al ciclo de vida del activo)
-- ISO 14224 (Clasificación y análisis de eventos técnicos)
-- ISO 9001:2015 (Control y seguimiento de procesos mediante indicadores de desempeño)
-"""
-
 import streamlit as st
 from pymongo import MongoClient
 import pandas as pd
@@ -19,6 +7,7 @@ from datetime import datetime
 from modulos.conexion_mongo import db
 
 coleccion = db["historial"]
+activos_tecnicos = db["activos_tecnicos"]
 
 def app():
     st.title("📊 Dashboard de KPIs – Historial Técnico")
@@ -29,7 +18,20 @@ def app():
     fecha_fin = st.sidebar.date_input("Hasta", value=datetime.today())
     tipo_evento = st.sidebar.multiselect("Tipo de Evento", ["preventiva", "correctiva", "tecnica", "observacion", "calibracion"],
                                          default=["preventiva", "correctiva", "tecnica", "observacion", "calibracion"])
-    
+
+    # Filtro por activo técnico o conjunto
+    st.sidebar.header("🧩 Activo Técnico (opcional)")
+    activos = list(activos_tecnicos.find())
+    opciones = ["Todos"] + sorted([a["id_activo_tecnico"] for a in activos if "id_activo_tecnico" in a])
+    id_filtrado = st.sidebar.selectbox("Filtrar por ID de activo técnico (incluye subactivos)", opciones)
+
+    # Construir lista de IDs válidos
+    ids_filtrados = None
+    if id_filtrado != "Todos":
+        subactivos = [a["id_activo_tecnico"] for a in activos if a.get("pertenece_a") == id_filtrado]
+        ids_filtrados = [id_filtrado] + subactivos
+        st.sidebar.success(f"Incluyendo {len(subactivos)} subactivo(s) de '{id_filtrado}'")
+
     # Consulta
     query = {
         "fecha_evento": {
@@ -38,6 +40,10 @@ def app():
         },
         "tipo_evento": {"$in": tipo_evento}
     }
+
+    if ids_filtrados:
+        query["id_activo_tecnico"] = {"$in": ids_filtrados}
+
     registros = list(coleccion.find(query))
     df = pd.DataFrame(registros)
 
@@ -70,11 +76,10 @@ def app():
     # Gráfico: Evolución mensual
     st.subheader("📆 Evolución Mensual de Eventos")
     mensual = df.groupby(["mes", "tipo_evento"]).size().unstack(fill_value=0)
-    mensual.index = mensual.index.to_timestamp()  # Convertir Period a Timestamp para graficar
+    mensual.index = mensual.index.to_timestamp()
 
     fig2, ax2 = plt.subplots()
     mensual.plot(ax=ax2, marker="o")
-
     ax2.set_ylabel("Cantidad")
     ax2.set_xlabel("Mes")
     ax2.set_title("Evolución mensual por tipo de evento")
@@ -83,9 +88,8 @@ def app():
     # Limitar a 2025 y mejorar etiquetas
     ax2.set_xlim([pd.Timestamp("2025-01-01"), pd.Timestamp("2025-12-31")])
     ax2.xaxis.set_major_locator(mdates.MonthLocator())
-    ax2.xaxis.set_major_formatter(mdates.DateFormatter("%b"))  # Ej: Jan, Feb, etc.
+    ax2.xaxis.set_major_formatter(mdates.DateFormatter("%b"))
     ax2.tick_params(axis='x', rotation=0)
-
     st.pyplot(fig2)
 
     # Tabla detallada
@@ -97,3 +101,4 @@ def app():
 
 if __name__ == "__main__":
     app()
+
