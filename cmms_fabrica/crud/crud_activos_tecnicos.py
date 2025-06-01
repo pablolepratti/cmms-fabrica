@@ -35,7 +35,7 @@ def app():
 
     def form_activo(defaults=None):
         opciones_tipo = ["Sistema General", "Infraestructura", "Administración", "Producción",
-                         "Logística", "Mantenimiento", "Instrumento Laboratorio", "Equipo en Cliente"]
+                         "Logística", "Mantenimiento", "Instrumento Laboratorio", "Equipo en Cliente", "Componente"]
         opciones_estado = ["Activo", "En revisión", "Fuera de servicio"]
 
         tipo_default = defaults.get("tipo") if defaults else None
@@ -50,11 +50,12 @@ def app():
             ubicacion = st.text_input("Ubicación", value=defaults.get("ubicacion") if defaults else "")
             tipo = st.selectbox("Tipo de Activo", opciones_tipo, index=tipo_index)
             estado = st.selectbox("Estado", opciones_estado, index=estado_index)
+            pertenece_a = st.text_input("Pertenece a (ID de otro activo técnico)", value=defaults.get("pertenece_a") if defaults else "")
             usuario = st.text_input("Usuario que registra", value=defaults.get("usuario_registro") if defaults else "")
             submit = st.form_submit_button("Guardar")
 
             if submit:
-                return {
+                data = {
                     "id_activo_tecnico": id_activo,
                     "nombre": nombre,
                     "ubicacion": ubicacion,
@@ -63,6 +64,9 @@ def app():
                     "usuario_registro": usuario,
                     "fecha_registro": datetime.now()
                 }
+                if pertenece_a:
+                    data["pertenece_a"] = pertenece_a
+                return data
 
         return None
 
@@ -89,7 +93,6 @@ def app():
 
         tipos_existentes = sorted(set([a.get("tipo", "⛔ Sin Tipo") for a in activos]))
         tipo_filtro = st.selectbox("Filtrar por tipo de activo", ["Todos"] + tipos_existentes)
-
         texto_filtro = st.text_input("🔍 Buscar por nombre o ID")
 
         # Aplicar filtros
@@ -114,7 +117,8 @@ def app():
                     nombre = a.get("nombre", "")
                     estado = a.get("estado", "-")
                     id_activo = a.get("id_activo_tecnico", "⛔ Sin ID")
-                    st.markdown(f"- **{id_activo}** – {nombre} ({estado})")
+                    subtitulo = f" (pertenece a {a['pertenece_a']})" if "pertenece_a" in a else ""
+                    st.markdown(f"- **{id_activo}** – {nombre} ({estado}){subtitulo}")
 
     elif choice == "Editar":
         st.subheader("✏️ Editar activo técnico")
@@ -158,3 +162,4 @@ def app():
 
 if __name__ == "__main__":
     app()
+
