@@ -15,6 +15,7 @@ from modulos.conexion_mongo import db
 
 coleccion = db["observaciones"]
 historial = db["historial"]
+activos = db["activos_tecnicos"]
 
 def registrar_evento_historial(evento):
     historial.insert_one({
@@ -33,8 +34,14 @@ def app():
     choice = st.sidebar.radio("Acción", menu)
 
     def form_observacion(defaults=None):
+        ids_activos = [d["id_activo_tecnico"] for d in activos.find({}, {"_id": 0, "id_activo_tecnico": 1})]
+        if not ids_activos:
+            st.warning("⚠️ No hay activos técnicos registrados.")
+            return None
+
         with st.form("form_observacion"):
-            id_activo = st.text_input("ID del Activo Técnico", value=defaults.get("id_activo_tecnico") if defaults else "")
+            id_activo = st.selectbox("ID del Activo Técnico", ids_activos,
+                                     index=ids_activos.index(defaults["id_activo_tecnico"]) if defaults and defaults.get("id_activo_tecnico") in ids_activos else 0)
             fecha_evento = st.date_input("Fecha del Evento", value=defaults.get("fecha_evento") if defaults else datetime.today())
             descripcion = st.text_area("Descripción de la Observación", value=defaults.get("descripcion") if defaults else "")
             tipo = st.selectbox("Tipo de Observación", ["Advertencia", "Hallazgo", "Ruido", "Otro"],
@@ -89,7 +96,6 @@ def app():
 
         texto_filtro = st.text_input("🔍 Buscar por ID, tipo o texto")
 
-        # Aplicar filtros
         filtradas = []
         for o in observaciones:
             coincide_estado = (estado_filtro == "Todos") or (o.get("estado") == estado_filtro)
@@ -103,8 +109,8 @@ def app():
             st.warning("No se encontraron observaciones con esos filtros.")
             return
 
-        activos = sorted(set(str(o.get("id_activo_tecnico") or "⛔ Sin ID") for o in filtradas))
-        for activo in activos:
+        activos_listados = sorted(set(str(o.get("id_activo_tecnico") or "⛔ Sin ID") for o in filtradas))
+        for activo in activos_listados:
             st.markdown(f"### 🏷️ Activo Técnico: `{activo}`")
             observaciones_activo = [o for o in filtradas if str(o.get("id_activo_tecnico") or "⛔ Sin ID") == activo]
             for o in observaciones_activo:
