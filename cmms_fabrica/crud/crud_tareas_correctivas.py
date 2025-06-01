@@ -72,13 +72,13 @@ def form_tarea(defaults=None):
             "estado": estado,
             "usuario_registro": usuario,
             "observaciones": observaciones,
-            "fecha_registro": datetime.now()
+            "fecha_registro": datetime.now(),
+            "incompleto": False  # al guardar manualmente se asume como completo
         }
     return None
 
 def app():
     st.title("🛠️ Gestión de Tareas Correctivas")
-
     menu = ["Registrar Falla", "Ver Tareas", "Editar Tarea", "Eliminar Tarea"]
     choice = st.sidebar.radio("Acción", menu)
 
@@ -97,8 +97,10 @@ def app():
 
     elif choice == "Ver Tareas":
         st.subheader("📋 Tareas Correctivas por Activo Técnico")
+        mostrar_incompletas = st.checkbox("🔧 Mostrar solo tareas incompletas")
+        query = {"incompleto": True} if mostrar_incompletas else {}
+        tareas = list(coleccion.find(query).sort("fecha_evento", -1))
 
-        tareas = list(coleccion.find().sort("fecha_evento", -1))
         if not tareas:
             st.info("No hay tareas registradas.")
             return
@@ -134,10 +136,12 @@ def app():
 
     elif choice == "Editar Tarea":
         st.subheader("✏️ Editar Tarea Correctiva")
-        tareas = list(coleccion.find())
+        mostrar_incompletas = st.checkbox("🔧 Mostrar solo tareas incompletas")
+        query = {"incompleto": True} if mostrar_incompletas else {}
+        tareas = list(coleccion.find(query))
         opciones = {
             f"{t.get('id_activo_tecnico', '⛔ Sin ID')} - {t.get('descripcion_falla', '')[:30]}": t
-            for t in tareas if isinstance(t, dict)
+            for t in tareas
         }
 
         if opciones:
@@ -164,7 +168,7 @@ def app():
         tareas = list(coleccion.find())
         opciones = {
             f"{t.get('id_activo_tecnico', '⛔ Sin ID')} - {t.get('descripcion_falla', '')[:30]}": t
-            for t in tareas if isinstance(t, dict)
+            for t in tareas
         }
 
         if opciones:
