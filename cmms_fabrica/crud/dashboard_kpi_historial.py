@@ -28,14 +28,22 @@ def app():
     st.sidebar.header("📅 Filtros")
     fecha_inicio = st.sidebar.date_input("Desde", value=datetime(2025, 1, 1))
     fecha_fin = st.sidebar.date_input("Hasta", value=datetime.today())
-    tipo_evento = st.sidebar.multiselect("Tipo de Evento", ["preventiva", "correctiva", "tecnica", "observacion", "calibracion"],
-                                         default=["preventiva", "correctiva", "tecnica", "observacion", "calibracion"])
+    tipo_evento = st.sidebar.multiselect(
+        "Tipo de Evento", 
+        ["preventiva", "correctiva", "tecnica", "observacion", "calibracion"],
+        default=["preventiva", "correctiva", "tecnica", "observacion", "calibracion"]
+    )
 
-    # Filtro por activo técnico o conjunto
+    # Filtro por activo técnico con jerarquía
     st.sidebar.header("🧩 Activo Técnico (opcional)")
     activos = list(activos_tecnicos.find())
-    opciones = ["Todos"] + sorted([a["id_activo_tecnico"] for a in activos if "id_activo_tecnico" in a])
-    id_filtrado = st.sidebar.selectbox("Filtrar por ID de activo técnico (incluye subactivos)", opciones)
+    opciones = ["Todos"] + sorted([
+        f"{a['id_activo_tecnico']} (pertenece a {a['pertenece_a']})" if a.get("pertenece_a")
+        else a["id_activo_tecnico"]
+        for a in activos if "id_activo_tecnico" in a
+    ])
+    seleccion = st.sidebar.selectbox("Filtrar por ID de activo técnico (incluye subactivos)", opciones)
+    id_filtrado = seleccion.split(" ")[0] if seleccion != "Todos" else "Todos"
 
     # Construir lista de IDs válidos
     ids_filtrados = None
@@ -52,7 +60,6 @@ def app():
         },
         "tipo_evento": {"$in": tipo_evento}
     }
-
     if ids_filtrados:
         query["id_activo_tecnico"] = {"$in": ids_filtrados}
 
@@ -104,6 +111,17 @@ def app():
     ax2.tick_params(axis='x', rotation=0)
     st.pyplot(fig2)
 
+    # Gráfico: Eventos por activo técnico
+    st.subheader("🔍 Eventos por Activo Técnico")
+    por_activo = df["id_activo_tecnico"].value_counts().sort_values(ascending=False)
+    fig3, ax3 = plt.subplots()
+    por_activo.plot(kind="bar", ax=ax3, color="lightgreen", edgecolor="black")
+    ax3.set_ylabel("Cantidad")
+    ax3.set_xlabel("Activo Técnico")
+    ax3.set_title("Eventos por activo técnico")
+    plt.xticks(rotation=90)
+    st.pyplot(fig3)
+
     # Tabla detallada
     st.subheader("📋 Detalle de Eventos Técnicos")
     st.dataframe(df[[
@@ -113,4 +131,3 @@ def app():
 
 if __name__ == "__main__":
     app()
-
