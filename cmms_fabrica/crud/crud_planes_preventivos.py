@@ -2,6 +2,7 @@
 🗓️ CRUD de Planes Preventivos – CMMS Fábrica
 
 Este módulo permite registrar, visualizar, editar y eliminar planes preventivos asociados a activos técnicos.
+Soporta activos jerárquicos mediante el campo `pertenece_a`, reflejando relaciones funcionales entre equipos.
 Cada acción se registra en la colección `historial` para trazabilidad operativa y auditorías.
 
 ✅ Normas aplicables:
@@ -38,11 +39,26 @@ def app():
         with st.form("form_plan_preventivo"):
             id_plan = st.text_input("ID del Plan", value=defaults.get("id_plan") if defaults else "")
 
-            # Selectbox dinámico para ID de activos técnicos
-            ids_activos = [d["id_activo_tecnico"] for d in activos.find({}, {"_id": 0, "id_activo_tecnico": 1})]
-            ids_activos = sorted(ids_activos)
-            id_activo_default = defaults.get("id_activo_tecnico") if defaults else ""
-            id_activo = st.selectbox("ID del Activo Técnico", ids_activos, index=ids_activos.index(id_activo_default) if id_activo_default in ids_activos else 0)
+            # Selectbox con jerarquía
+            activos_lista = list(activos.find({}, {"_id": 0, "id_activo_tecnico": 1, "nombre": 1, "pertenece_a": 1}))
+            opciones = []
+            map_id = {}
+            for a in activos_lista:
+                label = f"{a['id_activo_tecnico']} - {a.get('nombre', '')}"
+                if "pertenece_a" in a:
+                    label += f" (pertenece a {a['pertenece_a']})"
+                opciones.append(label)
+                map_id[label] = a["id_activo_tecnico"]
+
+            activo_default = None
+            if defaults and defaults.get("id_activo_tecnico"):
+                for k, v in map_id.items():
+                    if v == defaults["id_activo_tecnico"]:
+                        activo_default = k
+                        break
+
+            id_activo_label = st.selectbox("ID del Activo Técnico", opciones, index=opciones.index(activo_default) if activo_default else 0)
+            id_activo = map_id[id_activo_label]
 
             frecuencia = st.number_input("Frecuencia", min_value=1, value=defaults.get("frecuencia") if defaults else 30)
             unidad = st.selectbox("Unidad de Frecuencia", ["días", "semanas", "meses"],
