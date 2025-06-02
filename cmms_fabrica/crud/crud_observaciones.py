@@ -6,9 +6,9 @@ Soporta activos jerárquicos mediante el campo `pertenece_a`, reflejando relacio
 Registra automáticamente cada evento en la colección `historial` para trazabilidad completa.
 
 ✅ Normas aplicables:
-- ISO 14224 (Información sobre mantenimiento y confiabilidad de activos)
-- ISO 55001 (Gestión de activos físicos y jerarquía funcional)
-- ISO 9001:2015 (Gestión de calidad, observaciones y acciones correctivas)
+- ISO 14224
+- ISO 55001
+- ISO 9001:2015
 """
 
 import streamlit as st
@@ -61,6 +61,8 @@ def app():
             id_activo_label = st.selectbox("ID del Activo Técnico", opciones, index=opciones.index(activo_default) if activo_default else 0)
             id_activo = map_id[id_activo_label]
 
+            id_observacion = defaults.get("id_observacion") if defaults else f"OBS_{int(datetime.now().timestamp())}"
+
             fecha_evento = st.date_input("Fecha del Evento", value=defaults.get("fecha_evento") if defaults else datetime.today())
             descripcion = st.text_area("Descripción de la Observación", value=defaults.get("descripcion") if defaults else "")
             tipo = st.selectbox("Tipo de Observación", ["Advertencia", "Hallazgo", "Ruido", "Otro"],
@@ -74,7 +76,7 @@ def app():
 
         if submit:
             data = {
-                "id_observacion": f"OBS_{int(datetime.now().timestamp())}",
+                "id_observacion": id_observacion,
                 "id_activo_tecnico": id_activo,
                 "fecha_evento": str(fecha_evento),
                 "descripcion": descripcion,
@@ -132,6 +134,7 @@ def app():
             st.markdown(f"### 🏷️ Activo Técnico: `{activo}`")
             observaciones_activo = [o for o in filtradas if str(o.get("id_activo_tecnico") or "⛔ Sin ID") == activo]
             for o in observaciones_activo:
+                st.code(f"ID Observación: {o.get('id_observacion', '❌ No definido')}", language="yaml")
                 fecha = o.get("fecha_evento", "Sin Fecha")
                 tipo = o.get("tipo_observacion", "Sin Tipo")
                 estado = o.get("estado", "Sin Estado")
@@ -175,4 +178,3 @@ def app():
 
 if __name__ == "__main__":
     app()
-
