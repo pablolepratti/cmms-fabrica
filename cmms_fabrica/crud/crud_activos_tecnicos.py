@@ -125,7 +125,8 @@ def app():
                     estado = a.get("estado", "-")
                     id_activo = a.get("id_activo_tecnico", "⛔ Sin ID")
                     subtitulo = f" (pertenece a {a['pertenece_a']})" if "pertenece_a" in a else ""
-                    st.markdown(f"- **{id_activo}** – {nombre} ({estado}){subtitulo}")
+                    st.code(f"ID del Activo: {id_activo}", language="yaml")
+                    st.markdown(f"- **{nombre}** ({estado}){subtitulo}")
 
     elif choice == "Editar":
         st.subheader("✏️ Editar activo técnico")
