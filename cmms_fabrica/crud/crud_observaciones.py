@@ -158,7 +158,7 @@ def app():
                 "usuario": nuevos_datos["usuario_registro"],
                 "descripcion": f"Observación editada: {nuevos_datos['descripcion'][:60]}..."
             })
-            st.success("Observación actualizada correctamente.")
+            st.success("Observación actualizada correctamente. Refrescar la página para ver los cambios.")
 
     elif choice == "Eliminar Observación":
         st.subheader("🗑️ Eliminar Observación Técnica")
@@ -174,7 +174,7 @@ def app():
                 "usuario": datos.get("usuario_registro", "desconocido"),
                 "descripcion": f"Se eliminó la observación: {datos.get('descripcion', '')[:60]}..."
             })
-            st.success("Observación eliminada.")
+            st.success("Observación eliminada. Refrescar la página para ver los cambios.")
 
 if __name__ == "__main__":
     app()
