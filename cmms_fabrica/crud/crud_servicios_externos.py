@@ -74,6 +74,9 @@ def app():
     elif choice == "Ver Proveedores":
         st.subheader("📋 Servicios Externos Registrados")
         proveedores = list(coleccion.find().sort("nombre", 1))
+        if not proveedores:
+            st.info("No hay proveedores cargados.")
+            return
         for p in proveedores:
             st.code(f"ID Proveedor: {p.get('id_proveedor', '❌ No definido')}", language="yaml")
             st.markdown(f"**{p['nombre']}** ({p['especialidad']})")
@@ -85,6 +88,9 @@ def app():
         st.subheader("✏️ Editar Proveedor Técnico")
         proveedores = list(coleccion.find())
         opciones = {f"{p['id_proveedor']} - {p['nombre']}": p for p in proveedores}
+        if not opciones:
+            st.info("No hay proveedores para editar.")
+            return
         seleccion = st.selectbox("Seleccionar proveedor", list(opciones.keys()))
         datos = opciones[seleccion]
         nuevos_datos = form_proveedor(defaults=datos)
@@ -101,6 +107,9 @@ def app():
         st.subheader("🗑️ Eliminar Proveedor Técnico")
         proveedores = list(coleccion.find())
         opciones = {f"{p['id_proveedor']} - {p['nombre']}": p for p in proveedores}
+        if not opciones:
+            st.info("No hay proveedores para eliminar.")
+            return
         seleccion = st.selectbox("Seleccionar proveedor", list(opciones.keys()))
         datos = opciones[seleccion]
         if st.button("Eliminar definitivamente"):
@@ -110,7 +119,7 @@ def app():
                 "descripcion": f"Se eliminó al proveedor {datos['nombre']}",
                 "usuario": datos.get("usuario_registro", "desconocido")
             })
-            st.success("Proveedor eliminado.")
+            st.success("Proveedor eliminado. Actualizá la vista para confirmar.")
 
 if __name__ == "__main__":
     app()
