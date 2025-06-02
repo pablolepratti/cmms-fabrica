@@ -164,8 +164,6 @@ def app():
                         "descripcion": f"Tarea editada: {nuevos_datos['descripcion_falla'][:60]}..."
                     })
                     st.success("Tarea actualizada correctamente.")
-            else:
-                st.warning("La tarea seleccionada no fue encontrada.")
         else:
             st.info("No hay tareas disponibles para editar.")
 
@@ -188,7 +186,7 @@ def app():
                     "usuario": datos.get("usuario_registro", "desconocido"),
                     "descripcion": f"Se eliminó tarea: {datos.get('descripcion_falla', '')[:60]}..."
                 })
-                st.success("Tarea eliminada.")
+                st.success("Tarea eliminada. Refrescá la vista para confirmar.")
         else:
             st.info("No hay tareas disponibles para eliminar.")
 
