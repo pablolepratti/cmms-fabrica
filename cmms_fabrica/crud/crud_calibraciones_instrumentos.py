@@ -20,6 +20,9 @@ coleccion = db["calibraciones"]
 historial = db["historial"]
 activos = db["activos_tecnicos"]
 
+def generar_id_calibracion():
+    return f"CAL-{int(datetime.now().timestamp())}"
+
 def registrar_evento_historial(evento):
     historial.insert_one({
         "tipo_evento": "calibracion",
@@ -31,7 +34,6 @@ def registrar_evento_historial(evento):
     })
 
 def form_calibracion(defaults=None):
-    # Obtener IDs disponibles desde la base
     ids_activos = [d["id_activo_tecnico"] for d in activos.find({}, {"_id": 0, "id_activo_tecnico": 1})]
     if not ids_activos:
         st.warning("⚠️ No hay activos técnicos registrados.")
@@ -40,6 +42,8 @@ def form_calibracion(defaults=None):
     with st.form("form_calibracion"):
         id_activo = st.selectbox("ID del Instrumento", ids_activos,
                                  index=ids_activos.index(defaults["id_activo_tecnico"]) if defaults and defaults.get("id_activo_tecnico") in ids_activos else 0)
+        id_calibracion = defaults.get("id_calibracion") if defaults else generar_id_calibracion()
+
         fecha_cal = st.date_input("Fecha de Calibración", value=defaults.get("fecha_calibracion") if defaults else datetime.today())
         responsable = st.text_input("Responsable de Calibración", value=defaults.get("responsable") if defaults else "")
         proveedor = st.text_input("Proveedor Externo (si aplica)", value=defaults.get("proveedor_externo") if defaults else "")
@@ -53,6 +57,7 @@ def form_calibracion(defaults=None):
 
     if submit:
         return {
+            "id_calibracion": id_calibracion,
             "id_activo_tecnico": id_activo,
             "fecha_calibracion": str(fecha_cal),
             "fecha_proxima": str(prox),
@@ -69,7 +74,6 @@ def form_calibracion(defaults=None):
 def app():
     st.title("🧪 Gestión de Calibraciones de Instrumentos")
 
-    # ⚠️ Seguimiento: próximas por vencer
     datos = list(coleccion.find({}, {"_id": 0}))
     df = pd.DataFrame(datos)
 
@@ -84,7 +88,6 @@ def app():
         else:
             st.success("Todas las calibraciones están al día ✅")
 
-    # Menú de acciones
     menu = ["Registrar Calibración", "Ver Calibraciones", "Editar Calibración", "Eliminar Calibración"]
     choice = st.sidebar.radio("Acción", menu)
 
@@ -96,7 +99,7 @@ def app():
             registrar_evento_historial({
                 "id_activo_tecnico": data["id_activo_tecnico"],
                 "usuario": data["usuario_registro"],
-                "descripcion": f"Calibración realizada con resultado '{data['resultado']}'"
+                "descripcion": f"Calibración registrada con resultado '{data['resultado']}'"
             })
             st.success("Calibración registrada correctamente.")
             time.sleep(1)
@@ -112,12 +115,12 @@ def app():
 
         df = pd.DataFrame(registros)
         texto = st.text_input("🔍 Buscar por ID, resultado o responsable")
-
         filtrado = df[df.apply(lambda x: texto.lower() in str(x.values).lower(), axis=1)] if texto else df
 
         for instrumento in sorted(filtrado["id_activo_tecnico"].unique()):
             st.markdown(f"### 🏷️ Instrumento: `{instrumento}`")
             for _, c in filtrado[filtrado["id_activo_tecnico"] == instrumento].iterrows():
+                st.code(f"ID Calibración: {c.get('id_calibracion', '❌ No definido')}", language="yaml")
                 st.markdown(f"- 📅 **{c['fecha_calibracion']}** | 🧪 **Resultado:** {c['resultado']} | 👤 **Responsable:** {c['responsable']}")
                 st.write(c.get("observaciones", ""))
             st.markdown("---")
@@ -125,7 +128,10 @@ def app():
     elif choice == "Editar Calibración":
         st.subheader("✏️ Editar Calibración")
         registros = list(coleccion.find())
-        opciones = {f"{r.get('id_activo_tecnico', 'Sin ID')} - {r.get('fecha_calibracion', 'Sin Fecha')}": r for r in registros}
+        opciones = {
+            f"{r.get('id_calibracion', '❌')} | {r.get('id_activo_tecnico', 'Sin ID')} - {r.get('fecha_calibracion', 'Sin Fecha')}": r
+            for r in registros
+        }
         seleccion = st.selectbox("Seleccionar calibración", list(opciones.keys()))
         datos = opciones[seleccion]
         nuevos = form_calibracion(defaults=datos)
@@ -143,7 +149,10 @@ def app():
     elif choice == "Eliminar Calibración":
         st.subheader("🗑️ Eliminar Calibración")
         registros = list(coleccion.find())
-        opciones = {f"{r.get('id_activo_tecnico', 'Sin ID')} - {r.get('fecha_calibracion', 'Sin Fecha')}": r for r in registros}
+        opciones = {
+            f"{r.get('id_calibracion', '❌')} | {r.get('id_activo_tecnico', 'Sin ID')} - {r.get('fecha_calibracion', 'Sin Fecha')}": r
+            for r in registros
+        }
         seleccion = st.selectbox("Seleccionar calibración", list(opciones.keys()))
         datos = opciones[seleccion]
         if st.button("Eliminar definitivamente"):
