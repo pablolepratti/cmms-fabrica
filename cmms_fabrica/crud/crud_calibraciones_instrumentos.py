@@ -101,9 +101,7 @@ def app():
                 "usuario": data["usuario_registro"],
                 "descripcion": f"Calibración registrada con resultado '{data['resultado']}'"
             })
-            st.success("Calibración registrada correctamente.")
-            time.sleep(1)
-            st.rerun()
+            st.success("Calibración registrada correctamente. Refrescar la página para ver los cambios.")
 
     elif choice == "Ver Calibraciones":
         st.subheader("📋 Calibraciones por Instrumento")
@@ -142,9 +140,7 @@ def app():
                 "usuario": nuevos["usuario_registro"],
                 "descripcion": f"Edición de calibración ({nuevos['resultado']})"
             })
-            st.success("Calibración actualizada correctamente.")
-            time.sleep(1)
-            st.rerun()
+            st.success("Calibración actualizada correctamente. Refrescar la página para ver los cambios.")
 
     elif choice == "Eliminar Calibración":
         st.subheader("🗑️ Eliminar Calibración")
@@ -162,9 +158,7 @@ def app():
                 "usuario": datos.get("usuario_registro", "desconocido"),
                 "descripcion": f"Se eliminó calibración ({datos.get('resultado', '-')})"
             })
-            st.success("Calibración eliminada.")
-            time.sleep(1)
-            st.rerun()
+            st.success("Calibración eliminada. Refrescar la página para ver los cambios.")
 
 if __name__ == "__main__":
     app()
