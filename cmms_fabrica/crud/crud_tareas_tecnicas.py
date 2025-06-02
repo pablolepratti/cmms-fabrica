@@ -5,8 +5,8 @@ Este módulo permite registrar, visualizar, editar y eliminar tareas técnicas d
 Se registran automáticamente en la colección `historial` para trazabilidad.
 
 ✅ Normas aplicables:
-- ISO 9001:2015 (Control de tareas técnicas, presupuestos, acciones de soporte)
-- ISO 55001 (Gestión de mantenimiento y soporte técnico como parte del ciclo de vida del activo)
+- ISO 9001:2015
+- ISO 55001
 '''
 
 import streamlit as st
@@ -15,6 +15,9 @@ from modulos.conexion_mongo import db
 
 coleccion = db["tareas_tecnicas"]
 historial = db["historial"]
+
+def generar_id_tarea_tecnica():
+    return f"TT-{int(datetime.now().timestamp())}"
 
 def registrar_evento_historial(evento):
     historial.insert_one({
@@ -30,7 +33,6 @@ def form_tecnica(defaults=None):
     with st.form("form_tarea_tecnica"):
         hoy = datetime.today()
 
-        # 🔽 Selectbox dinámico con jerarquía (pertenece_a)
         activos = list(db["activos_tecnicos"].find({}, {"_id": 0, "id_activo_tecnico": 1, "pertenece_a": 1}))
         id_map = {
             a["id_activo_tecnico"]: (
@@ -39,13 +41,14 @@ def form_tecnica(defaults=None):
             )
             for a in activos if "id_activo_tecnico" in a
         }
-        ids_visibles = [""] + sorted(id_map.values())  # Permitimos vacío
+        ids_visibles = [""] + sorted(id_map.values())
         id_default = defaults.get("id_activo_tecnico") if defaults else ""
         label_default = id_map.get(id_default, id_default)
         index_default = ids_visibles.index(label_default) if label_default in ids_visibles else 0
 
         seleccion_visible = st.selectbox("ID del Activo Técnico (opcional)", ids_visibles, index=index_default)
         id_activo = next((k for k, v in id_map.items() if v == seleccion_visible), seleccion_visible) if seleccion_visible else ""
+        id_tarea_tecnica = defaults.get("id_tarea_tecnica") if defaults else generar_id_tarea_tecnica()
 
         fecha_evento = st.date_input("📆 Fecha del Evento", value=defaults.get("fecha_evento", hoy) if defaults else hoy)
         fecha_inicio = st.date_input("🗕️ Fecha de Inicio", value=defaults.get("fecha_inicio", fecha_evento) if defaults else fecha_evento)
@@ -63,6 +66,7 @@ def form_tecnica(defaults=None):
 
     if submit:
         return {
+            "id_tarea_tecnica": id_tarea_tecnica,
             "id_activo_tecnico": id_activo,
             "fecha_evento": str(fecha_evento),
             "fecha_inicio": str(fecha_inicio),
@@ -131,18 +135,21 @@ def app():
                 estado = t.get("estado", "Sin Estado")
                 tipo = t.get("tipo_tecnica", "Sin Tipo")
                 descripcion = t.get("descripcion", "")
+                st.code(f"ID Tarea Técnica: {t.get('id_tarea_tecnica', '❌ No definido')}", language="yaml")
                 st.markdown(f"- 📅 **{fecha}** | 📋 **Tipo:** {tipo} | 🛠️ **Estado:** {estado}")
                 st.write(descripcion)
             st.markdown("---")
 
-        # ✅ Finalizar tarea técnica desde la vista
         st.markdown("### ✅ Finalizar Tarea Técnica")
         tareas_abiertas = [t for t in filtradas if t.get("estado") != "Cerrada"]
 
         if not tareas_abiertas:
             st.info("Todas las tareas ya están finalizadas.")
         else:
-            opciones = {f"{t['id_activo_tecnico']} - {t['descripcion'][:30]}": t for t in tareas_abiertas}
+            opciones = {
+                f"{t.get('id_tarea_tecnica', '❌')} | {t['id_activo_tecnico']} - {t['descripcion'][:30]}": t
+                for t in tareas_abiertas
+            }
             seleccion = st.selectbox("Seleccionar tarea a finalizar", list(opciones.keys()))
             datos = opciones[seleccion]
 
@@ -166,7 +173,10 @@ def app():
     elif choice == "Editar Tarea":
         st.subheader("✏️ Editar Tarea Técnica")
         tareas = list(coleccion.find())
-        opciones = {f"{t.get('id_activo_tecnico', 'Sin ID')} - {t.get('descripcion', '')[:30]}": t for t in tareas}
+        opciones = {
+            f"{t.get('id_tarea_tecnica', '❌')} | {t.get('id_activo_tecnico', 'Sin ID')} - {t.get('descripcion', '')[:30]}": t
+            for t in tareas
+        }
         seleccion = st.selectbox("Seleccionar tarea", list(opciones.keys()))
         datos = opciones[seleccion]
         nuevos_datos = form_tecnica(defaults=datos)
@@ -182,7 +192,10 @@ def app():
     elif choice == "Eliminar Tarea":
         st.subheader("🗑️ Eliminar Tarea Técnica")
         tareas = list(coleccion.find())
-        opciones = {f"{t.get('id_activo_tecnico', 'Sin ID')} - {t.get('descripcion', '')[:30]}": t for t in tareas}
+        opciones = {
+            f"{t.get('id_tarea_tecnica', '❌')} | {t.get('id_activo_tecnico', 'Sin ID')} - {t.get('descripcion', '')[:30]}": t
+            for t in tareas
+        }
         seleccion = st.selectbox("Seleccionar tarea", list(opciones.keys()))
         datos = opciones[seleccion]
         if st.button("Eliminar definitivamente"):
@@ -196,4 +209,3 @@ def app():
 
 if __name__ == "__main__":
     app()
-
