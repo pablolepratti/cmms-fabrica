@@ -5,8 +5,8 @@ Este módulo permite registrar, visualizar, editar y eliminar proveedores técni
 Cada cambio se documenta automáticamente en la colección `historial`.
 
 ✅ Normas aplicables:
-- ISO 9001:2015 (Evaluación de proveedores y trazabilidad de servicios)
-- ISO 55001 (Gestión de activos con terceros, contratos y mantenimiento)
+- ISO 9001:2015
+- ISO 55001
 """
 
 import streamlit as st
@@ -75,6 +75,7 @@ def app():
         st.subheader("📋 Servicios Externos Registrados")
         proveedores = list(coleccion.find().sort("nombre", 1))
         for p in proveedores:
+            st.code(f"ID Proveedor: {p.get('id_proveedor', '❌ No definido')}", language="yaml")
             st.markdown(f"**{p['nombre']}** ({p['especialidad']})")
             st.write(f"Contacto: {p['contacto']} | Tel: {p['telefono']} | Correo: {p['correo']}")
             st.write(p.get("observaciones", ""))
