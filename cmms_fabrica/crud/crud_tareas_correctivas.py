@@ -17,6 +17,9 @@ from modulos.conexion_mongo import db
 coleccion = db["tareas_correctivas"]
 historial = db["historial"]
 
+def generar_id_tarea():
+    return f"TC-{int(datetime.now().timestamp())}"
+
 def registrar_evento_historial(evento):
     historial.insert_one({
         "tipo_evento": evento["tipo_evento"],
@@ -36,11 +39,12 @@ def form_tarea(defaults=None):
         index_default = ids_activos.index(id_default) if id_default in ids_activos else 0 if ids_activos else -1
 
         id_activo = st.selectbox("ID del Activo Técnico", ids_activos, index=index_default) if ids_activos else st.text_input("ID del Activo Técnico")
+        id_tarea = defaults.get("id_tarea") if defaults else generar_id_tarea()
 
         fecha_evento = st.date_input("Fecha del Evento", value=defaults.get("fecha_evento") if defaults else datetime.today())
         descripcion_falla = st.text_area("Descripción de la Falla", value=defaults.get("descripcion_falla") if defaults else "")
         modo_falla = st.text_input("Modo de Falla", value=defaults.get("modo_falla") if defaults else "")
-        
+
         rca_requerido = st.checkbox("¿Requiere Análisis de Causa Raíz?", value=defaults.get("rca_requerido") if defaults else False)
         rca_completado = st.checkbox("RCA Completado", value=defaults.get("rca_completado") if defaults else False)
         causa_raiz = st.text_input("Causa Raíz", value=defaults.get("causa_raiz") if defaults else "")
@@ -57,6 +61,7 @@ def form_tarea(defaults=None):
 
     if submit:
         return {
+            "id_tarea": id_tarea,
             "id_activo_tecnico": id_activo,
             "fecha_evento": str(fecha_evento),
             "descripcion_falla": descripcion_falla,
@@ -73,7 +78,7 @@ def form_tarea(defaults=None):
             "usuario_registro": usuario,
             "observaciones": observaciones,
             "fecha_registro": datetime.now(),
-            "incompleto": False  # al guardar manualmente se asume como completo
+            "incompleto": False
         }
     return None
 
@@ -130,6 +135,7 @@ def app():
                 fecha = t.get("fecha_evento", "Sin Fecha")
                 estado = t.get("estado", "Sin Estado")
                 descripcion = t.get("descripcion_falla") or t.get("descripcion", "")
+                st.code(f"ID Tarea: {t.get('id_tarea', '❌ No definido')}", language="yaml")
                 st.markdown(f"- 📅 **{fecha}** | 🛠️ **Estado:** {estado}")
                 st.write(descripcion)
             st.markdown("---")
@@ -140,7 +146,7 @@ def app():
         query = {"incompleto": True} if mostrar_incompletas else {}
         tareas = list(coleccion.find(query))
         opciones = {
-            f"{t.get('id_activo_tecnico', '⛔ Sin ID')} - {t.get('descripcion_falla', '')[:30]}": t
+            f"{t.get('id_tarea', '❌')} | {t.get('id_activo_tecnico', '⛔')} - {t.get('descripcion_falla', '')[:30]}": t
             for t in tareas
         }
 
@@ -167,7 +173,7 @@ def app():
         st.subheader("🗑️ Eliminar Tarea Correctiva")
         tareas = list(coleccion.find())
         opciones = {
-            f"{t.get('id_activo_tecnico', '⛔ Sin ID')} - {t.get('descripcion_falla', '')[:30]}": t
+            f"{t.get('id_tarea', '❌')} | {t.get('id_activo_tecnico', '⛔')} - {t.get('descripcion_falla', '')[:30]}": t
             for t in tareas
         }
 
