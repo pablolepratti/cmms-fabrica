@@ -168,6 +168,9 @@ def app():
         st.subheader("✏️ Editar Plan Preventivo")
         planes = list(coleccion.find())
         opciones = {f"{p['id_plan']} - {p['id_activo_tecnico']}": p for p in planes}
+        if not opciones:
+            st.warning("No hay planes para editar.")
+            return
         seleccion = st.selectbox("Seleccionar plan", list(opciones.keys()))
         datos = opciones[seleccion]
         nuevos_datos = form_plan(defaults=datos)
@@ -185,6 +188,9 @@ def app():
         st.subheader("🗑️ Eliminar Plan Preventivo")
         planes = list(coleccion.find())
         opciones = {f"{p['id_plan']} - {p['id_activo_tecnico']}": p for p in planes}
+        if not opciones:
+            st.warning("No hay planes para eliminar.")
+            return
         seleccion = st.selectbox("Seleccionar plan", list(opciones.keys()))
         datos = opciones[seleccion]
         if st.button("Eliminar definitivamente"):
@@ -195,7 +201,7 @@ def app():
                 "usuario": datos.get("usuario_registro", "desconocido"),
                 "descripcion": f"Se eliminó el plan '{datos.get('id_plan', '')}'"
             })
-            st.success("Plan eliminado.")
+            st.success("Plan eliminado. Actualizá la vista para confirmar.")
 
 if __name__ == "__main__":
     app()
