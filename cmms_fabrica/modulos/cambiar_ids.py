@@ -10,15 +10,14 @@ EDITABLES = {
             "planes_preventivos.id_activo_tecnico",
             "observaciones.id_activo_tecnico",
             "calibraciones.id_activo_tecnico",
-            "historial.id_activo_tecnico",
-            "servicios.id_activo"
+            "historial.id_activo_tecnico"
         ]
     },
     "tareas_correctivas": {
-        "id_origen": ["historial.id_origen"]
+        "id_tarea": ["historial.id_origen"]
     },
     "tareas_tecnicas": {
-        "id_origen": ["historial.id_origen"]
+        "id_tarea_tecnica": ["historial.id_origen"]
     },
     "planes_preventivos": {
         "id_plan": ["historial.id_origen"]
@@ -26,8 +25,11 @@ EDITABLES = {
     "observaciones": {
         "id_observacion": ["historial.id_origen"]
     },
-    "servicios": {
-        "id_servicio": ["historial.id_origen"]
+    "calibraciones": {
+        "id_calibracion": ["historial.id_origen"]
+    },
+    "servicios_externos": {
+        "id_proveedor": ["historial.id_origen"]
     },
     "historial": {
         "id_evento": []
