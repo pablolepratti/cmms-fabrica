@@ -18,6 +18,9 @@ from modulos.conexion_mongo import db
 coleccion = db["planes_preventivos"]
 historial = db["historial"]
 
+def generar_id_plan():
+    return f"PP-{int(datetime.now().timestamp())}"
+
 def registrar_evento_historial(evento):
     historial.insert_one({
         "tipo_evento": evento["tipo_evento"],
@@ -36,7 +39,7 @@ def app():
 
     def form_plan(defaults=None):
         with st.form("form_plan_preventivo"):
-            id_plan = st.text_input("ID del Plan", value=defaults.get("id_plan") if defaults else "")
+            id_plan = st.text_input("ID del Plan", value=defaults.get("id_plan") if defaults else generar_id_plan())
 
             activos = db["activos_tecnicos"]
             activos_lista = list(activos.find({}, {"_id": 0, "id_activo_tecnico": 1, "nombre": 1, "pertenece_a": 1}))
@@ -150,6 +153,7 @@ def app():
 
                 vencido = fecha_obj and fecha_obj < hoy
 
+                st.code(f"ID del Plan: {id_plan}", language="yaml")
                 if vencido:
                     st.markdown(
                         f"<span style='color:red; font-weight:bold'>🚨 {id_plan} ({estado}) - VENCIDO el {proxima_fecha}</span>",
