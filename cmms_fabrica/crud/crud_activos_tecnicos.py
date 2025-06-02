@@ -51,10 +51,9 @@ def app():
             tipo = st.selectbox("Tipo de Activo", opciones_tipo, index=tipo_index)
             estado = st.selectbox("Estado", opciones_estado, index=estado_index)
 
-            # Selectbox dinámico para jerarquía funcional
             activos_existentes = list(coleccion.find({}, {"_id": 0, "id_activo_tecnico": 1}))
             ids_disponibles = sorted([a["id_activo_tecnico"] for a in activos_existentes if a.get("id_activo_tecnico") != id_activo])
-            ids_disponibles.insert(0, "")  # permitir vacío
+            ids_disponibles.insert(0, "")
             valor_default = defaults.get("pertenece_a") if defaults else ""
             index_default = ids_disponibles.index(valor_default) if valor_default in ids_disponibles else 0
             pertenece_a = st.selectbox("Pertenece a (opcional)", options=ids_disponibles, index=index_default)
@@ -164,7 +163,7 @@ def app():
                     "usuario": datos.get("usuario_registro", "desconocido"),
                     "descripcion": f"Se eliminó el activo '{datos.get('nombre', '')}'"
                 })
-                st.success("Activo técnico eliminado.")
+                st.success("Activo técnico eliminado. Refrescar la página para ver los cambios.")
         else:
             st.info("No hay activos cargados.")
 
