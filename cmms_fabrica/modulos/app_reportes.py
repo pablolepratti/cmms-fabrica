@@ -20,36 +20,34 @@ from io import BytesIO
 coleccion = db["historial"]
 activos_tecnicos = db["activos_tecnicos"]
 
-# 🧾 Clase PDF simplificada
+# 📄 Clase PDF con descripciones legibles
 class PDF(FPDF):
     def header(self):
         self.set_font("Arial", "B", 14)
         self.cell(0, 10, "Reporte de Eventos Técnicos", ln=True, align="C")
         self.ln(5)
 
-    def chapter_title(self, title):
-        self.set_font("Arial", "B", 12)
-        self.cell(0, 10, title, ln=True)
-        self.ln(2)
-
     def chapter_body(self, df):
-        self.set_font("Arial", "B", 9)
-        for col in df.columns[:5]:
-            self.cell(38, 8, str(col)[:18], border=1)
-        self.ln()
-
-        self.set_font("Arial", "", 9)
+        self.set_font("Arial", "", 10)
         for _, row in df.iterrows():
-            for val in row[:5]:
-                clean_val = str(val).encode('ascii', 'ignore').decode('ascii')
-                self.cell(38, 8, clean_val[:18], border=1)
-            self.ln()
+            self.multi_cell(0, 6, f"Fecha: {row['fecha_evento'].strftime('%Y-%m-%d')}", 0)
+            self.multi_cell(0, 6, f"Tipo de evento: {row['tipo_evento']}", 0)
+            self.multi_cell(0, 6, f"Activo: {row['id_activo_tecnico']}", 0)
+            self.multi_cell(0, 6, f"Usuario: {row['usuario_registro']}", 0)
+            self.set_font("Arial", "B", 10)
+            self.multi_cell(0, 6, "Descripción:", 0)
+            self.set_font("Arial", "", 10)
+            self.multi_cell(0, 6, f"{row.get('descripcion', '-')}", 0)
+            self.set_font("Arial", "B", 10)
+            self.multi_cell(0, 6, "Observaciones:", 0)
+            self.set_font("Arial", "", 10)
+            self.multi_cell(0, 6, f"{row.get('observaciones', '-')}", 0)
+            self.ln(5)
 
 def generar_pdf(df, nombre):
     pdf = PDF()
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
-    pdf.chapter_title("Reporte generado el " + datetime.now().strftime("%Y-%m-%d %H:%M"))
     pdf.chapter_body(df)
     os.makedirs("reportes", exist_ok=True)
     ruta = f"reportes/reporte_{nombre.lower().replace(' ', '_')}.pdf"
@@ -66,7 +64,6 @@ def generar_excel(df, nombre):
 def app():
     st.title("📄 Reportes Técnicos del CMMS")
 
-    # Filtros
     with st.sidebar:
         st.markdown("### 📅 Filtros")
         fecha_desde = st.date_input("Desde", value=date(2024, 1, 1))
@@ -86,7 +83,6 @@ def app():
         st.error("⚠️ La fecha 'desde' no puede ser posterior a la fecha 'hasta'.")
         return
 
-    # Construcción del query
     query = {
         "fecha_evento": {
             "$gte": datetime.combine(fecha_desde, datetime.min.time()),
@@ -106,15 +102,16 @@ def app():
         st.warning("No se encontraron datos para ese período.")
         return
 
-    # Procesamiento de DataFrame
     df = pd.DataFrame(datos)
     df["fecha_evento"] = pd.to_datetime(df["fecha_evento"])
     if "usuario_registro" not in df.columns and "usuario" in df.columns:
         df["usuario_registro"] = df["usuario"]
     elif "usuario_registro" not in df.columns:
         df["usuario_registro"] = "desconocido"
+    if "observaciones" not in df.columns:
+        df["observaciones"] = "-"
 
-    columnas = ["fecha_evento", "tipo_evento", "id_activo_tecnico", "descripcion", "usuario_registro"]
+    columnas = ["fecha_evento", "tipo_evento", "id_activo_tecnico", "descripcion", "observaciones", "usuario_registro"]
 
     st.markdown("### 📊 Vista Previa del Reporte")
     st.dataframe(df[columnas].sort_values("fecha_evento", ascending=False), use_container_width=True)
