@@ -15,9 +15,17 @@ from crud.generador_historial import registrar_evento_historial
 coleccion = db["inventario"]
 
 
-def form_item(defaults=None):
-    """Formulario para cargar o editar un ítem del inventario."""
-    with st.form("form_inventario"):
+def form_item(defaults=None, key: str = "form_inventario"):
+    """Formulario para cargar o editar un ítem del inventario.
+
+    Parameters
+    ----------
+    defaults : dict, optional
+        Valores por defecto para editar un ítem existente.
+    key : str, default "form_inventario"
+        Identificador único del formulario en la interfaz.
+    """
+    with st.form(key):
         col1, col2 = st.columns(2)
         with col1:
             id_item = st.text_input("ID del ítem", value=defaults.get("id_item") if defaults else "")
@@ -115,7 +123,7 @@ def app_inventario(usuario: str) -> None:
 
     with pestañas[1]:
         st.markdown("### ➕ Agregar nuevo ítem")
-        data = form_item()
+        data = form_item(key="form_nuevo_item")
         if data:
             if coleccion.find_one({"id_item": data["id_item"]}):
                 st.error("⚠️ Ya existe un ítem con ese ID.")
