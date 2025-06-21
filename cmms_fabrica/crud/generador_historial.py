@@ -1,10 +1,30 @@
-from pymongo import MongoClient
+"""Registro de eventos para el historial del CMMS.
+
+Este módulo centraliza la inserción de eventos en la colección ``historial``
+garantizando trazabilidad según las directrices de ISO 9001 e ISO 55001.
+"""
+
+from __future__ import annotations
+
 from datetime import datetime
+import logging
 from modulos.conexion_mongo import db
 
-def registrar_evento_historial(tipo_evento, id_activo, id_origen, descripcion, usuario, proveedor_externo=None, observaciones=None):
-    """
-    Inserta un evento consolidado en la colección historial.
+logger = logging.getLogger(__name__)
+
+def registrar_evento_historial(
+    tipo_evento: str,
+    id_activo: str | None,
+    id_origen: str,
+    descripcion: str,
+    usuario: str,
+    proveedor_externo: str | None = None,
+    observaciones: str | None = None,
+) -> str:
+    """Inserta un evento consolidado en la colección ``historial``.
+
+    Devuelve el identificador generado para facilitar la trazabilidad
+    de acuerdo con ISO 9001.
     """
 
     historial = db["historial"]
@@ -22,7 +42,8 @@ def registrar_evento_historial(tipo_evento, id_activo, id_origen, descripcion, u
     }
 
     historial.insert_one(evento)
-    print(f"[Historial] Evento registrado: {evento['id_evento']}")
+    logger.info("Evento registrado en historial: %s", evento["id_evento"])
+    return evento["id_evento"]
 
 # Ejemplo de uso desde otro script:
 if __name__ == "__main__":
