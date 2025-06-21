@@ -62,11 +62,12 @@ def generar_excel(df, nombre):
     return output
 
 
-def filtrar_ultimo_por_activo(df: pd.DataFrame, key: str = "id_activo_tecnico") -> pd.DataFrame:
-    """Devuelve el registro m\u00e1s reciente por activo t\u00e9cnico.
+def filtrar_ultimo_por_activo(df: pd.DataFrame, key: str = "id_origen") -> pd.DataFrame:
+    """Devuelve el registro m\u00e1s reciente agrupado por ``key``.
 
-    Esto asegura la trazabilidad conforme a ISO 9001:2015 al conservar solo la
-    \u00faltima observaci\u00f3n registrada por activo.
+    Por defecto se utiliza ``id_origen`` para mostrar solo la \u00faltima
+    actualizaci\u00f3n de cada evento, mejorando la trazabilidad seg\u00fan las
+    directrices de ISO 9001:2015.
     """
     if key not in df.columns or "fecha_evento" not in df.columns:
         return df

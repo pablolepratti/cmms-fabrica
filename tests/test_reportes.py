@@ -23,12 +23,13 @@ def test_generar_reportes_con_observaciones(tmp_path):
     assert excel_buffer.getbuffer().nbytes > 0
 
 
-def test_filtrar_ultimo_por_activo():
+def test_filtrar_ultimo_por_evento():
     df = pd.DataFrame(
         {
             "fecha_evento": [pd.Timestamp("2024-01-01"), pd.Timestamp("2024-01-05")],
             "tipo_evento": ["test", "test"],
             "id_activo_tecnico": ["A1", "A1"],
+            "id_origen": ["EV1", "EV1"],
             "descripcion": ["primero", "segundo"],
             "usuario_registro": ["u", "u"],
         }
