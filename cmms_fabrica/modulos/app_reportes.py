@@ -83,6 +83,8 @@ def app():
         st.error("⚠️ La fecha 'desde' no puede ser posterior a la fecha 'hasta'.")
         return
 
+    # Filtrado por fecha_evento según la definición en docs/estructura_sistema.md
+    # (sección "Timestamps")
     query = {
         "fecha_evento": {
             "$gte": datetime.combine(fecha_desde, datetime.min.time()),
