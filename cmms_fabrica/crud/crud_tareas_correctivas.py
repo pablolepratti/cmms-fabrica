@@ -13,22 +13,13 @@ Registra automáticamente en la colección `historial` cada evento para asegurar
 import streamlit as st
 from datetime import datetime
 from modulos.conexion_mongo import db
+from crud.generador_historial import registrar_evento_historial
 
 coleccion = db["tareas_correctivas"]
-historial = db["historial"]
 
 def generar_id_tarea():
     return f"TC-{int(datetime.now().timestamp())}"
 
-def registrar_evento_historial(evento):
-    historial.insert_one({
-        "tipo_evento": evento["tipo_evento"],
-        "id_activo_tecnico": evento.get("id_activo_tecnico"),
-        "descripcion": evento.get("descripcion", ""),
-        "usuario": evento.get("usuario", "sistema"),
-        "fecha_evento": datetime.now(),
-        "modulo": "tareas_correctivas"
-    })
 
 def form_tarea(defaults=None):
     with st.form("form_tarea_correctiva"):
@@ -92,12 +83,13 @@ def app():
         data = form_tarea()
         if data:
             coleccion.insert_one(data)
-            registrar_evento_historial({
-                "tipo_evento": "Alta de tarea correctiva",
-                "id_activo_tecnico": data["id_activo_tecnico"],
-                "usuario": data["usuario_registro"],
-                "descripcion": f"Tarea registrada por falla: {data['descripcion_falla'][:60]}..."
-            })
+            registrar_evento_historial(
+                "Alta de tarea correctiva",
+                data["id_activo_tecnico"],
+                data["id_tarea"],
+                f"Tarea registrada por falla: {data['descripcion_falla'][:60]}...",
+                data["usuario_registro"],
+            )
             st.success("Tarea correctiva registrada correctamente.")
 
     elif choice == "Ver Tareas":
@@ -157,12 +149,13 @@ def app():
                 nuevos_datos = form_tarea(defaults=datos)
                 if nuevos_datos:
                     coleccion.update_one({"_id": datos["_id"]}, {"$set": nuevos_datos})
-                    registrar_evento_historial({
-                        "tipo_evento": "Edición de tarea correctiva",
-                        "id_activo_tecnico": nuevos_datos["id_activo_tecnico"],
-                        "usuario": nuevos_datos["usuario_registro"],
-                        "descripcion": f"Tarea editada: {nuevos_datos['descripcion_falla'][:60]}..."
-                    })
+                    registrar_evento_historial(
+                        "Edición de tarea correctiva",
+                        nuevos_datos["id_activo_tecnico"],
+                        nuevos_datos["id_tarea"],
+                        f"Tarea editada: {nuevos_datos['descripcion_falla'][:60]}...",
+                        nuevos_datos["usuario_registro"],
+                    )
                     st.success("Tarea actualizada correctamente.")
         else:
             st.info("No hay tareas disponibles para editar.")
@@ -180,12 +173,13 @@ def app():
             datos = opciones.get(seleccion)
             if datos and st.button("Eliminar definitivamente"):
                 coleccion.delete_one({"_id": datos["_id"]})
-                registrar_evento_historial({
-                    "tipo_evento": "Baja de tarea correctiva",
-                    "id_activo_tecnico": datos.get("id_activo_tecnico"),
-                    "usuario": datos.get("usuario_registro", "desconocido"),
-                    "descripcion": f"Se eliminó tarea: {datos.get('descripcion_falla', '')[:60]}..."
-                })
+                registrar_evento_historial(
+                    "Baja de tarea correctiva",
+                    datos.get("id_activo_tecnico"),
+                    datos.get("id_tarea"),
+                    f"Se eliminó tarea: {datos.get('descripcion_falla', '')[:60]}...",
+                    datos.get("usuario_registro", "desconocido"),
+                )
                 st.success("Tarea eliminada. Refrescá la vista para confirmar.")
         else:
             st.info("No hay tareas disponibles para eliminar.")

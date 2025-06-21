@@ -82,12 +82,13 @@ def app():
         data = form_activo()
         if data:
             coleccion.insert_one(data)
-            registrar_evento_historial({
-                "tipo_evento": "Alta de activo técnico",
-                "id_activo_tecnico": data["id_activo_tecnico"],
-                "usuario": data["usuario_registro"],
-                "descripcion": f"Se dio de alta el activo '{data['nombre']}'"
-            })
+            registrar_evento_historial(
+                "Alta de activo técnico",
+                data["id_activo_tecnico"],
+                data["id_activo_tecnico"],
+                f"Se dio de alta el activo '{data['nombre']}'",
+                data["usuario_registro"],
+            )
             st.success("Activo técnico agregado correctamente.")
 
     elif choice == "Ver":
@@ -138,12 +139,13 @@ def app():
             nuevos_datos = form_activo(defaults=datos)
             if nuevos_datos:
                 coleccion.update_one({"_id": datos["_id"]}, {"$set": nuevos_datos})
-                registrar_evento_historial({
-                    "tipo_evento": "Edición de activo técnico",
-                    "id_activo_tecnico": nuevos_datos["id_activo_tecnico"],
-                    "usuario": nuevos_datos["usuario_registro"],
-                    "descripcion": f"Se editó el activo '{nuevos_datos['nombre']}'"
-                })
+                registrar_evento_historial(
+                    "Edición de activo técnico",
+                    nuevos_datos["id_activo_tecnico"],
+                    nuevos_datos["id_activo_tecnico"],
+                    f"Se editó el activo '{nuevos_datos['nombre']}'",
+                    nuevos_datos["usuario_registro"],
+                )
                 st.success("Activo técnico actualizado correctamente.")
         else:
             st.info("No hay activos cargados.")
@@ -157,12 +159,13 @@ def app():
             datos = opciones[seleccion]
             if st.button("Eliminar definitivamente"):
                 coleccion.delete_one({"_id": datos["_id"]})
-                registrar_evento_historial({
-                    "tipo_evento": "Baja de activo técnico",
-                    "id_activo_tecnico": datos.get("id_activo_tecnico"),
-                    "usuario": datos.get("usuario_registro", "desconocido"),
-                    "descripcion": f"Se eliminó el activo '{datos.get('nombre', '')}'"
-                })
+                registrar_evento_historial(
+                    "Baja de activo técnico",
+                    datos.get("id_activo_tecnico"),
+                    datos.get("id_activo_tecnico"),
+                    f"Se eliminó el activo '{datos.get('nombre', '')}'",
+                    datos.get("usuario_registro", "desconocido"),
+                )
                 st.success("Activo técnico eliminado. Refrescar la página para ver los cambios.")
         else:
             st.info("No hay activos cargados.")

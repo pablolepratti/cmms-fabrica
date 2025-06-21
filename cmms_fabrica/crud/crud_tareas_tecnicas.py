@@ -12,22 +12,13 @@ Se registran automáticamente en la colección `historial` para trazabilidad.
 import streamlit as st
 from datetime import datetime
 from modulos.conexion_mongo import db
+from crud.generador_historial import registrar_evento_historial
 
 coleccion = db["tareas_tecnicas"]
-historial = db["historial"]
 
 def generar_id_tarea_tecnica():
     return f"TT-{int(datetime.now().timestamp())}"
 
-def registrar_evento_historial(evento):
-    historial.insert_one({
-        "tipo_evento": "tecnica",
-        "id_activo_tecnico": evento.get("id_activo_tecnico", ""),
-        "descripcion": evento.get("descripcion", ""),
-        "usuario": evento.get("usuario", "sistema"),
-        "fecha_evento": datetime.now(),
-        "modulo": "tareas_tecnicas"
-    })
 
 def form_tecnica(defaults=None):
     with st.form("form_tarea_tecnica"):
@@ -93,11 +84,13 @@ def app():
         data = form_tecnica()
         if data:
             coleccion.insert_one(data)
-            registrar_evento_historial({
-                "id_activo_tecnico": data["id_activo_tecnico"],
-                "usuario": data["usuario_registro"],
-                "descripcion": f"Tarea registrada: {data['descripcion'][:60]}..."
-            })
+            registrar_evento_historial(
+                "Alta de tarea técnica",
+                data["id_activo_tecnico"],
+                data["id_tarea_tecnica"],
+                f"Tarea registrada: {data['descripcion'][:60]}...",
+                data["usuario_registro"],
+            )
             st.success("Tarea técnica registrada correctamente.")
 
     elif choice == "Ver Tareas":
@@ -162,11 +155,13 @@ def app():
                         "observaciones": datos.get("observaciones", "") + " | Finalizada vía dashboard"
                     }}
                 )
-                registrar_evento_historial({
-                    "id_activo_tecnico": datos["id_activo_tecnico"],
-                    "usuario": datos["usuario_registro"],
-                    "descripcion": f"Tarea marcada como finalizada: {datos['descripcion'][:60]}..."
-                })
+                registrar_evento_historial(
+                    "Cierre de tarea técnica",
+                    datos["id_activo_tecnico"],
+                    datos["id_tarea_tecnica"],
+                    f"Tarea marcada como finalizada: {datos['descripcion'][:60]}...",
+                    datos["usuario_registro"],
+                )
                 st.success("Tarea marcada como finalizada.")
                 st.rerun()
 
@@ -182,11 +177,13 @@ def app():
         nuevos_datos = form_tecnica(defaults=datos)
         if nuevos_datos:
             coleccion.update_one({"_id": datos["_id"]}, {"$set": nuevos_datos})
-            registrar_evento_historial({
-                "id_activo_tecnico": nuevos_datos["id_activo_tecnico"],
-                "usuario": nuevos_datos["usuario_registro"],
-                "descripcion": f"Tarea técnica editada: {nuevos_datos['descripcion'][:60]}..."
-            })
+            registrar_evento_historial(
+                "Edición de tarea técnica",
+                nuevos_datos["id_activo_tecnico"],
+                nuevos_datos["id_tarea_tecnica"],
+                f"Tarea técnica editada: {nuevos_datos['descripcion'][:60]}...",
+                nuevos_datos["usuario_registro"],
+            )
             st.success("Tarea técnica actualizada correctamente.")
 
     elif choice == "Eliminar Tarea":
@@ -200,11 +197,13 @@ def app():
         datos = opciones[seleccion]
         if st.button("Eliminar definitivamente"):
             coleccion.delete_one({"_id": datos["_id"]})
-            registrar_evento_historial({
-                "id_activo_tecnico": datos.get("id_activo_tecnico", ""),
-                "usuario": datos.get("usuario_registro", "desconocido"),
-                "descripcion": f"Se eliminó tarea: {datos.get('descripcion', '')[:60]}..."
-            })
+            registrar_evento_historial(
+                "Baja de tarea técnica",
+                datos.get("id_activo_tecnico", ""),
+                datos.get("id_tarea_tecnica"),
+                f"Se eliminó tarea: {datos.get('descripcion', '')[:60]}...",
+                datos.get("usuario_registro", "desconocido"),
+            )
             st.success("Tarea técnica eliminada.")
 
 if __name__ == "__main__":

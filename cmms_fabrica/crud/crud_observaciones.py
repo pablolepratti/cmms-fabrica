@@ -14,20 +14,10 @@ Registra automáticamente cada evento en la colección `historial` para trazabil
 import streamlit as st
 from datetime import datetime
 from modulos.conexion_mongo import db
+from crud.generador_historial import registrar_evento_historial
 
 coleccion = db["observaciones"]
-historial = db["historial"]
 activos = db["activos_tecnicos"]
-
-def registrar_evento_historial(evento):
-    historial.insert_one({
-        "tipo_evento": evento["tipo_evento"],
-        "id_activo_tecnico": evento.get("id_activo_tecnico"),
-        "descripcion": evento.get("descripcion", ""),
-        "usuario": evento.get("usuario"),
-        "fecha_evento": datetime.now(),
-        "modulo": "observaciones"
-    })
 
 def app():
     st.title("👁️ Registro de Observaciones Técnicas")
@@ -95,12 +85,14 @@ def app():
         data = form_observacion()
         if data:
             coleccion.insert_one(data)
-            registrar_evento_historial({
-                "tipo_evento": "Registro de observación técnica",
-                "id_activo_tecnico": data["id_activo_tecnico"],
-                "usuario": data["usuario_registro"],
-                "descripcion": f"{data['tipo_observacion']} registrada: {data['descripcion'][:60]}..."
-            })
+            registrar_evento_historial(
+                "Registro de observación técnica",
+                data["id_activo_tecnico"],
+                data["id_observacion"],
+                f"{data['tipo_observacion']} registrada: {data['descripcion'][:60]}...",
+                data["usuario_registro"],
+                observaciones=data.get("observaciones"),
+            )
             st.success("Observación registrada correctamente.")
 
     elif choice == "Ver Observaciones":
@@ -152,12 +144,14 @@ def app():
         nuevos_datos = form_observacion(defaults=datos)
         if nuevos_datos:
             coleccion.update_one({"_id": datos["_id"]}, {"$set": nuevos_datos})
-            registrar_evento_historial({
-                "tipo_evento": "Edición de observación técnica",
-                "id_activo_tecnico": nuevos_datos["id_activo_tecnico"],
-                "usuario": nuevos_datos["usuario_registro"],
-                "descripcion": f"Observación editada: {nuevos_datos['descripcion'][:60]}..."
-            })
+            registrar_evento_historial(
+                "Edición de observación técnica",
+                nuevos_datos["id_activo_tecnico"],
+                nuevos_datos["id_observacion"],
+                f"Observación editada: {nuevos_datos['descripcion'][:60]}...",
+                nuevos_datos["usuario_registro"],
+                observaciones=nuevos_datos.get("observaciones"),
+            )
             st.success("Observación actualizada correctamente. Refrescar la página para ver los cambios.")
 
     elif choice == "Eliminar Observación":
@@ -168,12 +162,14 @@ def app():
         datos = opciones[seleccion]
         if st.button("Eliminar definitivamente"):
             coleccion.delete_one({"_id": datos["_id"]})
-            registrar_evento_historial({
-                "tipo_evento": "Baja de observación técnica",
-                "id_activo_tecnico": datos.get("id_activo_tecnico"),
-                "usuario": datos.get("usuario_registro", "desconocido"),
-                "descripcion": f"Se eliminó la observación: {datos.get('descripcion', '')[:60]}..."
-            })
+            registrar_evento_historial(
+                "Baja de observación técnica",
+                datos.get("id_activo_tecnico"),
+                datos.get("id_observacion"),
+                f"Se eliminó la observación: {datos.get('descripcion', '')[:60]}...",
+                datos.get("usuario_registro", "desconocido"),
+                observaciones=datos.get("observaciones"),
+            )
             st.success("Observación eliminada. Refrescar la página para ver los cambios.")
 
 if __name__ == "__main__":

@@ -2,7 +2,7 @@ import pymongo
 import os
 from datetime import datetime
 from dotenv import load_dotenv
-from modulos.historial import log_evento
+from crud.generador_historial import registrar_evento_historial
 from modulos.conexion_mongo import db
 
 LIMITE_MB = 400
@@ -35,7 +35,13 @@ def limpiar_coleccion(nombre, campo_fecha, porcentaje=0.3, minimo=100):
 
     if ids_a_borrar:
         coleccion.delete_many({"_id": {"$in": ids_a_borrar}})
-        log_evento("sistema", "Limpieza automática Mongo", nombre, "almacenamiento", f"Se eliminaron {len(ids_a_borrar)} documentos.")
+        registrar_evento_historial(
+            "limpieza",
+            None,
+            nombre,
+            f"Se eliminaron {len(ids_a_borrar)} documentos.",
+            "sistema",
+        )
         return len(ids_a_borrar)
 
     return 0
