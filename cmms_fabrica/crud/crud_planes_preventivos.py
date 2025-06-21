@@ -14,22 +14,13 @@ Cada acción se registra en la colección `historial` para trazabilidad operativ
 import streamlit as st
 from datetime import datetime
 from modulos.conexion_mongo import db
+from crud.generador_historial import registrar_evento_historial
 
 coleccion = db["planes_preventivos"]
-historial = db["historial"]
 
 def generar_id_plan():
     return f"PP-{int(datetime.now().timestamp())}"
 
-def registrar_evento_historial(evento):
-    historial.insert_one({
-        "tipo_evento": evento["tipo_evento"],
-        "id_activo_tecnico": evento.get("id_activo_tecnico"),
-        "descripcion": evento.get("descripcion", ""),
-        "usuario": evento.get("usuario"),
-        "fecha_evento": datetime.now(),
-        "modulo": "planes_preventivos"
-    })
 
 def app():
     st.title("🗓️ Gestión de Planes Preventivos")
@@ -100,12 +91,13 @@ def app():
         data = form_plan()
         if data:
             coleccion.insert_one(data)
-            registrar_evento_historial({
-                "tipo_evento": "Alta de plan preventivo",
-                "id_activo_tecnico": data["id_activo_tecnico"],
-                "usuario": data["usuario_registro"],
-                "descripcion": f"Plan '{data['id_plan']}' registrado con frecuencia {data['frecuencia']} {data['unidad_frecuencia']}"
-            })
+            registrar_evento_historial(
+                "Alta de plan preventivo",
+                data["id_activo_tecnico"],
+                data["id_plan"],
+                f"Plan '{data['id_plan']}' registrado con frecuencia {data['frecuencia']} {data['unidad_frecuencia']}",
+                data["usuario_registro"],
+            )
             st.success("Plan preventivo registrado correctamente.")
 
     elif choice == "Ver Planes":
@@ -176,12 +168,13 @@ def app():
         nuevos_datos = form_plan(defaults=datos)
         if nuevos_datos:
             coleccion.update_one({"_id": datos["_id"]}, {"$set": nuevos_datos})
-            registrar_evento_historial({
-                "tipo_evento": "Edición de plan preventivo",
-                "id_activo_tecnico": nuevos_datos["id_activo_tecnico"],
-                "usuario": nuevos_datos["usuario_registro"],
-                "descripcion": f"Plan '{nuevos_datos['id_plan']}' fue editado"
-            })
+            registrar_evento_historial(
+                "Edición de plan preventivo",
+                nuevos_datos["id_activo_tecnico"],
+                nuevos_datos["id_plan"],
+                f"Plan '{nuevos_datos['id_plan']}' fue editado",
+                nuevos_datos["usuario_registro"],
+            )
             st.success("Plan actualizado correctamente.")
 
     elif choice == "Eliminar Plan":
@@ -195,12 +188,13 @@ def app():
         datos = opciones[seleccion]
         if st.button("Eliminar definitivamente"):
             coleccion.delete_one({"_id": datos["_id"]})
-            registrar_evento_historial({
-                "tipo_evento": "Baja de plan preventivo",
-                "id_activo_tecnico": datos.get("id_activo_tecnico"),
-                "usuario": datos.get("usuario_registro", "desconocido"),
-                "descripcion": f"Se eliminó el plan '{datos.get('id_plan', '')}'"
-            })
+            registrar_evento_historial(
+                "Baja de plan preventivo",
+                datos.get("id_activo_tecnico"),
+                datos.get("id_plan"),
+                f"Se eliminó el plan '{datos.get('id_plan', '')}'",
+                datos.get("usuario_registro", "desconocido"),
+            )
             st.success("Plan eliminado. Actualizá la vista para confirmar.")
 
 if __name__ == "__main__":

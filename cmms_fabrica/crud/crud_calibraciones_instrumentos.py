@@ -14,24 +14,15 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
 from modulos.conexion_mongo import db
+from crud.generador_historial import registrar_evento_historial
 import time
 
 coleccion = db["calibraciones"]
-historial = db["historial"]
 activos = db["activos_tecnicos"]
 
 def generar_id_calibracion():
     return f"CAL-{int(datetime.now().timestamp())}"
 
-def registrar_evento_historial(evento):
-    historial.insert_one({
-        "tipo_evento": "calibracion",
-        "id_activo_tecnico": evento.get("id_activo_tecnico"),
-        "descripcion": evento.get("descripcion", ""),
-        "usuario": evento.get("usuario"),
-        "fecha_evento": datetime.now(),
-        "modulo": "calibraciones"
-    })
 
 def form_calibracion(defaults=None):
     ids_activos = [d["id_activo_tecnico"] for d in activos.find({}, {"_id": 0, "id_activo_tecnico": 1})]
@@ -96,11 +87,13 @@ def app():
         data = form_calibracion()
         if data:
             coleccion.insert_one(data)
-            registrar_evento_historial({
-                "id_activo_tecnico": data["id_activo_tecnico"],
-                "usuario": data["usuario_registro"],
-                "descripcion": f"Calibración registrada con resultado '{data['resultado']}'"
-            })
+            registrar_evento_historial(
+                "Alta de calibración",
+                data["id_activo_tecnico"],
+                data["id_calibracion"],
+                f"Calibración registrada con resultado '{data['resultado']}'",
+                data["usuario_registro"],
+            )
             st.success("Calibración registrada correctamente. Refrescar la página para ver los cambios.")
 
     elif choice == "Ver Calibraciones":
@@ -135,11 +128,13 @@ def app():
         nuevos = form_calibracion(defaults=datos)
         if nuevos:
             coleccion.update_one({"_id": datos["_id"]}, {"$set": nuevos})
-            registrar_evento_historial({
-                "id_activo_tecnico": nuevos["id_activo_tecnico"],
-                "usuario": nuevos["usuario_registro"],
-                "descripcion": f"Edición de calibración ({nuevos['resultado']})"
-            })
+            registrar_evento_historial(
+                "Edición de calibración",
+                nuevos["id_activo_tecnico"],
+                nuevos["id_calibracion"],
+                f"Edición de calibración ({nuevos['resultado']})",
+                nuevos["usuario_registro"],
+            )
             st.success("Calibración actualizada correctamente. Refrescar la página para ver los cambios.")
 
     elif choice == "Eliminar Calibración":
@@ -153,11 +148,13 @@ def app():
         datos = opciones[seleccion]
         if st.button("Eliminar definitivamente"):
             coleccion.delete_one({"_id": datos["_id"]})
-            registrar_evento_historial({
-                "id_activo_tecnico": datos.get("id_activo_tecnico"),
-                "usuario": datos.get("usuario_registro", "desconocido"),
-                "descripcion": f"Se eliminó calibración ({datos.get('resultado', '-')})"
-            })
+            registrar_evento_historial(
+                "Baja de calibración",
+                datos.get("id_activo_tecnico"),
+                datos.get("id_calibracion"),
+                f"Se eliminó calibración ({datos.get('resultado', '-')})",
+                datos.get("usuario_registro", "desconocido"),
+            )
             st.success("Calibración eliminada. Refrescar la página para ver los cambios.")
 
 if __name__ == "__main__":

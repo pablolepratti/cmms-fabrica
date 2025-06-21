@@ -12,19 +12,9 @@ Cada cambio se documenta automáticamente en la colección `historial`.
 import streamlit as st
 from datetime import datetime
 from modulos.conexion_mongo import db
+from crud.generador_historial import registrar_evento_historial
 
 coleccion = db["servicios_externos"]
-historial = db["historial"]
-
-def registrar_evento_historial(evento):
-    historial.insert_one({
-        "tipo_evento": evento["tipo_evento"],
-        "id_activo_tecnico": None,
-        "descripcion": evento.get("descripcion", ""),
-        "usuario": evento.get("usuario", "sistema"),
-        "fecha_evento": datetime.now(),
-        "modulo": "servicios_externos"
-    })
 
 def app():
     st.title("🏢 Proveedores y Servicios Externos")
@@ -64,11 +54,13 @@ def app():
         data = form_proveedor()
         if data:
             coleccion.insert_one(data)
-            registrar_evento_historial({
-                "tipo_evento": "Alta de proveedor externo",
-                "descripcion": f"Se registró a {data['nombre']} ({data['especialidad']})",
-                "usuario": data["usuario_registro"]
-            })
+            registrar_evento_historial(
+                "Alta de proveedor externo",
+                None,
+                data["id_proveedor"],
+                f"Se registró a {data['nombre']} ({data['especialidad']})",
+                data["usuario_registro"],
+            )
             st.success("Proveedor registrado correctamente.")
 
     elif choice == "Ver Proveedores":
@@ -96,11 +88,13 @@ def app():
         nuevos_datos = form_proveedor(defaults=datos)
         if nuevos_datos:
             coleccion.update_one({"_id": datos["_id"]}, {"$set": nuevos_datos})
-            registrar_evento_historial({
-                "tipo_evento": "Edición de proveedor externo",
-                "descripcion": f"Se actualizó proveedor {nuevos_datos['nombre']}",
-                "usuario": nuevos_datos["usuario_registro"]
-            })
+            registrar_evento_historial(
+                "Edición de proveedor externo",
+                None,
+                nuevos_datos["id_proveedor"],
+                f"Se actualizó proveedor {nuevos_datos['nombre']}",
+                nuevos_datos["usuario_registro"],
+            )
             st.success("Proveedor actualizado correctamente.")
 
     elif choice == "Eliminar Proveedor":
@@ -114,11 +108,13 @@ def app():
         datos = opciones[seleccion]
         if st.button("Eliminar definitivamente"):
             coleccion.delete_one({"_id": datos["_id"]})
-            registrar_evento_historial({
-                "tipo_evento": "Baja de proveedor externo",
-                "descripcion": f"Se eliminó al proveedor {datos['nombre']}",
-                "usuario": datos.get("usuario_registro", "desconocido")
-            })
+            registrar_evento_historial(
+                "Baja de proveedor externo",
+                None,
+                datos.get("id_proveedor"),
+                f"Se eliminó al proveedor {datos['nombre']}",
+                datos.get("usuario_registro", "desconocido"),
+            )
             st.success("Proveedor eliminado. Actualizá la vista para confirmar.")
 
 if __name__ == "__main__":

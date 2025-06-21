@@ -43,7 +43,7 @@ cmms-fabrica/
 │   ├── conexion_mongo.py
 │   ├── cambiar_ids.py              # Se eliminará tras la transición completa
 │   ├── estilos.py
-│   └── generador_historial.py
+│   └── ../crud/generador_historial.py
 ├── activos/                        # Carpeta técnica por activo (checklists, fotos, planos)
 ├── docs/                           # Documentación e instructivos
 ├── reportes/                       # PDFs generados por el sistema
@@ -79,6 +79,7 @@ streamlit run app.py
 ```
 
 5. Conectar a tu base de datos MongoDB (configurado en `modulos/conexion_mongo.py`)
+6. Crear un archivo `.env` con las variables `MONGO_URI` y opcionalmente `DB_NAME`
 
 ---
 
