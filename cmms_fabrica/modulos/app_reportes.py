@@ -61,6 +61,19 @@ def generar_excel(df, nombre):
     output.seek(0)
     return output
 
+
+def filtrar_ultimo_por_activo(df: pd.DataFrame, key: str = "id_activo_tecnico") -> pd.DataFrame:
+    """Devuelve el registro m\u00e1s reciente por activo t\u00e9cnico.
+
+    Esto asegura la trazabilidad conforme a ISO 9001:2015 al conservar solo la
+    \u00faltima observaci\u00f3n registrada por activo.
+    """
+    if key not in df.columns or "fecha_evento" not in df.columns:
+        return df
+    ordenado = df.sort_values("fecha_evento", ascending=False)
+    idx = ordenado.groupby(key)["fecha_evento"].idxmax()
+    return ordenado.loc[idx].reset_index(drop=True)
+
 def app():
     st.title("📄 Reportes Técnicos del CMMS")
 
@@ -110,6 +123,8 @@ def app():
         df["usuario_registro"] = "desconocido"
     if "observaciones" not in df.columns:
         df["observaciones"] = "-"
+
+    df = filtrar_ultimo_por_activo(df)
 
     columnas = ["fecha_evento", "tipo_evento", "id_activo_tecnico", "descripcion", "observaciones", "usuario_registro"]
 
