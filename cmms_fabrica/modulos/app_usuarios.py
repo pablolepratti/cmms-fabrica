@@ -1,12 +1,10 @@
 import streamlit as st
 import pandas as pd
-import hashlib
 from modulos.conexion_mongo import db
+from .app_login import hash_password
 
 coleccion = db["usuarios"]
 
-def hash_password(password):
-    return hashlib.sha256(password.encode()).hexdigest()
 
 def app_usuarios(usuario_logueado, rol_logueado):
     st.subheader("👤 Gestión de Usuarios del Sistema")

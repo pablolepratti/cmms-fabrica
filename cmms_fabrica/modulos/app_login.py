@@ -1,12 +1,25 @@
 import streamlit as st
 import hashlib
+import secrets
 import time
 from modulos.conexion_mongo import db
 
 coleccion = db["usuarios"]
 
-def hash_password(password):
-    return hashlib.sha256(password.encode()).hexdigest()
+def hash_password(password: str) -> str:
+    """Generate salted password hash in the form ``salt$hash``."""
+    salt = secrets.token_hex(16)
+    hashed = hashlib.sha256((salt + password).encode()).hexdigest()
+    return f"{salt}${hashed}"
+
+def verify_password(stored: str, provided: str) -> bool:
+    """Verify a password against ``salt$hash`` structure."""
+    try:
+        salt, saved_hash = stored.split("$")
+    except ValueError:
+        # Compatibilidad con hashes antiguos sin sal
+        return stored == hashlib.sha256(provided.encode()).hexdigest()
+    return hashlib.sha256((salt + provided).encode()).hexdigest() == saved_hash
 
 def cerrar_sesion():
     st.session_state.usuario = None
@@ -33,7 +46,7 @@ def login_usuario():
 
         resultado = coleccion.find_one({"usuario": usuario})
 
-        if resultado and resultado["password_hash"] == hash_password(password):
+        if resultado and verify_password(resultado["password_hash"], password):
             st.success(f"✅ Bienvenido {usuario}")
             st.session_state.usuario = usuario
             st.session_state.rol = resultado["rol"]
