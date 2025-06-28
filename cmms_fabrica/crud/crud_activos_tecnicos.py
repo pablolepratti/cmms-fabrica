@@ -13,19 +13,9 @@ Registra automáticamente los eventos en la colección `historial` para trazabil
 import streamlit as st
 from datetime import datetime
 from modulos.conexion_mongo import db
+from crud.generador_historial import registrar_evento_historial
 
 coleccion = db["activos_tecnicos"]
-historial = db["historial"]
-
-def registrar_evento_historial(evento):
-    historial.insert_one({
-        "tipo_evento": evento["tipo_evento"],
-        "id_activo_tecnico": evento.get("id_activo_tecnico"),
-        "descripcion": evento.get("descripcion", ""),
-        "usuario": evento.get("usuario"),
-        "fecha_evento": datetime.now(),
-        "modulo": "activos_tecnicos"
-    })
 
 def app():
     st.title("🔧 Gestión de Activos Técnicos")
