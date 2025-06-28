@@ -11,7 +11,6 @@ que consolida eventos preventivos, correctivos, técnicos, observaciones y calib
 """
 
 import streamlit as st
-from pymongo import MongoClient
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
