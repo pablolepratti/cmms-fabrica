@@ -1,25 +1,53 @@
-from datetime import datetime
-from crud.generador_historial import registrar_evento_historial
-from modulos.conexion_mongo import db
+"""Herramientas de mantenimiento del almacenamiento en MongoDB."""
 
-LIMITE_MB = 400
+from __future__ import annotations
+
+from datetime import datetime
+from typing import Dict, Literal
+
+from ..crud.generador_historial import registrar_evento_historial
+from .conexion_mongo import db
+
+LIMITE_MB: int = 400
 
 # Colecciones a rotar, campo por el que se ordenan (más antiguos primero)
-colecciones_rotables = {
+colecciones_rotables: Dict[str, str] = {
     "historial": "fecha",
     "observaciones": "fecha",
     "tareas": "ultima_ejecucion",
     "servicios": "fecha_realizacion"
 }
 
-def obtener_tamano_total_mb():
-    """Obtiene el tamaño total estimado de la base de datos Mongo en MB."""
+def obtener_tamano_total_mb() -> float:
+    """Devuelve el tamaño total estimado de la base de datos en megabytes."""
     stats = db.command("dbstats")
     total_bytes = stats.get("storageSize", 0)
     return total_bytes / (1024 * 1024)
 
-def limpiar_coleccion(nombre, campo_fecha, porcentaje=0.3, minimo=100):
-    """Elimina los documentos más antiguos de una colección si tiene muchos registros"""
+def limpiar_coleccion(
+    nombre: str,
+    campo_fecha: str,
+    porcentaje: float = 0.3,
+    minimo: int = 100,
+) -> int:
+    """Borra documentos antiguos manteniendo la trazabilidad.
+
+    Parameters
+    ----------
+    nombre: str
+        Nombre de la colección objetivo.
+    campo_fecha: str
+        Campo por el cual ordenar los documentos más antiguos primero.
+    porcentaje: float, default 0.3
+        Porcentaje aproximado a eliminar si se supera ``minimo``.
+    minimo: int, default 100
+        Límite de registros a partir del cual se ejecuta la limpieza.
+
+    Returns
+    -------
+    int
+        Cantidad de documentos eliminados.
+    """
     coleccion = db[nombre]
     total = coleccion.count_documents({})
 
@@ -43,7 +71,9 @@ def limpiar_coleccion(nombre, campo_fecha, porcentaje=0.3, minimo=100):
 
     return 0
 
-def ejecutar_limpieza_si_es_necesario():
+def ejecutar_limpieza_si_es_necesario() -> bool:
+    """Ejecuta la rotación de colecciones si se supera ``LIMITE_MB``."""
+
     uso_actual = obtener_tamano_total_mb()
     if uso_actual < LIMITE_MB:
         return False

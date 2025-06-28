@@ -15,7 +15,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from datetime import datetime
-from modulos.conexion_mongo import db
+from ..modulos.conexion_mongo import db
 
 coleccion = db["historial"]
 activos_tecnicos = db["activos_tecnicos"]

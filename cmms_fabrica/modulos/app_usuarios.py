@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from modulos.conexion_mongo import db
+from .conexion_mongo import db
 from .app_login import hash_password
 
 coleccion = db["usuarios"]
