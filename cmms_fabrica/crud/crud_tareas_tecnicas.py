@@ -12,12 +12,10 @@ Se registran automáticamente en la colección `historial` para trazabilidad.
 import streamlit as st
 from datetime import datetime
 from modulos.conexion_mongo import db
-from crud.generador_historial import registrar_evento_historial
+from crud.generador_historial import generar_id, registrar_evento_historial
 
 coleccion = db["tareas_tecnicas"]
 
-def generar_id_tarea_tecnica():
-    return f"TT-{int(datetime.now().timestamp())}"
 
 
 def form_tecnica(defaults=None):
@@ -39,7 +37,7 @@ def form_tecnica(defaults=None):
 
         seleccion_visible = st.selectbox("ID del Activo Técnico (opcional)", ids_visibles, index=index_default)
         id_activo = next((k for k, v in id_map.items() if v == seleccion_visible), seleccion_visible) if seleccion_visible else ""
-        id_tarea_tecnica = defaults.get("id_tarea_tecnica") if defaults else generar_id_tarea_tecnica()
+        id_tarea_tecnica = defaults.get("id_tarea_tecnica") if defaults else generar_id("TT")
 
         fecha_evento = st.date_input("📆 Fecha del Evento", value=defaults.get("fecha_evento", hoy) if defaults else hoy)
         fecha_inicio = st.date_input("🗕️ Fecha de Inicio", value=defaults.get("fecha_inicio", fecha_evento) if defaults else fecha_evento)

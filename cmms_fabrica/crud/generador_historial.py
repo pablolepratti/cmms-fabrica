@@ -10,6 +10,11 @@ from datetime import datetime
 import logging
 from modulos.conexion_mongo import db
 
+
+def generar_id(prefijo: str) -> str:
+    """Devuelve un identificador con el prefijo dado y timestamp."""
+    return f"{prefijo}-{int(datetime.now().timestamp())}"
+
 logger = logging.getLogger(__name__)
 
 def registrar_evento_historial(

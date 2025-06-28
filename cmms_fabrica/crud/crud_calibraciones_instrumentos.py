@@ -14,14 +14,12 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
 from modulos.conexion_mongo import db
-from crud.generador_historial import registrar_evento_historial
+from crud.generador_historial import generar_id, registrar_evento_historial
 import time
 
 coleccion = db["calibraciones"]
 activos = db["activos_tecnicos"]
 
-def generar_id_calibracion():
-    return f"CAL-{int(datetime.now().timestamp())}"
 
 
 def form_calibracion(defaults=None):
@@ -31,9 +29,12 @@ def form_calibracion(defaults=None):
         return None
 
     with st.form("form_calibracion"):
-        id_activo = st.selectbox("ID del Instrumento", ids_activos,
-                                 index=ids_activos.index(defaults["id_activo_tecnico"]) if defaults and defaults.get("id_activo_tecnico") in ids_activos else 0)
-        id_calibracion = defaults.get("id_calibracion") if defaults else generar_id_calibracion()
+        id_activo = st.selectbox(
+            "ID del Instrumento",
+            ids_activos,
+            index=ids_activos.index(defaults["id_activo_tecnico"]) if defaults and defaults.get("id_activo_tecnico") in ids_activos else 0,
+        )
+        id_calibracion = defaults.get("id_calibracion") if defaults else generar_id("CAL")
 
         fecha_cal = st.date_input("Fecha de Calibración", value=defaults.get("fecha_calibracion") if defaults else datetime.today())
         responsable = st.text_input("Responsable de Calibración", value=defaults.get("responsable") if defaults else "")

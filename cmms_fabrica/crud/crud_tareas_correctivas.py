@@ -13,12 +13,10 @@ Registra automáticamente en la colección `historial` cada evento para asegurar
 import streamlit as st
 from datetime import datetime
 from modulos.conexion_mongo import db
-from crud.generador_historial import registrar_evento_historial
+from crud.generador_historial import generar_id, registrar_evento_historial
 
 coleccion = db["tareas_correctivas"]
 
-def generar_id_tarea():
-    return f"TC-{int(datetime.now().timestamp())}"
 
 
 def form_tarea(defaults=None):
@@ -30,7 +28,7 @@ def form_tarea(defaults=None):
         index_default = ids_activos.index(id_default) if id_default in ids_activos else 0 if ids_activos else -1
 
         id_activo = st.selectbox("ID del Activo Técnico", ids_activos, index=index_default) if ids_activos else st.text_input("ID del Activo Técnico")
-        id_tarea = defaults.get("id_tarea") if defaults else generar_id_tarea()
+        id_tarea = defaults.get("id_tarea") if defaults else generar_id("TC")
 
         fecha_evento = st.date_input("Fecha del Evento", value=defaults.get("fecha_evento") if defaults else datetime.today())
         descripcion_falla = st.text_area("Descripción de la Falla", value=defaults.get("descripcion_falla") if defaults else "")

@@ -14,13 +14,9 @@ Cada acción se registra en la colección `historial` para trazabilidad operativ
 import streamlit as st
 from datetime import datetime
 from modulos.conexion_mongo import db
-from crud.generador_historial import registrar_evento_historial
+from crud.generador_historial import generar_id, registrar_evento_historial
 
 coleccion = db["planes_preventivos"]
-
-def generar_id_plan():
-    return f"PP-{int(datetime.now().timestamp())}"
-
 
 def app():
     st.title("🗓️ Gestión de Planes Preventivos")
@@ -30,7 +26,10 @@ def app():
 
     def form_plan(defaults=None):
         with st.form("form_plan_preventivo"):
-            id_plan = st.text_input("ID del Plan", value=defaults.get("id_plan") if defaults else generar_id_plan())
+            id_plan = st.text_input(
+                "ID del Plan",
+                value=defaults.get("id_plan") if defaults else generar_id("PP"),
+            )
 
             activos = db["activos_tecnicos"]
             activos_lista = list(activos.find({}, {"_id": 0, "id_activo_tecnico": 1, "nombre": 1, "pertenece_a": 1}))
