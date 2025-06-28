@@ -1,9 +1,10 @@
 """
-📦 CRUD de Inventario Técnico – CMMS Fábrica
+📦 Módulo unificado de Inventario Técnico – CMMS Fábrica
 
-Gestiona ítems del inventario técnico asociados a repuestos e insumos.
-Registra todas las altas, ediciones y bajas en la colección ``historial``
-para mantener la trazabilidad de acuerdo con ISO 9001 e ISO 55001.
+Combina la lógica previa de ``app_inventario`` y ``crud_inventario`` en una
+única interfaz con layout estándar similar al de Activos Técnicos.
+Todas las operaciones se registran en ``historial`` para garantizar la
+trazabilidad según ISO 9001 e ISO 55001.
 """
 
 import pandas as pd
@@ -14,6 +15,19 @@ from crud.generador_historial import registrar_evento_historial
 
 coleccion = db["inventario"]
 
+
+def cargar_inventario() -> pd.DataFrame:
+    """Devuelve el inventario completo como ``DataFrame``.
+
+    Se convierten a texto todas las columnas que contengan ``id`` para
+    facilitar las búsquedas y evitar problemas de tipos.
+    """
+    datos = list(coleccion.find({}, {"_id": 0}))
+    df = pd.DataFrame(datos)
+    for col in df.columns:
+        if "id" in col.lower():
+            df[col] = df[col].astype(str)
+    return df
 
 def form_item(defaults=None, key: str = "form_inventario"):
     """Formulario para cargar o editar un ítem del inventario.
@@ -87,14 +101,12 @@ def form_item(defaults=None, key: str = "form_inventario"):
     return None
 
 
-def visualizar_inventario():
+def visualizar_inventario() -> None:
     """Muestra el inventario con filtros básicos."""
-    datos = list(coleccion.find({}, {"_id": 0}))
-    if not datos:
+    df = cargar_inventario()
+    if df.empty:
         st.info("No hay ítems cargados en el inventario.")
         return
-
-    df = pd.DataFrame(datos)
     tipo = st.selectbox("Filtrar por tipo", ["Todos"] + sorted(df["tipo"].dropna().unique()))
     if tipo != "Todos":
         df = df[df["tipo"] == tipo]
@@ -115,14 +127,13 @@ def visualizar_inventario():
 
 def app_inventario(usuario: str) -> None:
     """Interfaz principal para gestionar el inventario técnico."""
-    st.title("📦 Inventario Técnico")
-    pestañas = st.tabs(["📄 Ver Inventario", "🛠️ Administrar Inventario"])
+    st.title("📦 Gestión de Inventario Técnico")
 
-    with pestañas[0]:
-        visualizar_inventario()
+    menu = ["Agregar", "Ver", "Editar", "Eliminar"]
+    accion = st.sidebar.radio("Acción", menu)
 
-    with pestañas[1]:
-        st.markdown("### ➕ Agregar nuevo ítem")
+    if accion == "Agregar":
+        st.subheader("➕ Agregar nuevo ítem")
         data = form_item(key="form_nuevo_item")
         if data:
             if coleccion.find_one({"id_item": data["id_item"]}):
@@ -139,19 +150,21 @@ def app_inventario(usuario: str) -> None:
                     usuario,
                 )
                 st.success("Ítem agregado correctamente.")
-                st.rerun()
 
+    elif accion == "Ver":
+        st.subheader("📄 Inventario Técnico")
+        visualizar_inventario()
+
+    elif accion == "Editar":
+        st.subheader("✏️ Editar ítem de inventario")
         items = list(coleccion.find())
-        if items:
-            st.divider()
-            st.markdown("### ✏️ Editar ítem existente")
-            opciones = {
-                f"{i.get('id_item')} - {i.get('descripcion', '')}": i for i in items
-            }
+        if not items:
+            st.info("No hay ítems cargados.")
+        else:
+            opciones = {f"{i.get('id_item')} - {i.get('descripcion', '')}": i for i in items}
             seleccionado = st.selectbox("Seleccionar ítem", list(opciones.keys()))
             seleccionado_datos = opciones[seleccionado]
-
-            nuevos_datos = form_item(defaults=seleccionado_datos)
+            nuevos_datos = form_item(defaults=seleccionado_datos, key="editar_item")
             if nuevos_datos:
                 coleccion.update_one({"_id": seleccionado_datos["_id"]}, {"$set": nuevos_datos})
                 registrar_evento_historial(
@@ -162,17 +175,17 @@ def app_inventario(usuario: str) -> None:
                     usuario,
                 )
                 st.success("Ítem actualizado correctamente.")
-                st.rerun()
 
-            st.divider()
-            st.markdown("### 🗑️ Eliminar ítem")
-            eliminar_opcion = st.selectbox(
-                "Seleccionar ítem a eliminar",
-                list(opciones.keys()),
-                key="eliminar_item",
-            )
+    elif accion == "Eliminar":
+        st.subheader("🗑️ Eliminar ítem de inventario")
+        items = list(coleccion.find())
+        if not items:
+            st.info("No hay ítems cargados.")
+        else:
+            opciones = {f"{i.get('id_item')} - {i.get('descripcion', '')}": i for i in items}
+            seleccionado = st.selectbox("Seleccionar ítem a eliminar", list(opciones.keys()))
             if st.button("Eliminar ítem seleccionado"):
-                item = opciones[eliminar_opcion]
+                item = opciones[seleccionado]
                 coleccion.delete_one({"_id": item["_id"]})
                 registrar_evento_historial(
                     "Baja de ítem inventario",
@@ -182,7 +195,6 @@ def app_inventario(usuario: str) -> None:
                     usuario,
                 )
                 st.success("Ítem eliminado correctamente.")
-                st.rerun()
 
 
 if __name__ == "__main__":
