@@ -27,6 +27,10 @@ def registrar_evento_historial(
     de acuerdo con ISO 9001.
     """
 
+    if db is None:
+        logger.warning("MongoDB no disponible. Evento no registrado.")
+        return ""
+
     historial = db["historial"]
 
     evento = {
