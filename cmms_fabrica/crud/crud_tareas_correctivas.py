@@ -12,8 +12,8 @@ Registra automáticamente en la colección `historial` cada evento para asegurar
 
 import streamlit as st
 from datetime import datetime
-from modulos.conexion_mongo import db
-from crud.generador_historial import registrar_evento_historial
+from ..modulos.conexion_mongo import db
+from .generador_historial import registrar_evento_historial
 
 coleccion = db["tareas_correctivas"]
 

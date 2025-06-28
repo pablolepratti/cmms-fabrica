@@ -46,6 +46,7 @@ cmms-fabrica/
 │   └── ../crud/generador_historial.py
 ├── activos/                        # Carpeta técnica por activo (checklists, fotos, planos)
 ├── docs/                           # Documentación e instructivos
+│   └── checklist_cruds_activos_tecnicos.md  # Comparativa de campos por CRUD
 ├── reportes/                       # PDFs generados por el sistema
 └── requirements.txt                # Dependencias Python
 ```

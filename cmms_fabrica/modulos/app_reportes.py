@@ -13,7 +13,7 @@ import streamlit as st
 import pandas as pd
 from fpdf import FPDF
 from datetime import datetime, date
-from modulos.conexion_mongo import db
+from .conexion_mongo import db
 import os
 from io import BytesIO
 

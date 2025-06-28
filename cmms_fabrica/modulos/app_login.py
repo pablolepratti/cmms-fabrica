@@ -2,7 +2,7 @@ import streamlit as st
 import hashlib
 import secrets
 import time
-from modulos.conexion_mongo import db
+from .conexion_mongo import db
 
 coleccion = db["usuarios"]
 
