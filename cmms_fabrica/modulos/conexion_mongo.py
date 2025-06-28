@@ -8,14 +8,17 @@ load_dotenv()
 MONGO_URI = os.getenv("MONGO_URI")
 DB_NAME = os.getenv("DB_NAME", "cmms")
 
-if not MONGO_URI:
-    raise Exception("❌ No se encontró la URI de MongoDB. Verifica tu archivo .env")
-
-# 🚀 Conexión a MongoDB
-try:
-    client = pymongo.MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
-    client.server_info()
-except errors.ServerSelectionTimeoutError as e:
-    raise Exception("❌ Error de conexión a MongoDB") from e
-
-db = client[DB_NAME]
+client = None
+db = None
+if MONGO_URI:
+    try:
+        client = pymongo.MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
+        client.server_info()
+        db = client[DB_NAME]
+    except Exception:
+        # Entorno de pruebas o base no disponible
+        client = None
+        db = None
+else:
+    # MODO TEST sin variables de entorno
+    db = None

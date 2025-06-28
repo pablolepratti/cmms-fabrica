@@ -17,8 +17,8 @@ from modulos.conexion_mongo import db
 import os
 from io import BytesIO
 
-coleccion = db["historial"]
-activos_tecnicos = db["activos_tecnicos"]
+coleccion = db["historial"] if db else None
+activos_tecnicos = db["activos_tecnicos"] if db else None
 
 # 📄 Clase PDF con descripciones legibles
 class PDF(FPDF):
