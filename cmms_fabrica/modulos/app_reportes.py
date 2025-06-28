@@ -18,7 +18,7 @@ import os
 from io import BytesIO
 
 coleccion = db["historial"] if db is not None else None
-activos_tecnicos = db["activos_tecnicos"] if db else None
+activos_tecnicos = db["activos_tecnicos"] if db is not None else None
 
 # 📄 Clase PDF con descripciones legibles
 class PDF(FPDF):
