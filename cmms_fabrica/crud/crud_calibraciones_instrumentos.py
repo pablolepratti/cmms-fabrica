@@ -15,7 +15,6 @@ import pandas as pd
 from datetime import datetime, timedelta
 from modulos.conexion_mongo import db
 from crud.generador_historial import registrar_evento_historial
-import time
 
 coleccion = db["calibraciones"]
 activos = db["activos_tecnicos"]

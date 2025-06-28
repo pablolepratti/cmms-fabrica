@@ -1,7 +1,4 @@
-import pymongo
-import os
 from datetime import datetime
-from dotenv import load_dotenv
 from crud.generador_historial import registrar_evento_historial
 from modulos.conexion_mongo import db
 
