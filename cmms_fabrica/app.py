@@ -23,7 +23,7 @@ from crud.crud_inventario import app_inventario
 # Módulo de usuarios (admin)
 from modulos.app_usuarios import app_usuarios
 
-# Cambiar IDs
+# Gestión de IDs manuales
 from modulos.cambiar_ids import app as cambiar_ids
 
 # Reportes técnicos
