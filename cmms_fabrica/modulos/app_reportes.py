@@ -17,7 +17,7 @@ from modulos.conexion_mongo import db
 import os
 from io import BytesIO
 
-coleccion = db["historial"] if db else None
+coleccion = db["historial"] if db is not None else None
 activos_tecnicos = db["activos_tecnicos"] if db else None
 
 # 📄 Clase PDF con descripciones legibles
