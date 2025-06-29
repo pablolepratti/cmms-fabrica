@@ -5,8 +5,8 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Dict, Literal
 
-from cmms_fabrica.crud.generador_historial import registrar_evento_historial
-from cmms_fabrica.modulos.conexion_mongo import db
+from crud.generador_historial import registrar_evento_historial
+from modulos.conexion_mongo import db
 
 LIMITE_MB: int = 400
 
