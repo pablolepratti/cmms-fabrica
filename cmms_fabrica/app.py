@@ -2,32 +2,32 @@ import streamlit as st
 st.set_page_config(page_title="CMMS Fábrica", layout="wide")
 
 # 🔐 Login y cierre de sesión
-from cmms_fabrica.modulos.app_login import login_usuario, cerrar_sesion
-from cmms_fabrica.modulos.conexion_mongo import db
+from modulos.app_login import login_usuario, cerrar_sesion
+from modulos.conexion_mongo import db
 
 # 💄 Estilos responsive
-from cmms_fabrica.modulos.estilos import aplicar_estilos
+from modulos.estilos import aplicar_estilos
 
 
 # Nuevos módulos CRUD centrados en activos técnicos
-from cmms_fabrica.crud.crud_activos_tecnicos import app as crud_activos_tecnicos
-from cmms_fabrica.crud.crud_planes_preventivos import app as crud_planes_preventivos
-from cmms_fabrica.crud.crud_tareas_correctivas import app as crud_tareas_correctivas
-from cmms_fabrica.crud.crud_tareas_tecnicas import app as crud_tareas_tecnicas
-from cmms_fabrica.crud.crud_observaciones import app as crud_observaciones
-from cmms_fabrica.crud.crud_calibraciones_instrumentos import app as crud_calibraciones
-from cmms_fabrica.crud.crud_servicios_externos import app as crud_servicios
-from cmms_fabrica.crud.dashboard_kpi_historial import app as kpi_historial
-from cmms_fabrica.crud.crud_inventario import app_inventario
+from crud.crud_activos_tecnicos import app as crud_activos_tecnicos
+from crud.crud_planes_preventivos import app as crud_planes_preventivos
+from crud.crud_tareas_correctivas import app as crud_tareas_correctivas
+from crud.crud_tareas_tecnicas import app as crud_tareas_tecnicas
+from crud.crud_observaciones import app as crud_observaciones
+from crud.crud_calibraciones_instrumentos import app as crud_calibraciones
+from crud.crud_servicios_externos import app as crud_servicios
+from crud.dashboard_kpi_historial import app as kpi_historial
+from crud.crud_inventario import app_inventario
 
 # Módulo de usuarios (admin)
-from cmms_fabrica.modulos.app_usuarios import app_usuarios
+from modulos.app_usuarios import app_usuarios
 
 # Gestión de IDs manuales
-from cmms_fabrica.modulos.cambiar_ids import app as cambiar_ids
+from modulos.cambiar_ids import app as cambiar_ids
 
 # Reportes técnicos
-from cmms_fabrica.modulos.app_reportes import app as app_reportes
+from modulos.app_reportes import app as app_reportes
 
 # 📱 Estilos responsive
 aplicar_estilos()
