@@ -1,7 +1,7 @@
 """Herramienta para actualizar IDs de documentos en múltiples colecciones."""
 
 import streamlit as st
-from cmms_fabrica.modulos.conexion_mongo import db
+from modulos.conexion_mongo import db
 
 # Diccionario de colecciones, campos editables y rutas de actualización
 EDITABLES = {
