@@ -2,7 +2,7 @@ import streamlit as st
 import hashlib
 import secrets
 import time
-from .conexion_mongo import db
+from cmms_fabrica.modulos.conexion_mongo import db
 
 coleccion = db["usuarios"]
 

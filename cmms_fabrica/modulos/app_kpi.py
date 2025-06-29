@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from .conexion_mongo import db
+from cmms_fabrica.modulos.conexion_mongo import db
 
 def cargar_coleccion(nombre):
     df = pd.DataFrame(list(db[nombre].find({}, {"_id": 0})))

@@ -9,8 +9,8 @@ seguridad basadas en ISO 27001.
 import streamlit as st
 import pandas as pd
 
-from .conexion_mongo import db
-from .app_login import hash_password
+from cmms_fabrica.modulos.conexion_mongo import db
+from cmms_fabrica.modulos.app_login import hash_password
 
 coleccion = db["usuarios"]
 
