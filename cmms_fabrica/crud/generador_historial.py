@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from datetime import datetime
 import logging
-from cmms_fabrica.modulos.conexion_mongo import db
+from modulos.conexion_mongo import db
 
 logger = logging.getLogger(__name__)
 
