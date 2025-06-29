@@ -13,8 +13,8 @@ Permite registrar, visualizar, editar y eliminar calibraciones, mostrando alerta
 import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
-from ..modulos.conexion_mongo import db
-from .generador_historial import registrar_evento_historial
+from cmms_fabrica.modulos.conexion_mongo import db
+from cmms_fabrica.crud.generador_historial import registrar_evento_historial
 
 coleccion = db["calibraciones"]
 activos = db["activos_tecnicos"]
