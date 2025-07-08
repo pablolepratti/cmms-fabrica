@@ -1,13 +1,11 @@
-'''
-📌 CRUD de Tareas Técnicas – CMMS Fábrica
+"""
+📄 CRUD de Tareas Técnicas – CMMS Fábrica
 
-Este módulo permite registrar, visualizar, editar y eliminar tareas técnicas de gestión, presupuestos u otras intervenciones no correctivas ni preventivas.
-Se registran automáticamente en la colección `historial` para trazabilidad.
+Normas aplicables: ISO 9001:2015 | ISO 55001 | ISO 14224
 
-✅ Normas aplicables:
-- ISO 9001:2015
-- ISO 55001
-'''
+Descripción: Este módulo permite registrar, visualizar, editar y eliminar tareas técnicas no preventivas ni correctivas.
+Cada acción se registra automáticamente en la colección `historial` para trazabilidad completa.
+"""
 
 import streamlit as st
 from datetime import datetime
@@ -16,6 +14,9 @@ from crud.generador_historial import registrar_evento_historial
 
 coleccion = db["tareas_tecnicas"]
 
+estados_posibles = ["Pendiente", "En curso", "Finalizada"]
+tipos_tecnica = ["Presupuesto", "Consulta", "Gestión", "Otra"]
+
 def generar_id_tarea_tecnica():
     return f"TT-{int(datetime.now().timestamp())}"
 
@@ -23,6 +24,7 @@ def form_tecnica(defaults=None):
     with st.form("form_tarea_tecnica"):
         hoy = datetime.today()
 
+        # Activos técnicos
         activos = list(db["activos_tecnicos"].find({}, {"_id": 0, "id_activo_tecnico": 1, "pertenece_a": 1}))
         id_map = {
             a["id_activo_tecnico"]: (
@@ -35,29 +37,29 @@ def form_tecnica(defaults=None):
         id_default = defaults.get("id_activo_tecnico") if defaults else ""
         label_default = id_map.get(id_default, id_default)
         index_default = ids_visibles.index(label_default) if label_default in ids_visibles else 0
-
         seleccion_visible = st.selectbox("ID del Activo Técnico (opcional)", ids_visibles, index=index_default)
+        id_activo = next((k for k, v in id_map.items() if v == seleccion_visible), "") if seleccion_visible else ""
 
+        # Proveedores externos
         proveedores = list(db["servicios_externos"].find({}, {"_id": 0, "nombre": 1}))
         nombres_proveedores = sorted([p["nombre"] for p in proveedores if "nombre" in p])
         proveedor_default = defaults.get("proveedor_externo") if defaults else ""
-        index_proveedor = nombres_proveedores.index(proveedor_default) if proveedor_default in nombres_proveedores else 0 if nombres_proveedores else -1
+        index_proveedor = nombres_proveedores.index(proveedor_default) if proveedor_default in nombres_proveedores else 0
 
-        id_activo = ""
-        if seleccion_visible and seleccion_visible in id_map.values():
-            id_activo = next(k for k, v in id_map.items() if v == seleccion_visible)
-
+        # Campos
         id_tarea = defaults.get("id_tarea_tecnica") if defaults else generar_id_tarea_tecnica()
-        fecha_evento = st.date_input("Fecha del Evento", value=defaults.get("fecha_evento") if defaults else hoy)
+        fecha_evento = st.date_input("Fecha del Evento", value=datetime.strptime(defaults.get("fecha_evento"), "%Y-%m-%d") if defaults else hoy)
         descripcion = st.text_area("Descripción Técnica", value=defaults.get("descripcion") if defaults else "")
-        tipo_tecnica = st.selectbox("Tipo de Tarea Técnica", ["Presupuesto", "Consulta", "Gestión", "Otra"],
-                                    index=["Presupuesto", "Consulta", "Gestión", "Otra"].index(defaults.get("tipo_tecnica")) if defaults else 0)
+        tipo_tecnica = st.selectbox("Tipo de Tarea Técnica", tipos_tecnica,
+                                    index=tipos_tecnica.index(defaults.get("tipo_tecnica")) if defaults and defaults.get("tipo_tecnica") in tipos_tecnica else 0)
         responsable = st.text_input("Responsable", value=defaults.get("responsable") if defaults else "")
         proveedor_externo = st.selectbox("Proveedor Externo (si aplica)", nombres_proveedores, index=index_proveedor) if nombres_proveedores else ""
-        estado = st.selectbox("Estado", ["Pendiente", "En curso", "Finalizada"],
-                              index=["Pendiente", "En curso", "Finalizada"].index(defaults.get("estado")) if defaults else 0)
+        estado_default = defaults.get("estado") if defaults else ""
+        estado_index = estados_posibles.index(estado_default) if estado_default in estados_posibles else 0
+        estado = st.selectbox("Estado", estados_posibles, index=estado_index)
         usuario = st.text_input("Usuario que registra", value=defaults.get("usuario_registro") if defaults else "")
         observaciones = st.text_area("Observaciones adicionales", value=defaults.get("observaciones") if defaults else "")
+
         submit = st.form_submit_button("Guardar Tarea Técnica")
 
     if submit:
@@ -81,7 +83,7 @@ def form_tecnica(defaults=None):
     return None
 
 def app():
-    st.title("📌 Gestión de Tareas Técnicas")
+    st.title("🧾 Gestión de Tareas Técnicas")
     menu = ["Registrar Tarea", "Ver Tareas", "Editar Tarea", "Eliminar Tarea"]
     choice = st.sidebar.radio("Acción", menu)
 
@@ -115,7 +117,6 @@ def app():
                 estado = t.get("estado", "Sin Estado")
                 descripcion = t.get("descripcion", "")
                 proveedor = t.get("proveedor_externo", "")
-
                 st.code(f"ID Tarea: {t.get('id_tarea_tecnica', '❌ No definido')}", language="yaml")
                 st.markdown(f"- 📅 **{fecha}** | 📌 **Estado:** {estado}")
                 if proveedor:
