@@ -2,13 +2,12 @@
 🗓️ CRUD de Planes Preventivos – CMMS Fábrica
 
 Este módulo permite registrar, visualizar, editar y eliminar planes preventivos asociados a activos técnicos.
-Soporta activos jerárquicos mediante el campo `pertenece_a`, reflejando relaciones funcionales entre equipos.
 Cada acción se registra en la colección `historial` para trazabilidad operativa y auditorías.
 
 ✅ Normas aplicables:
 - ISO 55001 (Gestión del ciclo de vida del activo)
-- ISO 9001:2015 (Gestión de planificación, ejecución y control)
-- ISO 14224 (Mantenimiento preventivo documentado y rastreable)
+- ISO 9001:2015 (Planificación y control operacional)
+- ISO 14224 (Estructura y datos de mantenimiento)
 """
 
 import streamlit as st
@@ -32,15 +31,9 @@ def app():
             id_plan = st.text_input("ID del Plan", value=defaults.get("id_plan") if defaults else generar_id_plan())
 
             activos = db["activos_tecnicos"]
-            activos_lista = list(activos.find({}, {"_id": 0, "id_activo_tecnico": 1, "nombre": 1, "pertenece_a": 1}))
-            opciones = []
-            map_id = {}
-            for a in activos_lista:
-                label = f"{a['id_activo_tecnico']} – {a.get('nombre', 'Sin nombre')}"
-                if a.get("pertenece_a"):
-                    label += f" (Subequipo de {a['pertenece_a']})"
-                opciones.append(label)
-                map_id[label] = a["id_activo_tecnico"]
+            activos_lista = list(activos.find({}, {"_id": 0, "id_activo_tecnico": 1, "nombre": 1}))
+            opciones = [f"{a['id_activo_tecnico']} – {a.get('nombre', 'Sin nombre')}" for a in activos_lista]
+            map_id = {f"{a['id_activo_tecnico']} – {a.get('nombre', 'Sin nombre')}": a["id_activo_tecnico"] for a in activos_lista}
 
             default_id = defaults.get("id_activo_tecnico") if defaults else None
             default_label = next((k for k, v in map_id.items() if v == default_id), opciones[0] if opciones else "")
@@ -51,8 +44,8 @@ def app():
 
             frecuencia = st.number_input("Frecuencia", min_value=1, value=defaults.get("frecuencia") if defaults else 1)
             unidad_frecuencia = st.selectbox("Unidad", ["días", "semanas", "meses"], index=["días", "semanas", "meses"].index(defaults.get("unidad_frecuencia")) if defaults else 0)
-            proxima_fecha = st.date_input("Próxima Ejecución", value=defaults.get("proxima_fecha") if defaults else datetime.today())
-            ultima_fecha = st.date_input("Última Ejecución", value=defaults.get("ultima_fecha") if defaults else datetime.today())
+            proxima_fecha = st.date_input("Próxima Ejecución", value=datetime.strptime(defaults.get("proxima_fecha"), "%Y-%m-%d") if defaults and defaults.get("proxima_fecha") else datetime.today())
+            ultima_fecha = st.date_input("Última Ejecución", value=datetime.strptime(defaults.get("ultima_fecha"), "%Y-%m-%d") if defaults and defaults.get("ultima_fecha") else datetime.today())
             responsable = st.text_input("Responsable", value=defaults.get("responsable") if defaults else "")
 
             tipo_ejecucion = st.radio("¿Quién ejecuta la tarea preventiva?", ["Interno", "Externo"],
@@ -118,9 +111,20 @@ def app():
         if not planes:
             st.info("No hay planes cargados.")
             return
+
+        hoy = datetime.today().date()
         for p in planes:
+            proxima = datetime.strptime(p["proxima_fecha"], "%Y-%m-%d").date()
+            vencido = proxima < hoy
+            estado = p.get("estado", "Desconocido")
+            proveedor = p.get("proveedor_externo", "")
+
             st.code(f"{p['id_plan']} | {p['id_activo_tecnico']}", language="yaml")
-            st.markdown(f"- 🕒 **Próxima:** {p['proxima_fecha']} | 📌 **Estado:** {p['estado']}")
+            st.markdown(f"- 📅 **Próxima:** {proxima} {'❌ VENCIDO' if vencido else '✅ Vigente'}")
+            st.markdown(f"- 📌 **Estado:** {estado}")
+            if proveedor:
+                st.markdown(f"- 🔧 **Proveedor externo:** `{proveedor}`")
+            st.markdown("---")
 
     elif choice == "Editar Plan":
         st.subheader("✏️ Editar Plan Preventivo")
