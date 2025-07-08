@@ -1,10 +1,11 @@
 """
 📄 CRUD de Tareas Técnicas – CMMS Fábrica
 
-Normas aplicables: ISO 9001:2015 | ISO 55001 | ISO 14224
-
 Descripción: Este módulo permite registrar, visualizar, editar y eliminar tareas técnicas no preventivas ni correctivas.
 Cada acción se registra automáticamente en la colección `historial` para trazabilidad completa.
+
+Normas aplicables: ISO 9001:2015 | ISO 55001 | ISO 14224
+
 """
 
 import streamlit as st
@@ -46,14 +47,20 @@ def form_tecnica(defaults=None):
         proveedor_default = defaults.get("proveedor_externo") if defaults else ""
         index_proveedor = nombres_proveedores.index(proveedor_default) if proveedor_default in nombres_proveedores else 0
 
-        # Campos
+        # Campos principales
         id_tarea = defaults.get("id_tarea_tecnica") if defaults else generar_id_tarea_tecnica()
         fecha_evento = st.date_input("Fecha del Evento", value=datetime.strptime(defaults.get("fecha_evento"), "%Y-%m-%d") if defaults else hoy)
         descripcion = st.text_area("Descripción Técnica", value=defaults.get("descripcion") if defaults else "")
         tipo_tecnica = st.selectbox("Tipo de Tarea Técnica", tipos_tecnica,
                                     index=tipos_tecnica.index(defaults.get("tipo_tecnica")) if defaults and defaults.get("tipo_tecnica") in tipos_tecnica else 0)
         responsable = st.text_input("Responsable", value=defaults.get("responsable") if defaults else "")
-        proveedor_externo = st.selectbox("Proveedor Externo (si aplica)", nombres_proveedores, index=index_proveedor) if nombres_proveedores else ""
+
+        # Proveedor externo opcional
+        proveedor_externo = ""
+        usa_proveedor = st.checkbox("¿Participa un proveedor externo?", value=bool(proveedor_default))
+        if usa_proveedor and nombres_proveedores:
+            proveedor_externo = st.selectbox("Proveedor Externo", nombres_proveedores, index=index_proveedor)
+
         estado_default = defaults.get("estado") if defaults else ""
         estado_index = estados_posibles.index(estado_default) if estado_default in estados_posibles else 0
         estado = st.selectbox("Estado", estados_posibles, index=estado_index)
@@ -65,6 +72,9 @@ def form_tecnica(defaults=None):
     if submit:
         if not responsable or not usuario:
             st.error("Debe completar los campos obligatorios: Responsable y Usuario.")
+            return None
+        if usa_proveedor and not proveedor_externo:
+            st.error("Debe seleccionar un proveedor si indicó que participa un externo.")
             return None
 
         return {
