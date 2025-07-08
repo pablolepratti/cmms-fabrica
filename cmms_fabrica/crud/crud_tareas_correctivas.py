@@ -51,7 +51,14 @@ def form_tarea(defaults=None):
             causa_raiz = metodo_rca = acciones_rca = usuario_rca = ""
 
         responsable = st.text_input("Responsable de la Reparación", value=defaults.get("responsable") if defaults else "")
-        proveedor_externo = st.selectbox("Proveedor Externo (si aplica)", nombres_proveedores, index=index_proveedor) if nombres_proveedores else st.text_input("Proveedor Externo")
+        tipo_ejecucion = st.radio("¿Quién ejecutó la tarea?", ["Interno", "Externo"],
+                                  index=0 if defaults is None or defaults.get("proveedor_externo") in [None, ""] else 1)
+
+        if tipo_ejecucion == "Externo":
+            proveedor_externo = st.selectbox("Proveedor Externo (si aplica)", nombres_proveedores, index=index_proveedor) if nombres_proveedores else ""
+        else:
+            proveedor_externo = ""
+
         estado = st.selectbox("Estado", ["Abierta", "En proceso", "Cerrada"],
                               index=["Abierta", "En proceso", "Cerrada"].index(defaults.get("estado")) if defaults and defaults.get("estado") in ["Abierta", "En proceso", "Cerrada"] else 0)
         usuario = st.text_input("Usuario que registra", value=defaults.get("usuario_registro") if defaults else "")
