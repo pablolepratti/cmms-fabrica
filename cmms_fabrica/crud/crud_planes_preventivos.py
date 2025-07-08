@@ -21,7 +21,6 @@ coleccion = db["planes_preventivos"]
 def generar_id_plan():
     return f"PP-{int(datetime.now().timestamp())}"
 
-
 def app():
     st.title("🗓️ Gestión de Planes Preventivos")
 
@@ -37,53 +36,66 @@ def app():
             opciones = []
             map_id = {}
             for a in activos_lista:
-                label = f"{a['id_activo_tecnico']} - {a.get('nombre', '')}"
-                if "pertenece_a" in a:
-                    label += f" (pertenece a {a['pertenece_a']})"
+                label = f"{a['id_activo_tecnico']} – {a.get('nombre', 'Sin nombre')}"
+                if a.get("pertenece_a"):
+                    label += f" (Subequipo de {a['pertenece_a']})"
                 opciones.append(label)
                 map_id[label] = a["id_activo_tecnico"]
 
-            activo_default = None
-            if defaults and defaults.get("id_activo_tecnico"):
-                for k, v in map_id.items():
-                    if v == defaults["id_activo_tecnico"]:
-                        activo_default = k
-                        break
+            default_id = defaults.get("id_activo_tecnico") if defaults else None
+            default_label = next((k for k, v in map_id.items() if v == default_id), opciones[0] if opciones else "")
+            index_default = opciones.index(default_label) if default_label in opciones else 0
 
-            id_activo_label = st.selectbox("ID del Activo Técnico", opciones, index=opciones.index(activo_default) if activo_default else 0)
-            id_activo = map_id[id_activo_label]
+            id_activo = st.selectbox("Activo Técnico asociado", opciones, index=index_default)
+            id_activo_tecnico = map_id.get(id_activo)
 
-            frecuencia = st.number_input("Frecuencia", min_value=1, value=defaults.get("frecuencia") if defaults else 30)
-            unidad = st.selectbox("Unidad de Frecuencia", ["días", "semanas", "meses"],
-                                  index=["días", "semanas", "meses"].index(defaults.get("unidad_frecuencia")) if defaults else 2)
-            proxima_fecha = st.date_input("Próxima Fecha", value=defaults.get("proxima_fecha") if defaults else datetime.today())
-            ultima_fecha = st.date_input("Última Fecha", value=defaults.get("ultima_fecha") if defaults else datetime.today())
+            frecuencia = st.number_input("Frecuencia", min_value=1, value=defaults.get("frecuencia") if defaults else 1)
+            unidad_frecuencia = st.selectbox("Unidad", ["días", "semanas", "meses"], index=["días", "semanas", "meses"].index(defaults.get("unidad_frecuencia")) if defaults else 0)
+            proxima_fecha = st.date_input("Próxima Ejecución", value=defaults.get("proxima_fecha") if defaults else datetime.today())
+            ultima_fecha = st.date_input("Última Ejecución", value=defaults.get("ultima_fecha") if defaults else datetime.today())
             responsable = st.text_input("Responsable", value=defaults.get("responsable") if defaults else "")
-            estado = st.selectbox("Estado del Plan", ["Activo", "Suspendido", "Cerrado"],
-                                  index=["Activo", "Suspendido", "Cerrado"].index(defaults.get("estado")) if defaults else 0)
-            adjunto = st.text_input("Nombre de archivo adjunto (Excel externo)", value=defaults.get("adjunto_plan") if defaults else "")
-            proveedor_externo = st.text_input("Proveedor Externo (si aplica)", value=defaults.get("proveedor_externo") if defaults else "")
-            observaciones = st.text_area("Observaciones", value=defaults.get("observaciones") if defaults else "")
+
+            tipo_ejecucion = st.radio("¿Quién ejecuta la tarea preventiva?", ["Interno", "Externo"],
+                                      index=0 if defaults is None or defaults.get("proveedor_externo") in [None, ""] else 1)
+
+            proveedores = list(db["servicios_externos"].find({}, {"_id": 0, "nombre": 1}))
+            nombres_proveedores = sorted([p["nombre"] for p in proveedores if "nombre" in p])
+            proveedor_default = defaults.get("proveedor_externo") if defaults else None
+            index_proveedor = nombres_proveedores.index(proveedor_default) if proveedor_default in nombres_proveedores else 0 if nombres_proveedores else -1
+
+            if tipo_ejecucion == "Externo":
+                proveedor_externo = st.selectbox("Proveedor Externo", nombres_proveedores, index=index_proveedor) if nombres_proveedores else ""
+            else:
+                proveedor_externo = ""
+
+            estado = st.selectbox("Estado", ["Activo", "Suspendido", "Finalizado"],
+                                  index=["Activo", "Suspendido", "Finalizado"].index(defaults.get("estado")) if defaults else 0)
+
+            adjunto_plan = st.text_input("Documento o Link del Plan", value=defaults.get("adjunto_plan") if defaults else "")
             usuario = st.text_input("Usuario que registra", value=defaults.get("usuario_registro") if defaults else "")
-            submit = st.form_submit_button("Guardar Plan")
+            observaciones = st.text_area("Observaciones", value=defaults.get("observaciones") if defaults else "")
+            submit = st.form_submit_button("Guardar")
 
         if submit:
-            data = {
+            if not responsable or not usuario:
+                st.error("Debe completar los campos obligatorios: Responsable y Usuario.")
+                return None
+
+            return {
                 "id_plan": id_plan,
-                "id_activo_tecnico": id_activo,
+                "id_activo_tecnico": id_activo_tecnico,
                 "frecuencia": frecuencia,
-                "unidad_frecuencia": unidad,
+                "unidad_frecuencia": unidad_frecuencia,
                 "proxima_fecha": str(proxima_fecha),
                 "ultima_fecha": str(ultima_fecha),
                 "responsable": responsable,
-                "estado": estado,
-                "adjunto_plan": adjunto,
                 "proveedor_externo": proveedor_externo,
-                "observaciones": observaciones,
+                "estado": estado,
+                "adjunto_plan": adjunto_plan,
                 "usuario_registro": usuario,
+                "observaciones": observaciones,
                 "fecha_registro": datetime.now()
             }
-            return data
         return None
 
     if choice == "Registrar Plan":
@@ -95,107 +107,66 @@ def app():
                 "Alta de plan preventivo",
                 data["id_activo_tecnico"],
                 data["id_plan"],
-                f"Plan '{data['id_plan']}' registrado con frecuencia {data['frecuencia']} {data['unidad_frecuencia']}",
-                data["usuario_registro"],
+                f"Alta de plan para activo: {data['id_activo_tecnico']}",
+                data["usuario_registro"]
             )
-            st.success("Plan preventivo registrado correctamente.")
+            st.success("Plan registrado correctamente.")
 
     elif choice == "Ver Planes":
-        st.subheader("📋 Planes Preventivos por Activo Técnico")
-
+        st.subheader("📋 Planes Preventivos Registrados")
         planes = list(coleccion.find().sort("proxima_fecha", 1))
-        hoy = datetime.today().date()
-
         if not planes:
-            st.info("No hay planes preventivos registrados.")
+            st.info("No hay planes cargados.")
             return
-
-        estados_existentes = sorted(set(p.get("estado", "Activo") for p in planes))
-        estado_filtro = st.selectbox("Filtrar por estado del plan", ["Todos"] + estados_existentes)
-        texto_filtro = st.text_input("🔍 Buscar por ID de activo, ID de plan o texto")
-
-        filtrados = []
         for p in planes:
-            coincide_estado = (estado_filtro == "Todos") or (p.get("estado") == estado_filtro)
-            coincide_texto = texto_filtro.lower() in p.get("id_activo_tecnico", "").lower() or \
-                             texto_filtro.lower() in p.get("id_plan", "").lower() or \
-                             texto_filtro.lower() in p.get("observaciones", "").lower()
-            if coincide_estado and coincide_texto:
-                filtrados.append(p)
-
-        if not filtrados:
-            st.warning("No se encontraron planes con esos filtros.")
-            return
-
-        activos = sorted(set(str(p.get("id_activo_tecnico") or "⛔ Sin ID") for p in filtrados))
-        for activo in activos:
-            st.markdown(f"### 🏷️ Activo Técnico: `{activo}`")
-            planes_activo = [p for p in filtrados if str(p.get("id_activo_tecnico") or "⛔ Sin ID") == activo]
-
-            for p in planes_activo:
-                id_plan = p.get("id_plan", "Sin ID")
-                estado = p.get("estado", "Sin Estado")
-                proxima_fecha = p.get("proxima_fecha", "Sin Fecha")
-                observaciones = p.get("observaciones", "")
-
-                try:
-                    fecha_obj = datetime.strptime(proxima_fecha, "%Y-%m-%d").date() if isinstance(proxima_fecha, str) else proxima_fecha
-                except:
-                    fecha_obj = None
-
-                vencido = fecha_obj and fecha_obj < hoy
-
-                st.code(f"ID del Plan: {id_plan}", language="yaml")
-                if vencido:
-                    st.markdown(
-                        f"<span style='color:red; font-weight:bold'>🚨 {id_plan} ({estado}) - VENCIDO el {proxima_fecha}</span>",
-                        unsafe_allow_html=True
-                    )
-                else:
-                    st.markdown(f"**{id_plan}** ({estado}) - Próxima: {proxima_fecha}")
-                st.write(observaciones)
-            st.markdown("---")
+            st.code(f"{p['id_plan']} | {p['id_activo_tecnico']}", language="yaml")
+            st.markdown(f"- 🕒 **Próxima:** {p['proxima_fecha']} | 📌 **Estado:** {p['estado']}")
 
     elif choice == "Editar Plan":
         st.subheader("✏️ Editar Plan Preventivo")
         planes = list(coleccion.find())
-        opciones = {f"{p['id_plan']} - {p['id_activo_tecnico']}": p for p in planes}
-        if not opciones:
-            st.warning("No hay planes para editar.")
-            return
-        seleccion = st.selectbox("Seleccionar plan", list(opciones.keys()))
-        datos = opciones[seleccion]
-        nuevos_datos = form_plan(defaults=datos)
-        if nuevos_datos:
-            coleccion.update_one({"_id": datos["_id"]}, {"$set": nuevos_datos})
-            registrar_evento_historial(
-                "Edición de plan preventivo",
-                nuevos_datos["id_activo_tecnico"],
-                nuevos_datos["id_plan"],
-                f"Plan '{nuevos_datos['id_plan']}' fue editado",
-                nuevos_datos["usuario_registro"],
-            )
-            st.success("Plan actualizado correctamente.")
+        opciones = {
+            f"{p['id_plan']} | {p['id_activo_tecnico']}": p for p in planes
+        }
+        if opciones:
+            seleccion = st.selectbox("Seleccionar plan", list(opciones.keys()))
+            datos = opciones.get(seleccion)
+            if datos:
+                nuevos_datos = form_plan(defaults=datos)
+                if nuevos_datos:
+                    coleccion.update_one({"_id": datos["_id"]}, {"$set": nuevos_datos})
+                    registrar_evento_historial(
+                        "Edición de plan preventivo",
+                        nuevos_datos["id_activo_tecnico"],
+                        nuevos_datos["id_plan"],
+                        f"Edición de plan para activo: {nuevos_datos['id_activo_tecnico']}",
+                        nuevos_datos["usuario_registro"]
+                    )
+                    st.success("Plan actualizado correctamente.")
+        else:
+            st.info("No hay planes para editar.")
 
     elif choice == "Eliminar Plan":
         st.subheader("🗑️ Eliminar Plan Preventivo")
         planes = list(coleccion.find())
-        opciones = {f"{p['id_plan']} - {p['id_activo_tecnico']}": p for p in planes}
-        if not opciones:
-            st.warning("No hay planes para eliminar.")
-            return
-        seleccion = st.selectbox("Seleccionar plan", list(opciones.keys()))
-        datos = opciones[seleccion]
-        if st.button("Eliminar definitivamente"):
-            coleccion.delete_one({"_id": datos["_id"]})
-            registrar_evento_historial(
-                "Baja de plan preventivo",
-                datos.get("id_activo_tecnico"),
-                datos.get("id_plan"),
-                f"Se eliminó el plan '{datos.get('id_plan', '')}'",
-                datos.get("usuario_registro", "desconocido"),
-            )
-            st.success("Plan eliminado. Actualizá la vista para confirmar.")
+        opciones = {
+            f"{p['id_plan']} | {p['id_activo_tecnico']}": p for p in planes
+        }
+        if opciones:
+            seleccion = st.selectbox("Seleccionar plan", list(opciones.keys()))
+            datos = opciones.get(seleccion)
+            if datos and st.button("Eliminar definitivamente"):
+                coleccion.delete_one({"_id": datos["_id"]})
+                registrar_evento_historial(
+                    "Baja de plan preventivo",
+                    datos["id_activo_tecnico"],
+                    datos["id_plan"],
+                    f"Eliminación del plan asociado al activo: {datos['id_activo_tecnico']}",
+                    datos["usuario_registro"]
+                )
+                st.success("Plan eliminado correctamente.")
+        else:
+            st.info("No hay planes para eliminar.")
 
 if __name__ == "__main__":
     app()
