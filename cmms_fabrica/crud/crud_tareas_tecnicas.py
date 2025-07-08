@@ -86,7 +86,7 @@ def app():
     choice = st.sidebar.radio("Acción", menu)
 
     if choice == "Registrar Tarea":
-        st.subheader("➕ Nueva Tarea Técnica")
+        st.subheader("➕ Alta de Tarea Técnica")
         data = form_tecnica()
         if data:
             coleccion.insert_one(data)
@@ -97,7 +97,7 @@ def app():
                 f"Tarea técnica: {data['descripcion'][:60]}...",
                 data["usuario_registro"]
             )
-            st.success("Tarea técnica registrada correctamente.")
+            st.success("✅ Tarea técnica registrada correctamente.")
 
     elif choice == "Ver Tareas":
         st.subheader("📋 Tareas Técnicas Registradas")
@@ -105,10 +105,22 @@ def app():
         if not tareas:
             st.info("No hay tareas técnicas registradas.")
             return
-        for t in tareas:
-            st.code(f"{t.get('id_tarea_tecnica')} | {t.get('id_activo_tecnico', '⛔ Sin ID')}", language="yaml")
-            st.markdown(f"- 📅 **{t.get('fecha_evento')}** | 📌 **Estado:** {t.get('estado')}")
-            st.markdown(f"- 📝 {t.get('descripcion', '')}")
+
+        activos = sorted(set(t.get("id_activo_tecnico", "⛔ Sin ID") for t in tareas))
+        for activo in activos:
+            st.markdown(f"### 🏷️ Activo Técnico: `{activo}`")
+            tareas_activo = [t for t in tareas if t.get("id_activo_tecnico") == activo]
+            for t in tareas_activo:
+                fecha = t.get("fecha_evento", "Sin Fecha")
+                estado = t.get("estado", "Sin Estado")
+                descripcion = t.get("descripcion", "")
+                proveedor = t.get("proveedor_externo", "")
+
+                st.code(f"ID Tarea: {t.get('id_tarea_tecnica', '❌ No definido')}", language="yaml")
+                st.markdown(f"- 📅 **{fecha}** | 📌 **Estado:** {estado}")
+                if proveedor:
+                    st.markdown(f"- 🔧 **Proveedor externo:** `{proveedor}`")
+                st.markdown(f"- 📝 {descripcion}")
             st.markdown("---")
 
     elif choice == "Editar Tarea":
@@ -132,7 +144,7 @@ def app():
                         f"Tarea editada: {nuevos_datos['descripcion'][:60]}...",
                         nuevos_datos["usuario_registro"]
                     )
-                    st.success("Tarea técnica actualizada.")
+                    st.success("✅ Tarea técnica actualizada.")
         else:
             st.info("No hay tareas disponibles para editar.")
 
@@ -155,7 +167,7 @@ def app():
                     f"Se eliminó tarea técnica: {datos.get('descripcion', '')[:60]}...",
                     datos.get("usuario_registro", "desconocido")
                 )
-                st.success("Tarea eliminada.")
+                st.success("🗑️ Tarea eliminada correctamente.")
         else:
             st.info("No hay tareas disponibles para eliminar.")
 
