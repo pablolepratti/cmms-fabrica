@@ -20,7 +20,6 @@ coleccion = db["tareas_correctivas"]
 def generar_id_tarea():
     return f"TC-{int(datetime.now().timestamp())}"
 
-
 def form_tarea(defaults=None):
     with st.form("form_tarea_correctiva"):
 
@@ -30,20 +29,29 @@ def form_tarea(defaults=None):
         index_default = ids_activos.index(id_default) if id_default in ids_activos else 0 if ids_activos else -1
 
         id_activo = st.selectbox("ID del Activo Técnico", ids_activos, index=index_default) if ids_activos else st.text_input("ID del Activo Técnico")
-        id_tarea = defaults.get("id_tarea") if defaults else generar_id_tarea()
 
+        proveedores = list(db["servicios_externos"].find({}, {"_id": 0, "nombre": 1}))
+        nombres_proveedores = sorted([p["nombre"] for p in proveedores if "nombre" in p])
+        proveedor_default = defaults.get("proveedor_externo") if defaults else None
+        index_proveedor = nombres_proveedores.index(proveedor_default) if proveedor_default in nombres_proveedores else 0 if nombres_proveedores else -1
+
+        id_tarea = defaults.get("id_tarea") if defaults else generar_id_tarea()
         fecha_evento = st.date_input("Fecha del Evento", value=defaults.get("fecha_evento") if defaults else datetime.today())
         descripcion_falla = st.text_area("Descripción de la Falla", value=defaults.get("descripcion_falla") if defaults else "")
         modo_falla = st.text_input("Modo de Falla", value=defaults.get("modo_falla") if defaults else "")
-
         rca_requerido = st.checkbox("¿Requiere Análisis de Causa Raíz?", value=defaults.get("rca_requerido") if defaults else False)
         rca_completado = st.checkbox("RCA Completado", value=defaults.get("rca_completado") if defaults else False)
-        causa_raiz = st.text_input("Causa Raíz", value=defaults.get("causa_raiz") if defaults else "")
-        metodo_rca = st.text_input("Método RCA", value=defaults.get("metodo_rca") if defaults else "")
-        acciones_rca = st.text_area("Acciones Derivadas del RCA", value=defaults.get("acciones_rca") if defaults else "")
-        usuario_rca = st.text_input("Usuario Responsable del RCA", value=defaults.get("usuario_rca") if defaults else "")
+
+        if rca_requerido:
+            causa_raiz = st.text_input("Causa Raíz", value=defaults.get("causa_raiz") if defaults else "")
+            metodo_rca = st.text_input("Método RCA", value=defaults.get("metodo_rca") if defaults else "")
+            acciones_rca = st.text_area("Acciones Derivadas del RCA", value=defaults.get("acciones_rca") if defaults else "")
+            usuario_rca = st.text_input("Usuario Responsable del RCA", value=defaults.get("usuario_rca") if defaults else "")
+        else:
+            causa_raiz = metodo_rca = acciones_rca = usuario_rca = ""
+
         responsable = st.text_input("Responsable de la Reparación", value=defaults.get("responsable") if defaults else "")
-        proveedor_externo = st.text_input("Proveedor Externo (si aplica)", value=defaults.get("proveedor_externo") if defaults else "")
+        proveedor_externo = st.selectbox("Proveedor Externo (si aplica)", nombres_proveedores, index=index_proveedor) if nombres_proveedores else st.text_input("Proveedor Externo")
         estado = st.selectbox("Estado", ["Abierta", "En proceso", "Cerrada"],
                               index=["Abierta", "En proceso", "Cerrada"].index(defaults.get("estado")) if defaults and defaults.get("estado") in ["Abierta", "En proceso", "Cerrada"] else 0)
         usuario = st.text_input("Usuario que registra", value=defaults.get("usuario_registro") if defaults else "")
@@ -51,6 +59,10 @@ def form_tarea(defaults=None):
         submit = st.form_submit_button("Guardar Tarea")
 
     if submit:
+        if not responsable or not usuario:
+            st.error("Debe completar los campos obligatorios: Responsable y Usuario.")
+            return None
+
         return {
             "id_tarea": id_tarea,
             "id_activo_tecnico": id_activo,
