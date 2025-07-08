@@ -22,7 +22,6 @@ def generar_id_plan():
 
 def app():
     st.title("🗓️ Gestión de Planes Preventivos")
-
     menu = ["Registrar Plan", "Ver Planes", "Editar Plan", "Eliminar Plan"]
     choice = st.sidebar.radio("Acción", menu)
 
@@ -92,7 +91,7 @@ def app():
         return None
 
     if choice == "Registrar Plan":
-        st.subheader("➕ Nuevo Plan Preventivo")
+        st.subheader("➕ Alta de Plan Preventivo")
         data = form_plan()
         if data:
             coleccion.insert_one(data)
@@ -103,7 +102,7 @@ def app():
                 f"Alta de plan para activo: {data['id_activo_tecnico']}",
                 data["usuario_registro"]
             )
-            st.success("Plan registrado correctamente.")
+            st.success("✅ Plan preventivo registrado correctamente.")
 
     elif choice == "Ver Planes":
         st.subheader("📋 Planes Preventivos Registrados")
@@ -113,17 +112,21 @@ def app():
             return
 
         hoy = datetime.today().date()
-        for p in planes:
-            proxima = datetime.strptime(p["proxima_fecha"], "%Y-%m-%d").date()
-            vencido = proxima < hoy
-            estado = p.get("estado", "Desconocido")
-            proveedor = p.get("proveedor_externo", "")
+        activos = sorted(set(p["id_activo_tecnico"] for p in planes))
+        for activo in activos:
+            st.markdown(f"### 🏷️ Activo Técnico: `{activo}`")
+            planes_activo = [p for p in planes if p["id_activo_tecnico"] == activo]
+            for p in planes_activo:
+                proxima = datetime.strptime(p["proxima_fecha"], "%Y-%m-%d").date()
+                vencido = proxima < hoy
+                estado = p.get("estado", "Desconocido")
+                proveedor = p.get("proveedor_externo", "")
 
-            st.code(f"{p['id_plan']} | {p['id_activo_tecnico']}", language="yaml")
-            st.markdown(f"- 📅 **Próxima:** {proxima} {'❌ VENCIDO' if vencido else '✅ Vigente'}")
-            st.markdown(f"- 📌 **Estado:** {estado}")
-            if proveedor:
-                st.markdown(f"- 🔧 **Proveedor externo:** `{proveedor}`")
+                st.code(f"ID Plan: {p['id_plan']}", language="yaml")
+                st.markdown(f"- 📅 **Próxima:** {proxima} {'❌ VENCIDO' if vencido else '✅ Vigente'}")
+                st.markdown(f"- 📌 **Estado:** {estado}")
+                if proveedor:
+                    st.markdown(f"- 🔧 **Proveedor externo:** `{proveedor}`")
             st.markdown("---")
 
     elif choice == "Editar Plan":
@@ -146,7 +149,7 @@ def app():
                         f"Edición de plan para activo: {nuevos_datos['id_activo_tecnico']}",
                         nuevos_datos["usuario_registro"]
                     )
-                    st.success("Plan actualizado correctamente.")
+                    st.success("✅ Plan actualizado correctamente.")
         else:
             st.info("No hay planes para editar.")
 
@@ -168,7 +171,7 @@ def app():
                     f"Eliminación del plan asociado al activo: {datos['id_activo_tecnico']}",
                     datos["usuario_registro"]
                 )
-                st.success("Plan eliminado correctamente.")
+                st.success("🗑️ Plan eliminado correctamente.")
         else:
             st.info("No hay planes para eliminar.")
 
