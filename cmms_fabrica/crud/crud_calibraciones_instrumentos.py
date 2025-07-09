@@ -1,9 +1,8 @@
-"""
-📄 CRUD de Calibraciones de Instrumentos – CMMS Fábrica
-
-Normas aplicables: ISO/IEC 17025 | ISO 9001:2015 | ISO 55001
-Descripción: Permite registrar, visualizar, editar y eliminar eventos de calibración con trazabilidad completa.
-"""
+# 📄 CRUD de Calibraciones de Instrumentos – CMMS Fábrica
+# Versión: Julio 2025
+# Autor: Pablo Lepratti
+# Normas aplicables: ISO/IEC 17025 | ISO 9001:2015 | ISO 55001
+# Descripción: Permite registrar, visualizar, editar y eliminar eventos de calibración con trazabilidad completa y alertas por vencimiento.
 
 import streamlit as st
 import pandas as pd
@@ -13,12 +12,15 @@ from crud.generador_historial import registrar_evento_historial
 
 coleccion = db["calibraciones"]
 activos = db["activos_tecnicos"]
+proveedores = db["servicios_externos"]
 
 def generar_id_calibracion():
     return f"CAL-{int(datetime.now().timestamp())}"
 
 def form_calibracion(defaults=None):
     ids_activos = [d["id_activo_tecnico"] for d in activos.find({}, {"_id": 0, "id_activo_tecnico": 1})]
+    nombres_proveedores = sorted([p["nombre"] for p in proveedores.find({}, {"_id": 0, "nombre": 1})])
+
     if not ids_activos:
         st.warning("⚠️ No hay activos técnicos registrados.")
         return None
@@ -29,18 +31,29 @@ def form_calibracion(defaults=None):
         id_activo = st.selectbox("ID del Instrumento", ids_activos, index=index_default)
 
         id_calibracion = defaults.get("id_calibracion") if defaults else generar_id_calibracion()
+        fecha_val = defaults.get("fecha_calibracion") if defaults else None
+        fecha_cal = st.date_input("Fecha de Calibración", value=datetime.strptime(fecha_val, "%Y-%m-%d") if fecha_val else datetime.today())
 
-        fecha_cal = st.date_input("Fecha de Calibración", value=datetime.strptime(defaults["fecha_calibracion"], "%Y-%m-%d") if defaults else datetime.today())
         responsable = st.text_input("Responsable de Calibración", value=defaults.get("responsable") if defaults else "")
-        proveedor = st.text_input("Proveedor Externo (si aplica)", value=defaults.get("proveedor_externo") if defaults else "")
+
+        proveedor_default = defaults.get("proveedor_externo") if defaults else ""
+        usa_proveedor = st.checkbox("¿Participa un proveedor externo?", value=bool(proveedor_default))
+        proveedor_externo = ""
+        if usa_proveedor and nombres_proveedores:
+            index_prov = nombres_proveedores.index(proveedor_default) if proveedor_default in nombres_proveedores else 0
+            proveedor_externo = st.selectbox("Proveedor Externo", nombres_proveedores, index=index_prov)
+
         resultado_opciones = ["Correcta", "Desviación leve", "Desviación crítica"]
         resultado = st.selectbox("Resultado", resultado_opciones,
                                  index=resultado_opciones.index(defaults.get("resultado")) if defaults and defaults.get("resultado") in resultado_opciones else 0)
+
         acciones = st.text_area("Acciones Derivadas", value=defaults.get("acciones") if defaults else "")
         observaciones = st.text_area("Observaciones", value=defaults.get("observaciones") if defaults else "")
-        prox_fecha = defaults.get("fecha_proxima")
-        prox_valor = datetime.strptime(prox_fecha, "%Y-%m-%d") if defaults and prox_fecha else datetime.today() + timedelta(days=180)
+
+        prox_fecha = defaults.get("fecha_proxima") if defaults else None
+        prox_valor = datetime.strptime(prox_fecha, "%Y-%m-%d") if prox_fecha else datetime.today() + timedelta(days=180)
         prox = st.date_input("Fecha Próxima Calibración", value=prox_valor)
+
         usuario = st.text_input("Usuario que registra", value=defaults.get("usuario_registro") if defaults else "")
 
         submit = st.form_submit_button("Guardar Calibración")
@@ -49,6 +62,9 @@ def form_calibracion(defaults=None):
         if not responsable or not usuario:
             st.error("Debe completar los campos obligatorios: Responsable y Usuario.")
             return None
+        if usa_proveedor and not proveedor_externo:
+            st.error("Debe seleccionar un proveedor si se indica que es externo.")
+            return None
 
         return {
             "id_calibracion": id_calibracion,
@@ -56,7 +72,7 @@ def form_calibracion(defaults=None):
             "fecha_calibracion": str(fecha_cal),
             "fecha_proxima": str(prox),
             "responsable": responsable,
-            "proveedor_externo": proveedor,
+            "proveedor_externo": proveedor_externo if usa_proveedor else "",
             "resultado": resultado,
             "acciones": acciones,
             "observaciones": observaciones,
