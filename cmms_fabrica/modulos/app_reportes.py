@@ -1,13 +1,12 @@
 """
-📄 Reporte Técnico Mensual – CMMS Fábrica
+📄 Módulo de Reportes Técnicos – CMMS Fábrica
 
-Auditoría técnica por activo en un período elegido.
-Incluye resumen por tipo de tarea (correctiva, técnica, preventiva, calibración)
-y movimientos recientes en inventario.
+Este módulo permite consultar y exportar reportes en PDF y Excel a partir de la colección `historial`
+y los movimientos recientes en inventario. Filtrado por tipo de evento, rango de fechas y activo técnico.
 
 ✅ Normas aplicables:
-- ISO 9001:2015 (trazabilidad y registros)
-- ISO 55001 (ciclo de vida del activo técnico)
+- ISO 9001:2015 (Trazabilidad documental y registros)
+- ISO 55001 (Control de mantenimiento y soporte documental)
 """
 
 import streamlit as st
@@ -15,66 +14,105 @@ import pandas as pd
 from fpdf import FPDF
 from datetime import datetime, date
 from modulos.conexion_mongo import db
-from io import BytesIO
 import os
+from io import BytesIO
 
 coleccion = db["historial"]
 activos_tecnicos = db["activos_tecnicos"]
 inventario = db["inventario"]
 
-TIPOS = ["correctiva", "tecnica", "preventiva", "calibracion"]
-
+# 📄 Clase PDF personalizada
 class PDF(FPDF):
     def header(self):
         self.set_font("Arial", "B", 14)
-        self.cell(0, 10, "Reporte Técnico Mensual – CMMS Fábrica", ln=True, align="C")
-        self.ln(10)
-
-    def tabla_resumen(self, df):
-        self.set_font("Arial", "B", 10)
-        headers = df.columns.tolist()
-        for col in headers:
-            self.cell(45, 8, col, border=1)
-        self.ln()
-        self.set_font("Arial", "", 10)
-        for _, row in df.iterrows():
-            for col in headers:
-                self.cell(45, 8, str(row[col]), border=1)
-            self.ln()
+        self.cell(0, 10, "Reporte de Actividades Técnicas – CMMS Fábrica", ln=True, align="C")
         self.ln(5)
 
-    def tabla_detalle(self, df):
+    def chapter_body(self, titulo, df):
+        self.set_font("Arial", "B", 12)
+        self.cell(0, 10, titulo, ln=True)
+        self.set_font("Arial", "", 10)
+        self.ln(2)
+
         for _, row in df.iterrows():
+            self.multi_cell(0, 6, f"Activo: {row['id_activo_tecnico']}", 0)
+            self.multi_cell(0, 6, f"Fecha: {row['fecha_evento'].strftime('%Y-%m-%d %H:%M')}", 0)
+            self.multi_cell(0, 6, f"Tipo: {row['tipo_evento']}", 0)
+            self.multi_cell(0, 6, f"Origen: {row['id_origen']}", 0)
+            self.multi_cell(0, 6, f"Usuario: {row['usuario_registro']}", 0)
             self.set_font("Arial", "B", 10)
-            self.multi_cell(0, 6, f"{row['fecha_evento']} – {row['tipo_evento']} – {row['id_activo_tecnico']}")
-            self.set_font("Arial", "", 9)
-            self.multi_cell(0, 6, f"Usuario: {row['usuario_registro']} | Proveedor: {row.get('proveedor_externo', '-')}")
-            self.multi_cell(0, 6, f"Descripción: {row['descripcion']}")
-            self.multi_cell(0, 6, f"Observaciones: {row['observaciones']}")
+            self.multi_cell(0, 6, "Descripción:", 0)
+            self.set_font("Arial", "", 10)
+            self.multi_cell(0, 6, f"{row.get('descripcion', '-')}", 0)
+            self.multi_cell(0, 6, f"Observaciones: {row.get('observaciones', '-')}", 0)
             self.ln(3)
 
-    def tabla_inventario(self, df):
-        self.set_font("Arial", "B", 10)
-        headers = df.columns.tolist()
-        for col in headers:
-            self.cell(40, 8, col[:15], border=1)
-        self.ln()
-        self.set_font("Arial", "", 9)
-        for _, row in df.iterrows():
-            for col in headers:
-                self.cell(40, 8, str(row[col])[:15], border=1)
-            self.ln()
+def generar_pdf(df_eventos, df_inventario, nombre):
+    pdf = PDF()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.add_page()
+
+    if not df_eventos.empty:
+        pdf.chapter_body("📌 Últimos eventos técnicos por activo", df_eventos)
+    else:
+        pdf.set_font("Arial", "I", 10)
+        pdf.cell(0, 10, "No se registraron eventos técnicos en este período.", ln=True)
+
+    pdf.ln(5)
+    pdf.set_font("Arial", "B", 12)
+    pdf.cell(0, 10, "📦 Movimientos recientes en Inventario", ln=True)
+    pdf.ln(2)
+
+    if not df_inventario.empty:
+        pdf.set_font("Arial", "", 10)
+        for _, row in df_inventario.iterrows():
+            pdf.multi_cell(0, 6, f"{row['fecha_evento'].strftime('%Y-%m-%d')} – {row['id_item']} – {row['descripcion']}", 0)
+    else:
+        pdf.set_font("Arial", "I", 10)
+        pdf.cell(0, 10, "No hubo movimientos en inventario.", ln=True)
+
+    os.makedirs("reportes", exist_ok=True)
+    ruta = f"reportes/reporte_{nombre.lower().replace(' ', '_')}.pdf"
+    pdf.output(ruta)
+    return ruta
+
+def generar_excel(df_eventos, df_inventario):
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        if not df_eventos.empty:
+            df_eventos.to_excel(writer, sheet_name="Eventos Técnicos", index=False)
+        if not df_inventario.empty:
+            df_inventario.to_excel(writer, sheet_name="Inventario", index=False)
+    output.seek(0)
+    return output
+
+def filtrar_ultimo_por_tarea(df):
+    if "id_origen" not in df or "fecha_evento" not in df:
+        return df
+    df_ordenado = df.sort_values("fecha_evento", ascending=False)
+    idx = df_ordenado.groupby("id_origen")["fecha_evento"].idxmax()
+    return df_ordenado.loc[idx].reset_index(drop=True)
 
 def app():
-    st.title("📄 Reporte Técnico Mensual – Auditoría por Activo")
+    st.title("📄 Reportes Técnicos del CMMS")
 
     with st.sidebar:
-        fecha_desde = st.date_input("📆 Desde", value=date(2025, 6, 1))
-        fecha_hasta = st.date_input("📆 Hasta", value=date(2025, 6, 30))
-        tipos = st.multiselect("Tipo de evento", TIPOS, default=TIPOS)
+        st.markdown("### 📅 Filtros")
+        fecha_desde = st.date_input("Desde", value=date(2025, 6, 1))
+        fecha_hasta = st.date_input("Hasta", value=date.today())
+        tipo_evento = st.multiselect("Tipo de Evento", ["preventiva", "correctiva", "tecnica", "calibracion", "observacion"],
+                                     default=["preventiva", "correctiva", "tecnica", "calibracion"])
+
+        activos = list(activos_tecnicos.find({}, {"_id": 0, "id_activo_tecnico": 1, "pertenece_a": 1}))
+        opciones = ["Todos"] + sorted([
+            f"{a['id_activo_tecnico']} (pertenece a {a['pertenece_a']})" if a.get("pertenece_a") else a["id_activo_tecnico"]
+            for a in activos
+        ])
+        seleccion = st.selectbox("Activo Técnico (con subactivos)", opciones)
+        id_activo = seleccion.split(" ")[0] if seleccion != "Todos" else None
 
     if fecha_desde > fecha_hasta:
-        st.error("⚠️ Fechas inválidas.")
+        st.error("⚠️ Fecha inválida.")
         return
 
     query = {
@@ -82,102 +120,58 @@ def app():
             "$gte": datetime.combine(fecha_desde, datetime.min.time()),
             "$lte": datetime.combine(fecha_hasta, datetime.max.time())
         },
-        "tipo_evento": {"$in": tipos}
+        "tipo_evento": {"$in": tipo_evento}
     }
-    eventos = list(coleccion.find(query, {"_id": 0}))
-    if not eventos:
-        st.warning("No hay eventos en ese período.")
+    if id_activo:
+        subactivos = [a["id_activo_tecnico"] for a in activos if a.get("pertenece_a") == id_activo]
+        ids = [id_activo] + subactivos
+        query["id_activo_tecnico"] = {"$in": ids}
+        st.sidebar.success(f"Incluye {len(subactivos)} subactivo(s)")
+
+    datos = list(coleccion.find(query, {"_id": 0}))
+    if not datos:
+        st.warning("No hay eventos en este período.")
         return
 
-    df = pd.DataFrame(eventos)
+    df = pd.DataFrame(datos)
     df["fecha_evento"] = pd.to_datetime(df["fecha_evento"])
-    df["observaciones"] = df.get("observaciones", "-")
     df["usuario_registro"] = df.get("usuario_registro", df.get("usuario", "desconocido"))
-    df["proveedor_externo"] = df.get("proveedor_externo", "-")
+    df["observaciones"] = df.get("observaciones", "-")
 
-    resumen = []
-    activos = df["id_activo_tecnico"].unique()
-    for activo in activos:
-        fila = {"Activo Técnico": activo}
-        df_activo = df[df["id_activo_tecnico"] == activo]
-        for tipo in TIPOS:
-            df_tipo = df_activo[df_activo["tipo_evento"] == tipo]
-            if not df_tipo.empty:
-                cant = len(df_tipo)
-                fecha_ult = df_tipo["fecha_evento"].max().strftime("%d/%m")
-                fila[tipo.capitalize()] = f"{cant} ({fecha_ult})"
-            else:
-                fila[tipo.capitalize()] = "—"
-        resumen.append(fila)
+    df_filtrado = filtrar_ultimo_por_tarea(df)
 
-    df_resumen = pd.DataFrame(resumen)
+    columnas = ["fecha_evento", "tipo_evento", "id_activo_tecnico", "id_origen", "descripcion", "usuario_registro", "observaciones"]
+    st.markdown("### 📌 Última actualización por tarea y activo técnico")
+    st.dataframe(df_filtrado[columnas].sort_values("fecha_evento", ascending=False), use_container_width=True)
 
-    st.subheader("🧱 Resumen por Activo Técnico")
-    st.dataframe(df_resumen, use_container_width=True)
-
-    st.subheader("📋 Detalle completo de eventos")
-    columnas = ["fecha_evento", "tipo_evento", "id_activo_tecnico", "usuario_registro",
-                "proveedor_externo", "descripcion", "observaciones"]
-    st.dataframe(df[columnas].sort_values("fecha_evento", ascending=False), use_container_width=True)
-
-    st.subheader("📦 Movimientos recientes en Inventario")
-    inventario_reciente = list(inventario.find({
+    # Inventario
+    st.markdown("### 📦 Movimientos recientes en Inventario")
+    df_inv = pd.DataFrame(list(inventario.find({
         "ultima_actualizacion": {
             "$gte": fecha_desde.strftime("%Y-%m-%d"),
             "$lte": fecha_hasta.strftime("%Y-%m-%d")
         }
-    }, {"_id": 0}))
-    df_inv = pd.DataFrame(inventario_reciente)
+    }, {"_id": 0, "id_item": 1, "descripcion": 1, "ultima_actualizacion": 1})))
+
     if not df_inv.empty:
-        st.dataframe(df_inv, use_container_width=True)
+        df_inv["fecha_evento"] = pd.to_datetime(df_inv["ultima_actualizacion"])
+        st.dataframe(df_inv[["fecha_evento", "id_item", "descripcion"]])
     else:
         st.info("No hubo actualizaciones en inventario en ese período.")
 
     col1, col2 = st.columns(2)
 
     with col1:
-        if st.button("📥 Descargar Excel"):
-            output = BytesIO()
-            with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
-                df_resumen.to_excel(writer, sheet_name="Resumen_por_activo", index=False)
-                df[columnas].to_excel(writer, sheet_name="Detalle_eventos", index=False)
-                if not df_inv.empty:
-                    df_inv.to_excel(writer, sheet_name="Inventario_actualizado", index=False)
-            st.download_button(
-                "⬇️ Descargar Excel",
-                data=output.getvalue(),
-                file_name="reporte_cmms.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
+        if st.button("📄 Generar PDF"):
+            archivo = generar_pdf(df_filtrado[columnas], df_inv, nombre="reporte")
+            with open(archivo, "rb") as f:
+                st.download_button("⬇️ Descargar PDF", data=f, file_name=os.path.basename(archivo), mime="application/pdf")
 
     with col2:
-        if st.button("🖨️ Generar PDF"):
-            pdf = PDF()
-            pdf.add_page()
-            pdf.set_font("Arial", "B", 12)
-            pdf.cell(0, 10, f"Período: {fecha_desde.strftime('%d/%m/%Y')} al {fecha_hasta.strftime('%d/%m/%Y')}", ln=True)
-
-            pdf.set_font("Arial", "B", 12)
-            pdf.cell(0, 10, "Resumen por Activo", ln=True)
-            pdf.tabla_resumen(df_resumen)
-
-            pdf.set_font("Arial", "B", 12)
-            pdf.cell(0, 10, "Detalle de Eventos", ln=True)
-            pdf.tabla_detalle(df[columnas])
-
-            if not df_inv.empty:
-                pdf.set_font("Arial", "B", 12)
-                pdf.cell(0, 10, "Movimientos en Inventario", ln=True)
-                pdf.tabla_inventario(df_inv)
-
-            output_pdf = BytesIO()
-            pdf.output(output_pdf)
-            st.download_button(
-                "⬇️ Descargar PDF",
-                data=output_pdf.getvalue(),
-                file_name="reporte_cmms.pdf",
-                mime="application/pdf"
-            )
+        if st.button("📥 Descargar Excel"):
+            excel = generar_excel(df_filtrado[columnas], df_inv)
+            st.download_button("⬇️ Descargar Excel", data=excel, file_name="reporte.xlsx",
+                               mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 if __name__ == "__main__":
     app()
