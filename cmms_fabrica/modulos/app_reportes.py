@@ -22,6 +22,12 @@ coleccion = db["historial"]
 activos_tecnicos = db["activos_tecnicos"]
 inventario = db["inventario"]
 
+# 🔐 Función para limpiar caracteres no soportados en PDF
+def safe_text(text):
+    if not isinstance(text, str):
+        text = str(text)
+    return text.encode("latin-1", "replace").decode("latin-1")
+
 # 📄 Clase PDF personalizada
 class PDF(FPDF):
     def header(self):
@@ -31,20 +37,20 @@ class PDF(FPDF):
 
     def chapter_body(self, titulo, df):
         self.set_font("Arial", "B", 12)
-        self.cell(0, 10, titulo, ln=True)
+        self.cell(0, 10, safe_text(titulo), ln=True)
         self.set_font("Arial", "", 10)
         self.ln(2)
         for _, row in df.iterrows():
-            self.multi_cell(0, 6, f"Activo técnico: {row.get('id_activo_tecnico', '-')}", 0)
-            self.multi_cell(0, 6, f"Fecha: {row.get('fecha_evento', '-').strftime('%Y-%m-%d %H:%M')}", 0)
-            self.multi_cell(0, 6, f"Tipo de evento: {row.get('tipo_evento', '-')}", 0)
-            self.multi_cell(0, 6, f"ID de origen: {row.get('id_origen', '-')}", 0)
-            self.multi_cell(0, 6, f"Usuario: {row.get('usuario_registro', '-')}", 0)
+            self.multi_cell(0, 6, safe_text(f"Activo técnico: {row.get('id_activo_tecnico', '-')}"), 0)
+            self.multi_cell(0, 6, safe_text(f"Fecha: {row.get('fecha_evento', '-').strftime('%Y-%m-%d %H:%M')}"), 0)
+            self.multi_cell(0, 6, safe_text(f"Tipo de evento: {row.get('tipo_evento', '-')}"), 0)
+            self.multi_cell(0, 6, safe_text(f"ID de origen: {row.get('id_origen', '-')}"), 0)
+            self.multi_cell(0, 6, safe_text(f"Usuario: {row.get('usuario_registro', '-')}"), 0)
             self.set_font("Arial", "B", 10)
-            self.multi_cell(0, 6, "Descripción:", 0)
+            self.multi_cell(0, 6, safe_text("Descripción:"), 0)
             self.set_font("Arial", "", 10)
-            self.multi_cell(0, 6, row.get("descripcion", "-"), 0)
-            self.multi_cell(0, 6, f"Observaciones: {row.get('observaciones', '-')}", 0)
+            self.multi_cell(0, 6, safe_text(row.get("descripcion", "-")), 0)
+            self.multi_cell(0, 6, safe_text(f"Observaciones: {row.get('observaciones', '-')}"), 0)
             self.ln(3)
 
 # 📤 Generador de PDF
@@ -56,19 +62,19 @@ def generar_pdf(df_eventos, df_inventario, nombre):
         pdf.chapter_body("Últimos eventos técnicos por activo", df_eventos)
     else:
         pdf.set_font("Arial", "I", 10)
-        pdf.cell(0, 10, "No se registraron eventos técnicos en este período.", ln=True)
+        pdf.cell(0, 10, safe_text("No se registraron eventos técnicos en este período."), ln=True)
     pdf.ln(5)
     pdf.set_font("Arial", "B", 12)
-    pdf.cell(0, 10, "Movimientos recientes en Inventario", ln=True)
+    pdf.cell(0, 10, safe_text("Movimientos recientes en Inventario"), ln=True)
     pdf.ln(2)
     if not df_inventario.empty:
         pdf.set_font("Arial", "", 10)
         for _, row in df_inventario.iterrows():
             fecha = row['fecha_evento'].strftime('%Y-%m-%d')
-            pdf.multi_cell(0, 6, f"{fecha} – {row.get('id_item', '-')} – {row.get('descripcion', '-')}", 0)
+            pdf.multi_cell(0, 6, safe_text(f"{fecha} – {row.get('id_item', '-')} – {row.get('descripcion', '-')}"), 0)
     else:
         pdf.set_font("Arial", "I", 10)
-        pdf.cell(0, 10, "No hubo movimientos en inventario.", ln=True)
+        pdf.cell(0, 10, safe_text("No hubo movimientos en inventario."), ln=True)
     os.makedirs("reportes", exist_ok=True)
     ruta = f"reportes/reporte_{nombre.lower().replace(' ', '_')}.pdf"
     pdf.output(ruta)
