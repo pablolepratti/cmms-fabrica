@@ -1,8 +1,10 @@
-# 📄 CRUD de Calibraciones de Instrumentos – CMMS Fábrica
-# Versión: Julio 2025
-# Autor: Pablo Lepratti
-# Normas aplicables: ISO/IEC 17025 | ISO 9001:2015 | ISO 55001
-# Descripción: Permite registrar, visualizar, editar y eliminar eventos de calibración con trazabilidad completa y alertas por vencimiento.
+"""
+📄 CRUD de Calibraciones de Instrumentos – CMMS Fábrica
+
+Normas aplicables: ISO/IEC 17025 | ISO 9001:2015 | ISO 55001
+
+Descripción: Permite registrar, visualizar, editar y eliminar eventos de calibración con trazabilidad completa y alertas por vencimiento.
+"""
 
 import streamlit as st
 import pandas as pd
