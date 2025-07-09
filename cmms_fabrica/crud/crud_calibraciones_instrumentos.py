@@ -1,14 +1,8 @@
-"""
-🧪 CRUD de Calibraciones de Instrumentos – CMMS Fábrica
-
-Este módulo combina trazabilidad completa con seguimiento operativo.
-Permite registrar, visualizar, editar y eliminar calibraciones, mostrando alertas por vencimientos y filtros por tipo/estado.
-
-✅ Normas aplicables:
-- ISO/IEC 17025 (Requisitos para laboratorios de calibración)
-- ISO 9001:2015 (Control de equipos de medición y trazabilidad)
-- ISO 55001 (Ciclo de vida de activos)
-"""
+# 📄 CRUD de Calibraciones de Instrumentos – CMMS Fábrica
+# Versión: Julio 2025
+# Autor: Pablo Lepratti
+# Normas aplicables: ISO/IEC 17025 | ISO 9001:2015 | ISO 55001
+# Descripción: Permite registrar, visualizar, editar y eliminar eventos de calibración con trazabilidad completa.
 
 import streamlit as st
 import pandas as pd
@@ -22,7 +16,6 @@ activos = db["activos_tecnicos"]
 def generar_id_calibracion():
     return f"CAL-{int(datetime.now().timestamp())}"
 
-
 def form_calibracion(defaults=None):
     ids_activos = [d["id_activo_tecnico"] for d in activos.find({}, {"_id": 0, "id_activo_tecnico": 1})]
     if not ids_activos:
@@ -30,22 +23,32 @@ def form_calibracion(defaults=None):
         return None
 
     with st.form("form_calibracion"):
-        id_activo = st.selectbox("ID del Instrumento", ids_activos,
-                                 index=ids_activos.index(defaults["id_activo_tecnico"]) if defaults and defaults.get("id_activo_tecnico") in ids_activos else 0)
+        id_default = defaults.get("id_activo_tecnico") if defaults else ""
+        index_default = ids_activos.index(id_default) if id_default in ids_activos else 0
+        id_activo = st.selectbox("ID del Instrumento", ids_activos, index=index_default)
+
         id_calibracion = defaults.get("id_calibracion") if defaults else generar_id_calibracion()
 
-        fecha_cal = st.date_input("Fecha de Calibración", value=defaults.get("fecha_calibracion") if defaults else datetime.today())
+        fecha_cal = st.date_input("Fecha de Calibración", value=datetime.strptime(defaults["fecha_calibracion"], "%Y-%m-%d") if defaults else datetime.today())
         responsable = st.text_input("Responsable de Calibración", value=defaults.get("responsable") if defaults else "")
         proveedor = st.text_input("Proveedor Externo (si aplica)", value=defaults.get("proveedor_externo") if defaults else "")
-        resultado = st.selectbox("Resultado", ["Correcta", "Desviación leve", "Desviación crítica"],
-                                 index=["Correcta", "Desviación leve", "Desviación crítica"].index(defaults.get("resultado")) if defaults else 0)
+        resultado_opciones = ["Correcta", "Desviación leve", "Desviación crítica"]
+        resultado = st.selectbox("Resultado", resultado_opciones,
+                                 index=resultado_opciones.index(defaults.get("resultado")) if defaults and defaults.get("resultado") in resultado_opciones else 0)
         acciones = st.text_area("Acciones Derivadas", value=defaults.get("acciones") if defaults else "")
         observaciones = st.text_area("Observaciones", value=defaults.get("observaciones") if defaults else "")
-        prox = st.date_input("Fecha Próxima Calibración", value=defaults.get("fecha_proxima") if defaults else datetime.today() + timedelta(days=180))
+        prox_fecha = defaults.get("fecha_proxima")
+        prox_valor = datetime.strptime(prox_fecha, "%Y-%m-%d") if defaults and prox_fecha else datetime.today() + timedelta(days=180)
+        prox = st.date_input("Fecha Próxima Calibración", value=prox_valor)
         usuario = st.text_input("Usuario que registra", value=defaults.get("usuario_registro") if defaults else "")
+
         submit = st.form_submit_button("Guardar Calibración")
 
     if submit:
+        if not responsable or not usuario:
+            st.error("Debe completar los campos obligatorios: Responsable y Usuario.")
+            return None
+
         return {
             "id_calibracion": id_calibracion,
             "id_activo_tecnico": id_activo,
@@ -63,21 +66,6 @@ def form_calibracion(defaults=None):
 
 def app():
     st.title("🧪 Gestión de Calibraciones de Instrumentos")
-
-    datos = list(coleccion.find({}, {"_id": 0}))
-    df = pd.DataFrame(datos)
-
-    if not df.empty:
-        df["fecha_proxima"] = pd.to_datetime(df.get("fecha_proxima"), errors='coerce')
-        hoy = datetime.today()
-        df_alerta = df[df["fecha_proxima"].notna() & (df["fecha_proxima"] <= hoy + timedelta(days=30))]
-
-        st.markdown("### ⚠️ Calibraciones vencidas o próximas")
-        if not df_alerta.empty:
-            st.dataframe(df_alerta[["id_activo_tecnico", "fecha_proxima", "resultado", "observaciones"]])
-        else:
-            st.success("Todas las calibraciones están al día ✅")
-
     menu = ["Registrar Calibración", "Ver Calibraciones", "Editar Calibración", "Eliminar Calibración"]
     choice = st.sidebar.radio("Acción", menu)
 
@@ -91,9 +79,9 @@ def app():
                 data["id_activo_tecnico"],
                 data["id_calibracion"],
                 f"Calibración registrada con resultado '{data['resultado']}'",
-                data["usuario_registro"],
+                data["usuario_registro"]
             )
-            st.success("Calibración registrada correctamente. Refrescar la página para ver los cambios.")
+            st.success("✅ Calibración registrada correctamente.")
 
     elif choice == "Ver Calibraciones":
         st.subheader("📋 Calibraciones por Instrumento")
@@ -104,6 +92,16 @@ def app():
             return
 
         df = pd.DataFrame(registros)
+        df["fecha_proxima"] = pd.to_datetime(df["fecha_proxima"], errors="coerce")
+        hoy = datetime.today()
+        df_alerta = df[df["fecha_proxima"].notna() & (df["fecha_proxima"] <= hoy + timedelta(days=30))]
+
+        st.markdown("### ⚠️ Calibraciones vencidas o próximas")
+        if not df_alerta.empty:
+            st.dataframe(df_alerta[["id_activo_tecnico", "fecha_proxima", "resultado", "observaciones"]], use_container_width=True)
+        else:
+            st.success("Todas las calibraciones están al día ✅")
+
         texto = st.text_input("🔍 Buscar por ID, resultado o responsable")
         filtrado = df[df.apply(lambda x: texto.lower() in str(x.values).lower(), axis=1)] if texto else df
 
@@ -111,8 +109,9 @@ def app():
             st.markdown(f"### 🏷️ Instrumento: `{instrumento}`")
             for _, c in filtrado[filtrado["id_activo_tecnico"] == instrumento].iterrows():
                 st.code(f"ID Calibración: {c.get('id_calibracion', '❌ No definido')}", language="yaml")
-                st.markdown(f"- 📅 **{c['fecha_calibracion']}** | 🧪 **Resultado:** {c['resultado']} | 👤 **Responsable:** {c['responsable']}")
-                st.write(c.get("observaciones", ""))
+                st.markdown(f"- 📅 **{c['fecha_calibracion']}** → 📆 **Próxima:** {c['fecha_proxima'].date()}")
+                st.markdown(f"- 🧪 **Resultado:** {c['resultado']} | 👤 **Responsable:** {c['responsable']}")
+                st.markdown(f"- 📝 {c.get('observaciones', '')}")
             st.markdown("---")
 
     elif choice == "Editar Calibración":
@@ -122,6 +121,9 @@ def app():
             f"{r.get('id_calibracion', '❌')} | {r.get('id_activo_tecnico', 'Sin ID')} - {r.get('fecha_calibracion', 'Sin Fecha')}": r
             for r in registros
         }
+        if not opciones:
+            st.info("No hay calibraciones disponibles.")
+            return
         seleccion = st.selectbox("Seleccionar calibración", list(opciones.keys()))
         datos = opciones[seleccion]
         nuevos = form_calibracion(defaults=datos)
@@ -132,9 +134,9 @@ def app():
                 nuevos["id_activo_tecnico"],
                 nuevos["id_calibracion"],
                 f"Edición de calibración ({nuevos['resultado']})",
-                nuevos["usuario_registro"],
+                nuevos["usuario_registro"]
             )
-            st.success("Calibración actualizada correctamente. Refrescar la página para ver los cambios.")
+            st.success("✅ Calibración actualizada correctamente.")
 
     elif choice == "Eliminar Calibración":
         st.subheader("🗑️ Eliminar Calibración")
@@ -143,6 +145,9 @@ def app():
             f"{r.get('id_calibracion', '❌')} | {r.get('id_activo_tecnico', 'Sin ID')} - {r.get('fecha_calibracion', 'Sin Fecha')}": r
             for r in registros
         }
+        if not opciones:
+            st.info("No hay calibraciones disponibles.")
+            return
         seleccion = st.selectbox("Seleccionar calibración", list(opciones.keys()))
         datos = opciones[seleccion]
         if st.button("Eliminar definitivamente"):
@@ -152,9 +157,9 @@ def app():
                 datos.get("id_activo_tecnico"),
                 datos.get("id_calibracion"),
                 f"Se eliminó calibración ({datos.get('resultado', '-')})",
-                datos.get("usuario_registro", "desconocido"),
+                datos.get("usuario_registro", "desconocido")
             )
-            st.success("Calibración eliminada. Refrescar la página para ver los cambios.")
+            st.success("🗑️ Calibración eliminada correctamente.")
 
 if __name__ == "__main__":
     app()
