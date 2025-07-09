@@ -1,12 +1,12 @@
 """
 📄 Módulo de Reportes Técnicos – CMMS Fábrica
 
-Este módulo permite consultar y exportar reportes en PDF y Excel a partir de la colección `historial`
-y los movimientos recientes en inventario. Filtrado por tipo de evento, rango de fechas y activo técnico.
+Este módulo permite consultar y exportar reportes a partir de la colección `historial`
+y los movimientos recientes en `inventario`, con filtros por tipo de evento, fechas y activo técnico.
 
-✅ Normas aplicables:
-- ISO 9001:2015 (Trazabilidad documental y registros)
-- ISO 55001 (Control de mantenimiento y soporte documental)
+✅ Normas aplicadas:
+- ISO 9001:2015 (Trazabilidad documental)
+- ISO 55001 (Gestión del mantenimiento basada en activos)
 """
 
 import streamlit as st
@@ -17,6 +17,7 @@ from modulos.conexion_mongo import db
 import os
 from io import BytesIO
 
+# 🔗 Colecciones MongoDB
 coleccion = db["historial"]
 activos_tecnicos = db["activos_tecnicos"]
 inventario = db["inventario"]
@@ -35,38 +36,40 @@ class PDF(FPDF):
         self.ln(2)
 
         for _, row in df.iterrows():
-            self.multi_cell(0, 6, f"Activo: {row['id_activo_tecnico']}", 0)
+            self.multi_cell(0, 6, f"Activo técnico: {row.get('id_activo_tecnico', '-')}", 0)
             self.multi_cell(0, 6, f"Fecha: {row['fecha_evento'].strftime('%Y-%m-%d %H:%M')}", 0)
-            self.multi_cell(0, 6, f"Tipo: {row['tipo_evento']}", 0)
-            self.multi_cell(0, 6, f"Origen: {row['id_origen']}", 0)
-            self.multi_cell(0, 6, f"Usuario: {row['usuario_registro']}", 0)
+            self.multi_cell(0, 6, f"Tipo de evento: {row.get('tipo_evento', '-')}", 0)
+            self.multi_cell(0, 6, f"ID de origen: {row.get('id_origen', '-')}", 0)
+            self.multi_cell(0, 6, f"Usuario: {row.get('usuario_registro', '-')}", 0)
             self.set_font("Arial", "B", 10)
             self.multi_cell(0, 6, "Descripción:", 0)
             self.set_font("Arial", "", 10)
-            self.multi_cell(0, 6, f"{row.get('descripcion', '-')}", 0)
+            self.multi_cell(0, 6, row.get("descripcion", "-"), 0)
             self.multi_cell(0, 6, f"Observaciones: {row.get('observaciones', '-')}", 0)
             self.ln(3)
 
+# 📤 Generador de PDF
 def generar_pdf(df_eventos, df_inventario, nombre):
     pdf = PDF()
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
 
     if not df_eventos.empty:
-        pdf.chapter_body("📌 Últimos eventos técnicos por activo", df_eventos)
+        pdf.chapter_body("Últimos eventos técnicos por activo", df_eventos)
     else:
         pdf.set_font("Arial", "I", 10)
         pdf.cell(0, 10, "No se registraron eventos técnicos en este período.", ln=True)
 
     pdf.ln(5)
     pdf.set_font("Arial", "B", 12)
-    pdf.cell(0, 10, "📦 Movimientos recientes en Inventario", ln=True)
+    pdf.cell(0, 10, "Movimientos recientes en Inventario", ln=True)
     pdf.ln(2)
 
     if not df_inventario.empty:
         pdf.set_font("Arial", "", 10)
         for _, row in df_inventario.iterrows():
-            pdf.multi_cell(0, 6, f"{row['fecha_evento'].strftime('%Y-%m-%d')} – {row['id_item']} – {row['descripcion']}", 0)
+            fecha = row['fecha_evento'].strftime('%Y-%m-%d')
+            pdf.multi_cell(0, 6, f"{fecha} – {row.get('id_item', '-')} – {row.get('descripcion', '-')}", 0)
     else:
         pdf.set_font("Arial", "I", 10)
         pdf.cell(0, 10, "No hubo movimientos en inventario.", ln=True)
@@ -76,6 +79,7 @@ def generar_pdf(df_eventos, df_inventario, nombre):
     pdf.output(ruta)
     return ruta
 
+# 📥 Generador de Excel
 def generar_excel(df_eventos, df_inventario):
     output = BytesIO()
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
@@ -86,6 +90,7 @@ def generar_excel(df_eventos, df_inventario):
     output.seek(0)
     return output
 
+# 🔍 Filtrar última actualización por tarea
 def filtrar_ultimo_por_tarea(df):
     if "id_origen" not in df or "fecha_evento" not in df:
         return df
@@ -93,6 +98,7 @@ def filtrar_ultimo_por_tarea(df):
     idx = df_ordenado.groupby("id_origen")["fecha_evento"].idxmax()
     return df_ordenado.loc[idx].reset_index(drop=True)
 
+# 🚀 Interfaz principal
 def app():
     st.title("📄 Reportes Técnicos del CMMS")
 
@@ -112,7 +118,7 @@ def app():
         id_activo = seleccion.split(" ")[0] if seleccion != "Todos" else None
 
     if fecha_desde > fecha_hasta:
-        st.error("⚠️ Fecha inválida.")
+        st.error("⚠️ Rango de fechas inválido.")
         return
 
     query = {
@@ -122,6 +128,7 @@ def app():
         },
         "tipo_evento": {"$in": tipo_evento}
     }
+
     if id_activo:
         subactivos = [a["id_activo_tecnico"] for a in activos if a.get("pertenece_a") == id_activo]
         ids = [id_activo] + subactivos
@@ -130,7 +137,7 @@ def app():
 
     datos = list(coleccion.find(query, {"_id": 0}))
     if not datos:
-        st.warning("No hay eventos en este período.")
+        st.warning("No se encontraron eventos técnicos en este período.")
         return
 
     df = pd.DataFrame(datos)
@@ -141,10 +148,10 @@ def app():
     df_filtrado = filtrar_ultimo_por_tarea(df)
 
     columnas = ["fecha_evento", "tipo_evento", "id_activo_tecnico", "id_origen", "descripcion", "usuario_registro", "observaciones"]
-    st.markdown("### 📌 Última actualización por tarea y activo técnico")
+    st.markdown("### ✅ Última actualización por tarea y activo técnico")
     st.dataframe(df_filtrado[columnas].sort_values("fecha_evento", ascending=False), use_container_width=True)
 
-    # Inventario
+    # 🧾 Inventario
     st.markdown("### 📦 Movimientos recientes en Inventario")
     df_inv = pd.DataFrame(list(inventario.find({
         "ultima_actualizacion": {
@@ -157,10 +164,10 @@ def app():
         df_inv["fecha_evento"] = pd.to_datetime(df_inv["ultima_actualizacion"])
         st.dataframe(df_inv[["fecha_evento", "id_item", "descripcion"]])
     else:
-        st.info("No hubo actualizaciones en inventario en ese período.")
+        st.info("No hubo movimientos en inventario en este período.")
 
+    # 📤 Exportar
     col1, col2 = st.columns(2)
-
     with col1:
         if st.button("📄 Generar PDF"):
             archivo = generar_pdf(df_filtrado[columnas], df_inv, nombre="reporte")
