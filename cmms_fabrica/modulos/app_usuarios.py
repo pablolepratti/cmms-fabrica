@@ -1,9 +1,11 @@
-# 📄 Módulo de Gestión de Usuarios – CMMS Fábrica
-# Versión: Julio 2025
-# Autor: Pablo Lepratti
-# Normas aplicables: ISO 9001:2015 | ISO 27001
-# Descripción: Permite registrar, visualizar, modificar y eliminar usuarios con control de roles y acceso restringido.
-# *Solo accesible para administradores.*
+"""
+📄 Módulo de Gestión de Usuarios – CMMS Fábrica
+
+Normas aplicables: ISO 9001:2015 | ISO 27001
+
+Descripción: Permite registrar, visualizar, modificar y eliminar usuarios con control de roles y acceso restringido.
+*Solo accesible para administradores.*
+"""
 
 import streamlit as st
 import pandas as pd
