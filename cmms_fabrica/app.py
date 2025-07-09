@@ -8,7 +8,6 @@ from modulos.conexion_mongo import db
 # 💄 Estilos responsive
 from modulos.estilos import aplicar_estilos
 
-
 # Nuevos módulos CRUD centrados en activos técnicos
 from crud.crud_activos_tecnicos import app as crud_activos_tecnicos
 from crud.crud_planes_preventivos import app as crud_planes_preventivos
@@ -29,7 +28,7 @@ from modulos.cambiar_ids import app as cambiar_ids
 # Reportes técnicos
 from modulos.app_reportes import app as app_reportes
 
-# 📱 Estilos responsive
+# 📱 Estilos
 aplicar_estilos()
 
 # 🔐 Login de usuario
@@ -43,7 +42,7 @@ with st.sidebar:
     st.markdown(f"👤 **{usuario}** ({rol})")
     st.button("Cerrar sesión", on_click=cerrar_sesion, use_container_width=True)
 
-# 📋 Menú lateral (CMMS nuevo completo)
+# 📋 Menú lateral
 menu = [
     "🏠 Inicio",
     "🧱 Activos Técnicos",
@@ -67,6 +66,32 @@ opcion = st.sidebar.radio("Menú principal", menu)
 if opcion == "🏠 Inicio":
     st.title("Bienvenido al CMMS de la Fábrica")
     kpi_historial()
+
+    # 📦 Monitoreo de almacenamiento (solo admin)
+    if rol == "admin":
+        st.markdown("## 🧹 Mantenimiento de Almacenamiento (MongoDB)")
+
+        from modulos.almacenamiento import (
+            obtener_tamano_total_mb,
+            listar_colecciones_ordenadas,
+            limpiar_coleccion_mas_cargada
+        )
+
+        uso_actual = obtener_tamano_total_mb()
+        st.markdown(f"**Uso actual estimado de la base de datos:** `{uso_actual:.2f} MB`")
+
+        st.markdown("### 📁 Colecciones rotables ordenadas por carga:")
+        datos = listar_colecciones_ordenadas()
+        for nombre, cantidad, _ in datos:
+            st.write(f"- `{nombre}` → {cantidad} documentos")
+
+        if st.button("🧹 Ejecutar limpieza automática"):
+            resultado = limpiar_coleccion_mas_cargada()
+            if resultado:
+                nombre, cantidad = resultado
+                st.success(f"✅ Se eliminaron {cantidad} documentos antiguos de `{nombre}`.")
+            else:
+                st.info("ℹ️ No se requería limpieza: colecciones por debajo del mínimo.")
 
 elif opcion == "🧱 Activos Técnicos":
     crud_activos_tecnicos()
