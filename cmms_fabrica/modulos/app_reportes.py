@@ -34,10 +34,9 @@ class PDF(FPDF):
         self.cell(0, 10, titulo, ln=True)
         self.set_font("Arial", "", 10)
         self.ln(2)
-
         for _, row in df.iterrows():
             self.multi_cell(0, 6, f"Activo técnico: {row.get('id_activo_tecnico', '-')}", 0)
-            self.multi_cell(0, 6, f"Fecha: {row['fecha_evento'].strftime('%Y-%m-%d %H:%M')}", 0)
+            self.multi_cell(0, 6, f"Fecha: {row.get('fecha_evento', '-').strftime('%Y-%m-%d %H:%M')}", 0)
             self.multi_cell(0, 6, f"Tipo de evento: {row.get('tipo_evento', '-')}", 0)
             self.multi_cell(0, 6, f"ID de origen: {row.get('id_origen', '-')}", 0)
             self.multi_cell(0, 6, f"Usuario: {row.get('usuario_registro', '-')}", 0)
@@ -53,18 +52,15 @@ def generar_pdf(df_eventos, df_inventario, nombre):
     pdf = PDF()
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
-
     if not df_eventos.empty:
         pdf.chapter_body("Últimos eventos técnicos por activo", df_eventos)
     else:
         pdf.set_font("Arial", "I", 10)
         pdf.cell(0, 10, "No se registraron eventos técnicos en este período.", ln=True)
-
     pdf.ln(5)
     pdf.set_font("Arial", "B", 12)
     pdf.cell(0, 10, "Movimientos recientes en Inventario", ln=True)
     pdf.ln(2)
-
     if not df_inventario.empty:
         pdf.set_font("Arial", "", 10)
         for _, row in df_inventario.iterrows():
@@ -73,7 +69,6 @@ def generar_pdf(df_eventos, df_inventario, nombre):
     else:
         pdf.set_font("Arial", "I", 10)
         pdf.cell(0, 10, "No hubo movimientos en inventario.", ln=True)
-
     os.makedirs("reportes", exist_ok=True)
     ruta = f"reportes/reporte_{nombre.lower().replace(' ', '_')}.pdf"
     pdf.output(ruta)
@@ -108,7 +103,6 @@ def app():
         fecha_hasta = st.date_input("Hasta", value=date.today())
         tipo_evento = st.multiselect("Tipo de Evento", ["preventiva", "correctiva", "tecnica", "calibracion", "observacion"],
                                      default=["preventiva", "correctiva", "tecnica", "calibracion"])
-
         activos = list(activos_tecnicos.find({}, {"_id": 0, "id_activo_tecnico": 1, "pertenece_a": 1}))
         opciones = ["Todos"] + sorted([
             f"{a['id_activo_tecnico']} (pertenece a {a['pertenece_a']})" if a.get("pertenece_a") else a["id_activo_tecnico"]
@@ -128,7 +122,6 @@ def app():
         },
         "tipo_evento": {"$in": tipo_evento}
     }
-
     if id_activo:
         subactivos = [a["id_activo_tecnico"] for a in activos if a.get("pertenece_a") == id_activo]
         ids = [id_activo] + subactivos
@@ -142,16 +135,20 @@ def app():
 
     df = pd.DataFrame(datos)
     df["fecha_evento"] = pd.to_datetime(df["fecha_evento"])
-    df["usuario_registro"] = df.get("usuario_registro", df.get("usuario", "desconocido"))
-    df["observaciones"] = df.get("observaciones", "-")
+    for campo in ["usuario_registro", "descripcion", "observaciones", "id_origen"]:
+        if campo not in df.columns:
+            df[campo] = "-"
+    df["usuario_registro"] = df["usuario_registro"].fillna("desconocido")
 
     df_filtrado = filtrar_ultimo_por_tarea(df)
 
     columnas = ["fecha_evento", "tipo_evento", "id_activo_tecnico", "id_origen", "descripcion", "usuario_registro", "observaciones"]
+    for col in columnas:
+        if col not in df_filtrado.columns:
+            df_filtrado[col] = "-"
     st.markdown("### ✅ Última actualización por tarea y activo técnico")
     st.dataframe(df_filtrado[columnas].sort_values("fecha_evento", ascending=False), use_container_width=True)
 
-    # 🧾 Inventario
     st.markdown("### 📦 Movimientos recientes en Inventario")
     df_inv = pd.DataFrame(list(inventario.find({
         "ultima_actualizacion": {
@@ -166,14 +163,12 @@ def app():
     else:
         st.info("No hubo movimientos en inventario en este período.")
 
-    # 📤 Exportar
     col1, col2 = st.columns(2)
     with col1:
         if st.button("📄 Generar PDF"):
             archivo = generar_pdf(df_filtrado[columnas], df_inv, nombre="reporte")
             with open(archivo, "rb") as f:
                 st.download_button("⬇️ Descargar PDF", data=f, file_name=os.path.basename(archivo), mime="application/pdf")
-
     with col2:
         if st.button("📥 Descargar Excel"):
             excel = generar_excel(df_filtrado[columnas], df_inv)
