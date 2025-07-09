@@ -1,15 +1,9 @@
-"""
-👁️ CRUD de Observaciones Técnicas – CMMS Fábrica
-
-Este módulo permite registrar, visualizar, editar y eliminar observaciones técnicas asociadas a activos técnicos.
-Soporta activos jerárquicos mediante el campo `pertenece_a`, reflejando relaciones funcionales.
-Registra automáticamente cada evento en la colección `historial` para trazabilidad completa.
-
-✅ Normas aplicables:
-- ISO 14224
-- ISO 55001
-- ISO 9001:2015
-"""
+# 📄 CRUD de Observaciones Técnicas – CMMS Fábrica
+# Versión: Julio 2025
+# Autor: Pablo Lepratti
+# Normas aplicables: ISO 14224 | ISO 55001 | ISO 9001:2015
+# Descripción: Módulo para registrar hallazgos técnicos asociados a activos sin necesidad de acción inmediata.
+# Cada evento queda trazado automáticamente en la colección `historial`.
 
 import streamlit as st
 from datetime import datetime
@@ -19,66 +13,68 @@ from crud.generador_historial import registrar_evento_historial
 coleccion = db["observaciones"]
 activos = db["activos_tecnicos"]
 
-def app():
-    st.title("👁️ Registro de Observaciones Técnicas")
+tipos_observacion = ["Advertencia", "Hallazgo", "Ruido", "Otro"]
+estados_posibles = ["Pendiente", "Revisado"]
 
-    menu = ["Registrar Observación", "Ver Observaciones", "Editar Observación", "Eliminar Observación"]
-    choice = st.sidebar.radio("Acción", menu)
+def generar_id_observacion():
+    return f"OBS_{int(datetime.now().timestamp())}"
 
-    def form_observacion(defaults=None):
-        activos_lista = list(activos.find({}, {"_id": 0, "id_activo_tecnico": 1, "nombre": 1, "pertenece_a": 1}))
-        if not activos_lista:
-            st.warning("⚠️ No hay activos técnicos registrados.")
+def form_observacion(defaults=None):
+    activos_lista = list(activos.find({}, {"_id": 0, "id_activo_tecnico": 1, "nombre": 1, "pertenece_a": 1}))
+    if not activos_lista:
+        st.warning("⚠️ No hay activos técnicos registrados.")
+        return None
+
+    id_map = {
+        a["id_activo_tecnico"]: f"{a['id_activo_tecnico']} - {a.get('nombre', '')}" +
+        (f" (pertenece a {a['pertenece_a']})" if a.get("pertenece_a") else "")
+        for a in activos_lista
+    }
+    opciones = [""] + sorted(id_map.values())
+    id_default = defaults.get("id_activo_tecnico") if defaults else ""
+    label_default = id_map.get(id_default, id_default)
+    index_default = opciones.index(label_default) if label_default in opciones else 0
+
+    with st.form("form_observacion"):
+        seleccion_visible = st.selectbox("ID del Activo Técnico", opciones, index=index_default)
+        id_activo = next((k for k, v in id_map.items() if v == seleccion_visible), "") if seleccion_visible else ""
+
+        id_observacion = defaults.get("id_observacion") if defaults else generar_id_observacion()
+        fecha_evento = st.date_input("Fecha del Evento", value=datetime.strptime(defaults.get("fecha_evento"), "%Y-%m-%d") if defaults else datetime.today())
+        descripcion = st.text_area("Descripción de la Observación", value=defaults.get("descripcion") if defaults else "")
+        tipo = st.selectbox("Tipo de Observación", tipos_observacion,
+                            index=tipos_observacion.index(defaults.get("tipo_observacion")) if defaults and defaults.get("tipo_observacion") in tipos_observacion else 0)
+        reportado_por = st.text_input("Reportado por", value=defaults.get("reportado_por") if defaults else "")
+        estado = st.selectbox("Estado", estados_posibles,
+                              index=estados_posibles.index(defaults.get("estado")) if defaults and defaults.get("estado") in estados_posibles else 0)
+        usuario = st.text_input("Usuario que registra", value=defaults.get("usuario_registro") if defaults else "")
+        observaciones = st.text_area("Notas adicionales", value=defaults.get("observaciones") if defaults else "")
+
+        submit = st.form_submit_button("Guardar Observación")
+
+    if submit:
+        if not id_activo or not usuario:
+            st.error("Debe seleccionar un activo y completar el usuario.")
             return None
 
-        opciones = []
-        map_id = {}
-        for a in activos_lista:
-            label = f"{a['id_activo_tecnico']} - {a.get('nombre', '')}"
-            if "pertenece_a" in a:
-                label += f" (pertenece a {a['pertenece_a']})"
-            opciones.append(label)
-            map_id[label] = a["id_activo_tecnico"]
+        return {
+            "id_observacion": id_observacion,
+            "id_activo_tecnico": id_activo,
+            "fecha_evento": str(fecha_evento),
+            "descripcion": descripcion,
+            "tipo_observacion": tipo,
+            "reportado_por": reportado_por,
+            "estado": estado,
+            "usuario_registro": usuario,
+            "observaciones": observaciones,
+            "fecha_registro": datetime.now()
+        }
+    return None
 
-        activo_default = None
-        if defaults and defaults.get("id_activo_tecnico"):
-            for k, v in map_id.items():
-                if v == defaults["id_activo_tecnico"]:
-                    activo_default = k
-                    break
-
-        with st.form("form_observacion"):
-            id_activo_label = st.selectbox("ID del Activo Técnico", opciones, index=opciones.index(activo_default) if activo_default else 0)
-            id_activo = map_id[id_activo_label]
-
-            id_observacion = defaults.get("id_observacion") if defaults else f"OBS_{int(datetime.now().timestamp())}"
-
-            fecha_evento = st.date_input("Fecha del Evento", value=defaults.get("fecha_evento") if defaults else datetime.today())
-            descripcion = st.text_area("Descripción de la Observación", value=defaults.get("descripcion") if defaults else "")
-            tipo = st.selectbox("Tipo de Observación", ["Advertencia", "Hallazgo", "Ruido", "Otro"],
-                                index=["Advertencia", "Hallazgo", "Ruido", "Otro"].index(defaults.get("tipo_observacion")) if defaults and defaults.get("tipo_observacion") in ["Advertencia", "Hallazgo", "Ruido", "Otro"] else 0)
-            reportado_por = st.text_input("Reportado por", value=defaults.get("reportado_por") if defaults else "")
-            estado = st.selectbox("Estado", ["Pendiente", "Revisado"],
-                                  index=["Pendiente", "Revisado"].index(defaults.get("estado")) if defaults and defaults.get("estado") in ["Pendiente", "Revisado"] else 0)
-            usuario = st.text_input("Usuario que registra", value=defaults.get("usuario_registro") if defaults else "")
-            observaciones = st.text_area("Notas adicionales", value=defaults.get("observaciones") if defaults else "")
-            submit = st.form_submit_button("Guardar Observación")
-
-        if submit:
-            data = {
-                "id_observacion": id_observacion,
-                "id_activo_tecnico": id_activo,
-                "fecha_evento": str(fecha_evento),
-                "descripcion": descripcion,
-                "tipo_observacion": tipo,
-                "reportado_por": reportado_por,
-                "estado": estado,
-                "usuario_registro": usuario,
-                "observaciones": observaciones,
-                "fecha_registro": datetime.now()
-            }
-            return data
-        return None
+def app():
+    st.title("👁️ Gestión de Observaciones Técnicas")
+    menu = ["Registrar Observación", "Ver Observaciones", "Editar Observación", "Eliminar Observación"]
+    choice = st.sidebar.radio("Acción", menu)
 
     if choice == "Registrar Observación":
         st.subheader("➕ Nueva Observación Técnica")
@@ -93,19 +89,17 @@ def app():
                 data["usuario_registro"],
                 observaciones=data.get("observaciones"),
             )
-            st.success("Observación registrada correctamente.")
+            st.success("✅ Observación registrada correctamente.")
 
     elif choice == "Ver Observaciones":
         st.subheader("👁️ Observaciones Técnicas por Activo Técnico")
-
         observaciones = list(coleccion.find().sort("fecha_evento", -1))
 
         if not observaciones:
             st.info("No hay observaciones registradas.")
             return
 
-        estados_existentes = sorted(set(o.get("estado", "Pendiente") for o in observaciones))
-        estado_filtro = st.selectbox("Filtrar por estado", ["Todos"] + estados_existentes)
+        estado_filtro = st.selectbox("Filtrar por estado", ["Todos"] + estados_posibles)
         texto_filtro = st.text_input("🔍 Buscar por ID, tipo o texto")
 
         filtradas = []
@@ -121,11 +115,11 @@ def app():
             st.warning("No se encontraron observaciones con esos filtros.")
             return
 
-        activos_listados = sorted(set(str(o.get("id_activo_tecnico") or "⛔ Sin ID") for o in filtradas))
+        activos_listados = sorted(set(o.get("id_activo_tecnico", "⛔ Sin ID") for o in filtradas))
         for activo in activos_listados:
             st.markdown(f"### 🏷️ Activo Técnico: `{activo}`")
-            observaciones_activo = [o for o in filtradas if str(o.get("id_activo_tecnico") or "⛔ Sin ID") == activo]
-            for o in observaciones_activo:
+            obs_activas = [o for o in filtradas if o.get("id_activo_tecnico") == activo]
+            for o in obs_activas:
                 st.code(f"ID Observación: {o.get('id_observacion', '❌ No definido')}", language="yaml")
                 fecha = o.get("fecha_evento", "Sin Fecha")
                 tipo = o.get("tipo_observacion", "Sin Tipo")
@@ -138,7 +132,13 @@ def app():
     elif choice == "Editar Observación":
         st.subheader("✏️ Editar Observación Técnica")
         obs = list(coleccion.find())
-        opciones = {f"{o.get('id_observacion', 'Sin ID')} - {o.get('id_activo_tecnico', 'Sin Activo')} ({o.get('fecha_evento', 'Sin Fecha')})": o for o in obs}
+        opciones = {
+            f"{o.get('id_observacion', 'Sin ID')} - {o.get('id_activo_tecnico', 'Sin Activo')} ({o.get('fecha_evento', 'Sin Fecha')})": o
+            for o in obs
+        }
+        if not opciones:
+            st.info("No hay observaciones disponibles.")
+            return
         seleccion = st.selectbox("Seleccionar observación", list(opciones.keys()))
         datos = opciones[seleccion]
         nuevos_datos = form_observacion(defaults=datos)
@@ -152,12 +152,18 @@ def app():
                 nuevos_datos["usuario_registro"],
                 observaciones=nuevos_datos.get("observaciones"),
             )
-            st.success("Observación actualizada correctamente. Refrescar la página para ver los cambios.")
+            st.success("✅ Observación actualizada correctamente.")
 
     elif choice == "Eliminar Observación":
         st.subheader("🗑️ Eliminar Observación Técnica")
         obs = list(coleccion.find())
-        opciones = {f"{o.get('id_observacion', 'Sin ID')} - {o.get('id_activo_tecnico', 'Sin Activo')} ({o.get('fecha_evento', 'Sin Fecha')})": o for o in obs}
+        opciones = {
+            f"{o.get('id_observacion', 'Sin ID')} - {o.get('id_activo_tecnico', 'Sin Activo')} ({o.get('fecha_evento', 'Sin Fecha')})": o
+            for o in obs
+        }
+        if not opciones:
+            st.info("No hay observaciones disponibles.")
+            return
         seleccion = st.selectbox("Seleccionar observación", list(opciones.keys()))
         datos = opciones[seleccion]
         if st.button("Eliminar definitivamente"):
@@ -170,7 +176,7 @@ def app():
                 datos.get("usuario_registro", "desconocido"),
                 observaciones=datos.get("observaciones"),
             )
-            st.success("Observación eliminada. Refrescar la página para ver los cambios.")
+            st.success("🗑️ Observación eliminada correctamente.")
 
 if __name__ == "__main__":
     app()
