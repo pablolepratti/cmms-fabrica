@@ -22,17 +22,17 @@ coleccion = db["historial"]
 activos_tecnicos = db["activos_tecnicos"]
 inventario = db["inventario"]
 
-# 🔐 Función para limpiar caracteres no soportados en PDF
+# 🔐 Función para eliminar caracteres no soportados por PDF
 def safe_text(text):
     if not isinstance(text, str):
         text = str(text)
-    return text.encode("latin-1", "replace").decode("latin-1")
+    return text.encode("latin-1", "ignore").decode("latin-1")
 
 # 📄 Clase PDF personalizada
 class PDF(FPDF):
     def header(self):
         self.set_font("Arial", "B", 14)
-        self.cell(0, 10, "Reporte de Actividades Técnicas – CMMS Fábrica", ln=True, align="C")
+        self.cell(0, 10, safe_text("Reporte de Actividades Técnicas – CMMS Fábrica"), ln=True, align="C")
         self.ln(5)
 
     def chapter_body(self, titulo, df):
