@@ -5,9 +5,9 @@ Este módulo permite la gestión completa de activos técnicos (agregar, ver, ed
 Registra automáticamente los eventos en la colección `historial` para trazabilidad completa.
 
 ✅ Normas aplicables:
-- ISO 14224 (Información sobre confiabilidad y mantenimiento de activos)
-- ISO 55000 (Gestión de activos)
-- ISO 9001:2015 (Trazabilidad y control documental en mantenimiento)
+- ISO 14224
+- ISO 55001
+- ISO 9001:2015
 """
 
 import streamlit as st
@@ -34,6 +34,12 @@ def app():
         tipo_index = opciones_tipo.index(tipo_default) if tipo_default in opciones_tipo else 0
         estado_index = opciones_estado.index(estado_default) if estado_default in opciones_estado else 0
 
+        # Cargar responsables desde la colección usuarios
+        usuarios = [u.get("nombre") for u in db["usuarios"].find({}, {"_id": 0, "nombre": 1})]
+        responsables = usuarios if usuarios else ["Pablo"]
+        responsable_default = defaults.get("responsable") if defaults else responsables[0]
+        responsable_index = responsables.index(responsable_default) if responsable_default in responsables else 0
+
         with st.form("form_activo"):
             id_activo = st.text_input("ID del Activo Técnico", value=defaults.get("id_activo_tecnico") if defaults else "")
             nombre = st.text_input("Nombre o Descripción", value=defaults.get("nombre") if defaults else "")
@@ -48,6 +54,7 @@ def app():
             index_default = ids_disponibles.index(valor_default) if valor_default in ids_disponibles else 0
             pertenece_a = st.selectbox("Pertenece a (opcional)", options=ids_disponibles, index=index_default)
 
+            responsable = st.selectbox("Responsable del Activo", options=responsables, index=responsable_index)
             usuario = st.text_input("Usuario que registra", value=defaults.get("usuario_registro") if defaults else "")
             submit = st.form_submit_button("Guardar")
 
@@ -58,6 +65,7 @@ def app():
                     "ubicacion": ubicacion,
                     "tipo": tipo,
                     "estado": estado,
+                    "responsable": responsable,
                     "usuario_registro": usuario,
                     "fecha_registro": datetime.now()
                 }
