@@ -19,7 +19,7 @@ LIMITE_USD_MENSUAL = 10.0
 
 # UI
 st.title("🧰 Asistente de Mejora Continua del CMMS")
-estilo_formulario()
+aplicar_estilos()
 consulta = st.text_area("¿Qué parte del CMMS querés mejorar, revisar o analizar?")
 
 # Funciones auxiliares
