@@ -14,7 +14,7 @@ from crud.crud_planes_preventivos import app as crud_planes_preventivos
 from crud.crud_tareas_correctivas import app as crud_tareas_correctivas
 from crud.crud_tareas_tecnicas import app as crud_tareas_tecnicas
 from crud.crud_observaciones import app as crud_observaciones
-from crud.crud_calibraciones_instrumentos import app as crud_calibraciones
+from crud.crud_calibraciones_instruments import app as crud_calibraciones
 from crud.crud_servicios_externos import app as crud_servicios
 from crud.dashboard_kpi_historial import app as kpi_historial
 from crud.crud_inventario import app_inventario
@@ -27,6 +27,10 @@ from modulos.cambiar_ids import app as cambiar_ids
 
 # Reportes técnicos
 from modulos.app_reportes import app as app_reportes
+
+# Asistentes GPT
+from modulos.app_asistente_tecnico import app as asistente_tecnico
+from modulos.app_mejora import app as asistente_mejora
 
 # 📱 Estilos
 aplicar_estilos()
@@ -55,6 +59,8 @@ menu = [
     "🏢 Servicios Técnicos",
     "📊 KPIs Globales",
     "📄 Reportes Técnicos",
+    "🤖 Asistente Técnico",
+    "🧰 Asistente de Mejora Continua",
     "🆔 Cambiar IDs manuales" if rol == "admin" else None,
     "👥 Usuarios" if rol == "admin" else None,
 ]
@@ -67,24 +73,19 @@ if opcion == "🏠 Inicio":
     st.title("Bienvenido al CMMS de la Fábrica")
     kpi_historial()
 
-    # 📦 Monitoreo de almacenamiento (solo admin)
     if rol == "admin":
         st.markdown("## 🧹 Mantenimiento de Almacenamiento (MongoDB)")
-
         from modulos.almacenamiento import (
             obtener_tamano_total_mb,
             listar_colecciones_ordenadas,
             limpiar_coleccion_mas_cargada
         )
-
         uso_actual = obtener_tamano_total_mb()
         st.markdown(f"**Uso actual estimado de la base de datos:** `{uso_actual:.2f} MB`")
-
         st.markdown("### 📁 Colecciones rotables ordenadas por carga:")
         datos = listar_colecciones_ordenadas()
         for nombre, cantidad, _ in datos:
             st.write(f"- `{nombre}` → {cantidad} documentos")
-
         if st.button("🧹 Ejecutar limpieza automática"):
             resultado = limpiar_coleccion_mas_cargada()
             if resultado:
@@ -122,6 +123,12 @@ elif opcion == "📊 KPIs Globales":
 
 elif opcion == "📄 Reportes Técnicos":
     app_reportes()
+
+elif opcion == "🤖 Asistente Técnico":
+    asistente_tecnico()
+
+elif opcion == "🧰 Asistente de Mejora Continua":
+    asistente_mejora()
 
 elif opcion == "🆔 Cambiar IDs manuales":
     cambiar_ids()
