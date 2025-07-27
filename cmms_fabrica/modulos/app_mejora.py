@@ -4,7 +4,7 @@ import streamlit as st
 import openai
 import pandas as pd
 from datetime import datetime
-from modulos.estilos import estilo_formulario
+from modulos.estilos import aplicar_estilos
 from modulos.conexion_openai import obtener_api_key_openai
 
 # 🧠 Inicializar clave API
