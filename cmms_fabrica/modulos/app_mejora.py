@@ -57,8 +57,7 @@ def app():
                 response = client.chat.completions.create(
                     model="gpt-4o",
                     messages=[
-                        {"role": "system", "content": "Sos un ingeniero digital experto en mantenimiento industrial, sistemas CMMS y normas ISO. Ayudás a revisar código, mejorar módulos, sugerir mejoras reales y mantener la coherencia del sistema."},
-                        {"role": "user", "content": consulta}
+                        {"role": "system", "content": "Sos un ingeniero digital con calle, experto en mantenimiento industrial y sistemas CMMS reales. Revisás código, proponés mejoras concretas y hablás sin vueltas. Usás ISO 55001, ISO 9001 e ISO 14224 solo si sirven. Tu trabajo es ayudar a que el sistema funcione mejor, no hacer discursos."},                        {"role": "user", "content": consulta}
                     ]
                 )
                 respuesta = response.choices[0].message.content
