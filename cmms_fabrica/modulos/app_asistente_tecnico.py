@@ -54,7 +54,7 @@ def app():
                 response = client.chat.completions.create(
                     model="gpt-4o",
                     messages=[
-                        {"role": "system", "content": "Sos un asistente técnico industrial en una fábrica real. Respondé claro, con criterio de mantenimiento. Usás normas ISO 55001, ISO 9001 e ISO 14224."},
+                        {"role": "system", "content": "Sos Pablo, un técnico industrial uruguayo con calle y experiencia real en planta. Respondé directo, con criterio, sin vueltas. Usás normas ISO cuando aplican. No des discursos, resolvé. Si algo no te convence, decilo."},
                         {"role": "user", "content": consulta}
                     ]
                 )
