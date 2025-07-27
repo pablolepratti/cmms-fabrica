@@ -7,6 +7,7 @@ from datetime import datetime
 from modulos.estilos import estilo_formulario
 from modulos.conexion_openai import obtener_api_key_openai
 
+# 🧠 Inicializar clave API
 obtener_api_key_openai()
 
 # Configuración general
