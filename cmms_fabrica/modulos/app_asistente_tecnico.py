@@ -1,9 +1,11 @@
+# modulos/app_asistente_tecnico.py
+
 import streamlit as st
-import openai
 import pandas as pd
 from datetime import datetime
 from modulos.estilos import aplicar_estilos
 from modulos.conexion_openai import obtener_api_key_openai
+from openai import OpenAI
 
 # Configuración general
 ASISTENTE_ID = "tecnico"
@@ -38,6 +40,9 @@ def app():
     obtener_api_key_openai()
     aplicar_estilos()
     st.title("🤖 Asistente Técnico Industrial")
+
+    client = OpenAI()  # Cliente OpenAI ya toma la API Key desde la variable de entorno
+
     consulta = st.text_area("Ingresá tu consulta técnica de mantenimiento:")
 
     if consulta:
@@ -46,7 +51,7 @@ def app():
             st.error("🚫 Se alcanzó el límite mensual de uso del asistente ($10 USD). Esperá al próximo mes o ajustá el tope.")
         else:
             with st.spinner("Consultando al asistente..."):
-                response = openai.ChatCompletion.create(
+                response = client.chat.completions.create(
                     model="gpt-4o",
                     messages=[
                         {"role": "system", "content": "Sos un asistente técnico industrial en una fábrica real. Respondé claro, con criterio de mantenimiento. Usás normas ISO 55001, ISO 9001 e ISO 14224."},
@@ -54,8 +59,8 @@ def app():
                     ]
                 )
                 respuesta = response.choices[0].message.content
-                tokens_in = response["usage"]["prompt_tokens"]
-                tokens_out = response["usage"]["completion_tokens"]
+                tokens_in = response.usage.prompt_tokens
+                tokens_out = response.usage.completion_tokens
                 costo = registrar_uso(ASISTENTE_ID, tokens_in, tokens_out)
                 st.success(respuesta)
                 st.caption(f"Consulta registrada – Tokens: {tokens_in + tokens_out} | Costo: ${costo:.4f} USD")
