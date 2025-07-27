@@ -1,26 +1,27 @@
 # modulos/app_mejora.py
 
 import streamlit as st
-import openai
 import pandas as pd
 from datetime import datetime
 from modulos.estilos import aplicar_estilos
 from modulos.conexion_openai import obtener_api_key_openai
+from openai import OpenAI
 
 def app():
     # 🧠 Inicializar clave API
     obtener_api_key_openai()
+    client = OpenAI()  # cliente OpenAI ya usa la API key desde la variable de entorno
 
     # Configuración
     ASISTENTE_ID = "mejora"
-    COSTO_INPUT = 0.005 / 1000   # USD/token input
-    COSTO_OUTPUT = 0.015 / 1000  # USD/token output
+    COSTO_INPUT = 0.005 / 1000
+    COSTO_OUTPUT = 0.015 / 1000
     CSV_USO = "uso_api.csv"
     LIMITE_USD_MENSUAL = 10.0
 
     # UI
-    st.title("🧰 Asistente de Mejora Continua del CMMS")
     aplicar_estilos()
+    st.title("🧰 Asistente de Mejora Continua del CMMS")
     consulta = st.text_area("¿Qué parte del CMMS querés mejorar, revisar o analizar?")
 
     # Funciones auxiliares
@@ -53,7 +54,7 @@ def app():
             st.error("🚫 Se alcanzó el límite mensual de uso del asistente ($10 USD). Esperá al próximo mes o ajustá el tope.")
         else:
             with st.spinner("Analizando el sistema..."):
-                response = openai.ChatCompletion.create(
+                response = client.chat.completions.create(
                     model="gpt-4o",
                     messages=[
                         {"role": "system", "content": "Sos un ingeniero digital experto en mantenimiento industrial, sistemas CMMS y normas ISO. Ayudás a revisar código, mejorar módulos, sugerir mejoras reales y mantener la coherencia del sistema."},
@@ -61,8 +62,8 @@ def app():
                     ]
                 )
                 respuesta = response.choices[0].message.content
-                tokens_in = response["usage"]["prompt_tokens"]
-                tokens_out = response["usage"]["completion_tokens"]
+                tokens_in = response.usage.prompt_tokens
+                tokens_out = response.usage.completion_tokens
                 costo = registrar_uso(ASISTENTE_ID, tokens_in, tokens_out)
                 st.success(respuesta)
                 st.caption(f"Consulta registrada – Tokens: {tokens_in + tokens_out} | Costo: ${costo:.4f} USD")
