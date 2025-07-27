@@ -2,12 +2,12 @@
 
 import streamlit as st
 import pandas as pd
-from datetime import datetime
-from modulos.estilos import aplicar_estilos
-from modulos.conexion_openai import obtener_api_key_openai
-from modulos.conexion_mongo import db
-from openai import OpenAI
 import json
+from datetime import datetime
+from openai import OpenAI
+from modulos.estilos import aplicar_estilos
+from modulos.conexion_mongo import db
+from modulos.conexion_openai import obtener_api_key_openai
 
 # Configuración general
 ASISTENTE_ID = "mejora"
@@ -16,7 +16,6 @@ COSTO_OUTPUT = 0.015 / 1000
 CSV_USO = "uso_api.csv"
 LIMITE_USD_MENSUAL = 10.0
 
-# Funciones auxiliares
 def registrar_uso(asistente, tokens_in, tokens_out):
     costo = tokens_in * COSTO_INPUT + tokens_out * COSTO_OUTPUT
     fecha = datetime.now().strftime("%Y-%m-%d")
@@ -39,53 +38,40 @@ def calcular_total_mes():
     except:
         return 0.0
 
-def obtener_muestra_codigo():
-    archivos = ["app.py"]
-    carpetas = ["crud", "modulos"]
-    fragmentos = []
-    for carpeta in carpetas:
-        try:
-            import os
-            for archivo in os.listdir(carpeta):
-                if archivo.endswith(".py"):
-                    with open(os.path.join(carpeta, archivo), "r", encoding="utf-8") as f:
-                        contenido = f.read()
-                        fragmentos.append(f"# {carpeta}/{archivo}\n" + contenido[:1000])
-        except Exception:
-            continue
-    return "\n\n".join([f"# {a}\n" + open(a).read()[:1000] for a in archivos]) + "\n\n" + "\n\n".join(fragmentos[:3])
+def serializar_documentos(doc_list):
+    def convertir(obj):
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        return obj
+    return json.dumps(doc_list, default=convertir)
 
 def app():
     obtener_api_key_openai()
     aplicar_estilos()
-    st.title("🧰 Asistente de Mejora Continua del CMMS")
+    st.title("🧰 Asistente de Mejora Continua")
 
     client = OpenAI()
     consulta = st.text_area("¿Qué parte del sistema querés mejorar o revisar?")
 
     colecciones = db.list_collection_names()
-    col_seleccionada = st.selectbox("Seleccioná una colección para mostrar contexto (opcional):", ["(ninguna)"] + colecciones)
-
-    contexto = ""
-    if col_seleccionada != "(ninguna)":
-        docs = list(db[col_seleccionada].find().limit(3))
-        for d in docs:
-            d.pop("_id", None)
-        contexto = json.dumps(docs, indent=2)
-
-    codigo = obtener_muestra_codigo()
+    coleccion = st.selectbox("Seleccioná una colección para mostrar contexto (opcional):", [""] + colecciones)
 
     if consulta:
         total_mes = calcular_total_mes()
         if total_mes >= LIMITE_USD_MENSUAL:
-            st.error("🚫 Se alcanzó el límite mensual ($10 USD). Esperá al próximo mes o ajustá el tope.")
+            st.error("🚫 Límite mensual alcanzado ($10 USD).")
         else:
-            with st.spinner("Revisando el sistema..."):
+            contexto = ""
+            if coleccion:
+                docs = list(db[coleccion].find().limit(50))
+                contexto = serializar_documentos(docs)[:4000]  # recorte por tokens
+
+            with st.spinner("Analizando propuesta de mejora..."):
                 response = client.chat.completions.create(
                     model="gpt-4o",
                     messages=[
-                        {"role": "system", "content": "Sos un ingeniero digital que mejora sistemas CMMS reales, basados en Python y MongoDB. Leés el código, analizás estructuras y proponés mejoras prácticas y trazables. Respondé claro, con criterio industrial."},
-                        {"role": "user", "content": f"CONSULTA: {consulta}\n\nCÓDIGO:```python\n{codigo}```\n\nBASE DE DATOS:```json\n{contexto}```"}
+                        {"role": "system", "content": "Sos un ingeniero digital experto en mantenimiento industrial, sistemas CMMS y normas ISO. Ayudás a revisar código, mejorar módulos, sugerir mejoras reales y mantener la coherencia del sistema."},
+                        {"role": "user", "content": f"Consulta: {consulta}\n\nContexto (JSON): {contexto}"}
                     ]
                 )
                 respuesta = response.choices[0].message.content
