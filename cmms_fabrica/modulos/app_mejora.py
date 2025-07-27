@@ -5,9 +5,10 @@ import openai
 import pandas as pd
 from datetime import datetime
 from modulos.estilos import estilo_formulario
+import os
 
-# Cargar clave API desde secrets
-openai.api_key = st.secrets["openai_api_key"]
+openai.api_key = os.getenv("OPENAI_API_KEY")
+
 
 # Configuración
 ASISTENTE_ID = "mejora"
