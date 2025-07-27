@@ -19,7 +19,7 @@ LIMITE_USD_MENSUAL = 10.0
 
 # UI
 st.title("🤖 Asistente Técnico Industrial")
-estilo_formulario()
+aplicar_estilos()
 consulta = st.text_area("Ingresá tu consulta técnica de mantenimiento:")
 
 # Funciones auxiliares
