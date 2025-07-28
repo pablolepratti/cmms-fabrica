@@ -12,8 +12,26 @@ import streamlit as st
 from datetime import datetime
 from modulos.conexion_mongo import db
 from crud.generador_historial import registrar_evento_historial
+from modulos.utilidades_formularios import (
+    select_activo_tecnico,
+    select_proveedores_externos,
+)
 
-coleccion = db["tareas_tecnicas"]
+
+def crear_tarea_tecnica(data: dict, database=db):
+    """Inserta una tarea técnica y registra el evento."""
+    if database is None:
+        return None
+    coleccion = database["tareas_tecnicas"]
+    coleccion.insert_one(data)
+    registrar_evento_historial(
+        "Alta de tarea técnica",
+        data.get("id_activo_tecnico", "Sin ID"),
+        data["id_tarea_tecnica"],
+        f"Tarea técnica: {data['descripcion'][:60]}...",
+        data["usuario_registro"],
+    )
+    return data["id_tarea_tecnica"]
 
 estados_posibles = ["Pendiente", "En curso", "Finalizada"]
 tipos_tecnica = ["Presupuesto", "Consulta", "Gestión", "Otra"]
@@ -42,8 +60,7 @@ def form_tecnica(defaults=None):
         id_activo = next((k for k, v in id_map.items() if v == seleccion_visible), "") if seleccion_visible else ""
 
         # Proveedores externos
-        proveedores = list(db["servicios_externos"].find({}, {"_id": 0, "nombre": 1}))
-        nombres_proveedores = sorted([p["nombre"] for p in proveedores if "nombre" in p])
+        nombres_proveedores = select_proveedores_externos(db)
         proveedor_default = defaults.get("proveedor_externo") if defaults else ""
         index_proveedor = nombres_proveedores.index(proveedor_default) if proveedor_default in nombres_proveedores else 0
 
@@ -93,6 +110,11 @@ def form_tecnica(defaults=None):
     return None
 
 def app():
+    if db is None:
+        st.error("MongoDB no disponible")
+        return
+    coleccion = db["tareas_tecnicas"]
+
     st.title("🧾 Gestión de Tareas Técnicas")
     menu = ["Registrar Tarea", "Ver Tareas", "Editar Tarea", "Eliminar Tarea"]
     choice = st.sidebar.radio("Acción", menu)
@@ -101,14 +123,7 @@ def app():
         st.subheader("➕ Alta de Tarea Técnica")
         data = form_tecnica()
         if data:
-            coleccion.insert_one(data)
-            registrar_evento_historial(
-                "Alta de tarea técnica",
-                data.get("id_activo_tecnico", "Sin ID"),
-                data["id_tarea_tecnica"],
-                f"Tarea técnica: {data['descripcion'][:60]}...",
-                data["usuario_registro"]
-            )
+            crear_tarea_tecnica(data, db)
             st.success("✅ Tarea técnica registrada correctamente.")
 
     elif choice == "Ver Tareas":

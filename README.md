@@ -41,7 +41,6 @@ cmms-fabrica/
 │   ├── app_usuarios.py
 │   ├── app_reportes.py
 │   ├── conexion_mongo.py
-│   ├── cambiar_ids.py              # Se eliminará tras la transición completa
 │   ├── estilos.py
 │   └── ../crud/generador_historial.py
 ├── activos/                        # Carpeta técnica por activo (checklists, fotos, planos)

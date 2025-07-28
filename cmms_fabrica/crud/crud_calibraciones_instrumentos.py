@@ -11,17 +11,35 @@ import pandas as pd
 from datetime import datetime, timedelta
 from modulos.conexion_mongo import db
 from crud.generador_historial import registrar_evento_historial
+from modulos.utilidades_formularios import (
+    select_activo_tecnico,
+    select_proveedores_externos,
+)
 
-coleccion = db["calibraciones"]
-activos = db["activos_tecnicos"]
-proveedores = db["servicios_externos"]
+
+def crear_calibracion(data: dict, database=db):
+    """Inserta un registro de calibración y registra el evento."""
+    if database is None:
+        return None
+    coleccion = database["calibraciones"]
+    coleccion.insert_one(data)
+    registrar_evento_historial(
+        "Alta de calibración",
+        data["id_activo_tecnico"],
+        data["id_calibracion"],
+        f"Calibración registrada para {data['id_activo_tecnico']}",
+        data["usuario_registro"],
+    )
+    return data["id_calibracion"]
+
+
 
 def generar_id_calibracion():
     return f"CAL-{int(datetime.now().timestamp())}"
 
 def form_calibracion(defaults=None):
-    ids_activos = [d["id_activo_tecnico"] for d in activos.find({}, {"_id": 0, "id_activo_tecnico": 1})]
-    nombres_proveedores = sorted([p["nombre"] for p in proveedores.find({}, {"_id": 0, "nombre": 1})])
+    ids_activos = select_activo_tecnico(db)
+    nombres_proveedores = select_proveedores_externos(db)
 
     if not ids_activos:
         st.warning("⚠️ No hay activos técnicos registrados.")
@@ -84,6 +102,13 @@ def form_calibracion(defaults=None):
     return None
 
 def app():
+    if db is None:
+        st.error("MongoDB no disponible")
+        return
+    coleccion = db["calibraciones"]
+    activos = db["activos_tecnicos"]
+    proveedores = db["servicios_externos"]
+
     st.title("🧪 Gestión de Calibraciones de Instrumentos")
     menu = ["Registrar Calibración", "Ver Calibraciones", "Editar Calibración", "Eliminar Calibración"]
     choice = st.sidebar.radio("Acción", menu)
@@ -92,14 +117,7 @@ def app():
         st.subheader("➕ Nueva Calibración")
         data = form_calibracion()
         if data:
-            coleccion.insert_one(data)
-            registrar_evento_historial(
-                "Alta de calibración",
-                data["id_activo_tecnico"],
-                data["id_calibracion"],
-                f"Calibración registrada con resultado '{data['resultado']}'",
-                data["usuario_registro"]
-            )
+            crear_calibracion(data, db)
             st.success("✅ Calibración registrada correctamente.")
 
     elif choice == "Ver Calibraciones":

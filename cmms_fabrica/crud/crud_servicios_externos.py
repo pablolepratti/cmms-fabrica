@@ -14,9 +14,28 @@ from datetime import datetime
 from modulos.conexion_mongo import db
 from crud.generador_historial import registrar_evento_historial
 
-coleccion = db["servicios_externos"]
+
+def crear_proveedor(data: dict, database=db):
+    """Inserta un proveedor externo y registra el evento."""
+    if database is None:
+        return None
+    coleccion = database["servicios_externos"]
+    coleccion.insert_one(data)
+    registrar_evento_historial(
+        "Alta de proveedor externo",
+        None,
+        data["id_proveedor"],
+        f"Alta de proveedor {data['nombre']}",
+        data["usuario_registro"],
+    )
+    return data["id_proveedor"]
 
 def app():
+    if db is None:
+        st.error("MongoDB no disponible")
+        return
+    coleccion = db["servicios_externos"]
+
     st.title("🏢 Proveedores y Servicios Externos")
 
     menu = ["Registrar Proveedor", "Ver Proveedores", "Editar Proveedor", "Eliminar Proveedor"]
@@ -53,14 +72,7 @@ def app():
         st.subheader("➕ Nuevo Proveedor Técnico")
         data = form_proveedor()
         if data:
-            coleccion.insert_one(data)
-            registrar_evento_historial(
-                "Alta de proveedor externo",
-                None,
-                data["id_proveedor"],
-                f"Se registró a {data['nombre']} ({data['especialidad']})",
-                data["usuario_registro"],
-            )
+            crear_proveedor(data, db)
             st.success("Proveedor registrado correctamente.")
 
     elif choice == "Ver Proveedores":

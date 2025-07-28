@@ -9,9 +9,9 @@ import streamlit as st
 from datetime import datetime
 from modulos.conexion_mongo import db
 from crud.generador_historial import registrar_evento_historial
+from modulos.utilidades_formularios import select_activo_tecnico
 
-coleccion = db["observaciones"]
-activos = db["activos_tecnicos"]
+
 
 tipos_observacion = ["Advertencia", "Hallazgo", "Ruido", "Otro"]
 estados_posibles = ["Pendiente", "Revisado"]
@@ -72,6 +72,12 @@ def form_observacion(defaults=None):
     return None
 
 def app():
+    if db is None:
+        st.error("MongoDB no disponible")
+        return
+    coleccion = db["observaciones"]
+    activos = db["activos_tecnicos"]
+
     st.title("👁️ Gestión de Observaciones Técnicas")
     menu = ["Registrar Observación", "Ver Observaciones", "Editar Observación", "Eliminar Observación"]
     choice = st.sidebar.radio("Acción", menu)
