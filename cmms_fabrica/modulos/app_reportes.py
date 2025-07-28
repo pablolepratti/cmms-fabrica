@@ -44,7 +44,8 @@ class PDF(FPDF):
             self.multi_cell(0, 6, safe_text(f"Activo técnico: {row.get('id_activo_tecnico', '-')}"), 0)
             self.multi_cell(0, 6, safe_text(f"Fecha: {row.get('fecha_evento', '-').strftime('%Y-%m-%d %H:%M')}"), 0)
             self.multi_cell(0, 6, safe_text(f"Tipo de evento: {row.get('tipo_evento', '-')}"), 0)
-            self.multi_cell(0, 6, safe_text(f"ID de origen: {row.get('id_origen', '-')}"), 0)
+            origen = row.get('id_origen') or "HUÉRFANO"
+            self.multi_cell(0, 6, safe_text(f"ID de origen: {origen}"), 0)
             self.multi_cell(0, 6, safe_text(f"Usuario: {row.get('usuario_registro', '-')}"), 0)
             self.set_font("Arial", "B", 10)
             self.multi_cell(0, 6, safe_text("Descripción:"), 0)
@@ -99,6 +100,10 @@ def filtrar_ultimo_por_tarea(df):
     idx = df_ordenado.groupby("id_origen")["fecha_evento"].idxmax()
     return df_ordenado.loc[idx].reset_index(drop=True)
 
+# Compatibilidad con versiones anteriores
+def filtrar_ultimo_por_activo(df):
+    return filtrar_ultimo_por_tarea(df)
+
 # 🚀 Interfaz principal
 def app():
     st.title("📄 Reportes Técnicos del CMMS")
@@ -143,15 +148,18 @@ def app():
     df["fecha_evento"] = pd.to_datetime(df["fecha_evento"])
     for campo in ["usuario_registro", "descripcion", "observaciones", "id_origen"]:
         if campo not in df.columns:
-            df[campo] = "-"
+            df[campo] = "" if campo == "id_origen" else "-"
     df["usuario_registro"] = df["usuario_registro"].fillna("desconocido")
+    df["id_origen"] = df["id_origen"].replace("-", "").fillna("HUÉRFANO")
 
     df_filtrado = filtrar_ultimo_por_tarea(df)
 
     columnas = ["fecha_evento", "tipo_evento", "id_activo_tecnico", "id_origen", "descripcion", "usuario_registro", "observaciones"]
     for col in columnas:
         if col not in df_filtrado.columns:
-            df_filtrado[col] = "-"
+            df_filtrado[col] = "HUÉRFANO" if col == "id_origen" else "-"
+    if "id_origen" in df_filtrado.columns:
+        df_filtrado["id_origen"] = df_filtrado["id_origen"].replace("-", "").fillna("HUÉRFANO")
     st.markdown("### ✅ Última actualización por tarea y activo técnico")
     st.dataframe(df_filtrado[columnas].sort_values("fecha_evento", ascending=False), use_container_width=True)
 
@@ -167,16 +175,25 @@ def app():
         df_inv["fecha_evento"] = pd.to_datetime(df_inv["ultima_actualizacion"])
         st.dataframe(df_inv[["fecha_evento", "id_item", "descripcion"]])
     else:
-        st.info("No hubo movimientos en inventario en este período.")
+        st.markdown(
+            (
+                "<div style='text-align:center;color:#21ba45;font-weight:bold;'>"
+                "✅ No hubo movimientos recientes. Todo está en orden."
+                "</div>"
+            ),
+            unsafe_allow_html=True,
+        )
+
+    deshabilitar_export = df_filtrado.empty
 
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("📄 Generar PDF"):
+        if st.button("📄 Generar PDF", disabled=deshabilitar_export):
             archivo = generar_pdf(df_filtrado[columnas], df_inv, nombre="reporte")
             with open(archivo, "rb") as f:
                 st.download_button("⬇️ Descargar PDF", data=f, file_name=os.path.basename(archivo), mime="application/pdf")
     with col2:
-        if st.button("📥 Descargar Excel"):
+        if st.button("📥 Descargar Excel", disabled=deshabilitar_export):
             excel = generar_excel(df_filtrado[columnas], df_inv)
             st.download_button("⬇️ Descargar Excel", data=excel, file_name="reporte.xlsx",
                                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
