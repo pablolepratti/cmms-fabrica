@@ -15,9 +15,9 @@ logger = logging.getLogger(__name__)
 def registrar_evento_historial(
     tipo_evento: str,
     id_activo: str | None,
-    id_origen: str | None = None,
     descripcion: str,
     usuario: str,
+    id_origen: str | None = None,
     proveedor_externo: str | None = None,
     observaciones: str | None = None,
 ) -> str:
@@ -54,9 +54,9 @@ if __name__ == "__main__":
     registrar_evento_historial(
         tipo_evento="correctiva",
         id_activo="BOBST_SP126E",
-        id_origen="TAREA_5678",
         descripcion="Falla en sistema de succión",
         usuario="pablo",
+        id_origen="TAREA_5678",
         proveedor_externo="TecnoComp",
         observaciones="Requiere seguimiento"
     )
