@@ -9,6 +9,7 @@ from __future__ import annotations
 from datetime import datetime
 import logging
 from modulos.conexion_mongo import db
+import streamlit as st
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,10 @@ def registrar_evento_historial(
 
     if db is None:
         logger.warning("MongoDB no disponible. Evento no registrado.")
+        try:
+            st.warning("MongoDB no disponible. Evento no registrado.")
+        except Exception:
+            pass
         return ""
 
     historial = db["historial"]
