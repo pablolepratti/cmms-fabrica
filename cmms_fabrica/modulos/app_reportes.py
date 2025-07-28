@@ -92,17 +92,19 @@ def generar_excel(df_eventos, df_inventario):
     output.seek(0)
     return output
 
-# 🔍 Filtrar última actualización por tarea
-def filtrar_ultimo_por_tarea(df):
-    if "id_origen" not in df or "fecha_evento" not in df:
+# 🔍 Filtrar última actualización por tarea y activo técnico
+def filtrar_ultimo_por_tarea_y_activo(df):
+    """Devuelve la última entrada por combinación de activo técnico y tarea."""
+    if "id_origen" not in df or "id_activo_tecnico" not in df or "fecha_evento" not in df:
         return df
     df_ordenado = df.sort_values("fecha_evento", ascending=False)
-    idx = df_ordenado.groupby("id_origen")["fecha_evento"].idxmax()
+    idx = df_ordenado.groupby(["id_activo_tecnico", "id_origen"])["fecha_evento"].idxmax()
     return df_ordenado.loc[idx].reset_index(drop=True)
 
 # Compatibilidad con versiones anteriores
 def filtrar_ultimo_por_activo(df):
-    return filtrar_ultimo_por_tarea(df)
+    """Mantiene compatibilidad con versiones que agrupaban solo por tarea."""
+    return filtrar_ultimo_por_tarea_y_activo(df)
 
 # 🚀 Interfaz principal
 def app():
@@ -152,7 +154,7 @@ def app():
     df["usuario_registro"] = df["usuario_registro"].fillna("desconocido")
     df["id_origen"] = df["id_origen"].replace("-", "").fillna("HUÉRFANO")
 
-    df_filtrado = filtrar_ultimo_por_tarea(df)
+    df_filtrado = filtrar_ultimo_por_tarea_y_activo(df)
 
     columnas = ["fecha_evento", "tipo_evento", "id_activo_tecnico", "id_origen", "descripcion", "usuario_registro", "observaciones"]
     for col in columnas:
