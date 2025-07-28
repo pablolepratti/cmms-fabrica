@@ -11,7 +11,7 @@ import streamlit as st
 import pandas as pd
 from modulos.conexion_mongo import db
 from modulos.app_login import hash_password
-# from crud.generador_historial import registrar_evento_historial  # opcional
+from crud.generador_historial import registrar_evento_historial
 
 coleccion = db["usuarios"]
 
@@ -57,7 +57,13 @@ def app_usuarios(usuario_logueado: str, rol_logueado: str) -> None:
                     "rol": rol,
                 }
                 coleccion.insert_one(nuevo)
-                # registrar_evento_historial("Alta de usuario", "-", nuevo_usuario, f"Usuario creado con rol: {rol}", usuario_logueado)
+                registrar_evento_historial(
+                    "Alta usuario",
+                    "-",
+                    f"Usuario creado con rol: {rol}",
+                    usuario_logueado,
+                    id_origen=nuevo_usuario,
+                )
                 st.success(f"✅ Usuario '{nuevo_usuario}' creado correctamente.")
                 st.rerun()
 
@@ -82,8 +88,16 @@ def app_usuarios(usuario_logueado: str, rol_logueado: str) -> None:
                         {"usuario": usuario_sel},
                         {"$set": {"password_hash": hash_password(nueva_pass)}}
                     )
-                    # registrar_evento_historial("Modificación usuario", "-", usuario_sel, "Contraseña modificada", usuario_logueado)
-                    st.success(f"✅ Contraseña de '{usuario_sel}' actualizada correctamente.")
+                    registrar_evento_historial(
+                        "Modificación usuario",
+                        "-",
+                        "Contraseña modificada",
+                        usuario_logueado,
+                        id_origen=usuario_sel,
+                    )
+                    st.success(
+                        f"✅ Contraseña de '{usuario_sel}' actualizada correctamente."
+                    )
                     st.rerun()
 
     elif accion == "Eliminar Usuario":
@@ -98,7 +112,13 @@ def app_usuarios(usuario_logueado: str, rol_logueado: str) -> None:
             usuario_sel = st.selectbox("Seleccionar usuario", usuarios_disponibles)
             if st.button("Eliminar Usuario Seleccionado"):
                 coleccion.delete_one({"usuario": usuario_sel})
-                # registrar_evento_historial("Baja de usuario", "-", usuario_sel, "Usuario eliminado", usuario_logueado)
+                registrar_evento_historial(
+                    "Baja usuario",
+                    "-",
+                    "Usuario eliminado",
+                    usuario_logueado,
+                    id_origen=usuario_sel,
+                )
                 st.success(f"🗑️ Usuario '{usuario_sel}' eliminado correctamente.")
                 st.rerun()
 
