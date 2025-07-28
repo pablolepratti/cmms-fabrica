@@ -134,20 +134,41 @@ def app():
             st.info("No hay tareas técnicas registradas.")
             return
 
-        df = pd.DataFrame(tareas)
-        df.drop(columns=["_id"], inplace=True, errors="ignore")
+        estados = sorted({t.get("estado", "⛔ Sin Estado") for t in tareas})
+        estado_filtro = st.selectbox("Filtrar por estado", ["Todos"] + estados)
+        texto_filtro = st.text_input("🔍 Buscar por descripción o ID")
 
-        query = st.text_input("Buscar...")
-        df_filtered = (
-            df[df.astype(str).apply(lambda row: query.lower() in row.str.lower().to_string(), axis=1)]
-            if query
-            else df
-        )
+        filtradas = []
+        for t in tareas:
+            coincide_estado = estado_filtro == "Todos" or t.get("estado") == estado_filtro
+            texto = (
+                t.get("descripcion", "")
+                + t.get("id_activo_tecnico", "")
+                + t.get("id_tarea_tecnica", "")
+            )
+            coincide_texto = texto_filtro.lower() in texto.lower()
+            if coincide_estado and coincide_texto:
+                filtradas.append(t)
 
-        if df_filtered.empty:
-            st.info("🔍 No se encontraron registros")
+        if not filtradas:
+            st.warning("No se encontraron registros con esos filtros.")
         else:
-            st.dataframe(df_filtered, use_container_width=True)
+            agrupados = {}
+            for t in filtradas:
+                clave = t.get("estado", "⛔ Sin Estado")
+                agrupados.setdefault(clave, []).append(t)
+
+            for estado, lista in sorted(agrupados.items()):
+                st.markdown(
+                    f"<h4 style='text-align: left; margin-bottom: 0.5em;'>🔹 {estado}</h4>",
+                    unsafe_allow_html=True,
+                )
+                for t in lista:
+                    id_info = f"ID: {t.get('id_tarea_tecnica', '')} | Activo: {t.get('id_activo_tecnico', '')}"
+                    st.code(id_info, language="yaml")
+                    st.markdown(
+                        f"- **{t.get('descripcion', '')[:80]}** ({t.get('fecha_evento', '')})"
+                    )
 
     elif choice == "Editar Tarea":
         st.subheader("✏️ Editar Tarea Técnica")

@@ -106,23 +106,41 @@ def app():
             st.info("No hay observaciones registradas.")
             return
 
-        df = pd.DataFrame(observaciones)
-        df.drop(columns=["_id"], inplace=True, errors="ignore")
+        estados = sorted({o.get("estado", "⛔ Sin Estado") for o in observaciones})
+        estado_filtro = st.selectbox("Filtrar por estado", ["Todos"] + estados)
+        texto_filtro = st.text_input("🔍 Buscar por descripción o ID")
 
-        estado_filtro = st.selectbox("Filtrar por estado", ["Todos"] + estados_posibles)
-        df_estado = df if estado_filtro == "Todos" else df[df["estado"] == estado_filtro]
+        filtradas = []
+        for o in observaciones:
+            coincide_estado = estado_filtro == "Todos" or o.get("estado") == estado_filtro
+            texto = (
+                o.get("descripcion", "")
+                + o.get("id_observacion", "")
+                + o.get("id_activo_tecnico", "")
+            )
+            coincide_texto = texto_filtro.lower() in texto.lower()
+            if coincide_estado and coincide_texto:
+                filtradas.append(o)
 
-        query = st.text_input("Buscar...")
-        df_filtered = (
-            df_estado[df_estado.astype(str).apply(lambda row: query.lower() in row.str.lower().to_string(), axis=1)]
-            if query
-            else df_estado
-        )
-
-        if df_filtered.empty:
-            st.info("🔍 No se encontraron registros")
+        if not filtradas:
+            st.warning("No se encontraron registros con esos filtros.")
         else:
-            st.dataframe(df_filtered, use_container_width=True)
+            agrupados = {}
+            for o in filtradas:
+                clave = o.get("estado", "⛔ Sin Estado")
+                agrupados.setdefault(clave, []).append(o)
+
+            for estado, lista in sorted(agrupados.items()):
+                st.markdown(
+                    f"<h4 style='text-align: left; margin-bottom: 0.5em;'>🔹 {estado}</h4>",
+                    unsafe_allow_html=True,
+                )
+                for o in lista:
+                    id_info = f"ID: {o.get('id_observacion', '')} | Activo: {o.get('id_activo_tecnico', '')}"
+                    st.code(id_info, language="yaml")
+                    st.markdown(
+                        f"- **{o.get('descripcion', '')[:80]}** ({o.get('fecha_evento', '')})"
+                    )
 
     elif choice == "Editar Observación":
         st.subheader("✏️ Editar Observación Técnica")

@@ -126,20 +126,39 @@ def app():
             st.info("No hay planes cargados.")
             return
 
-        df = pd.DataFrame(planes)
-        df.drop(columns=["_id"], inplace=True, errors="ignore")
+        estados = sorted({p.get("estado", "⛔ Sin Estado") for p in planes})
+        estado_filtro = st.selectbox("Filtrar por estado", ["Todos"] + estados)
+        query = st.text_input("🔍 Buscar por ID o activo")
 
-        query = st.text_input("Buscar...")
-        df_filtered = (
-            df[df.astype(str).apply(lambda row: query.lower() in row.str.lower().to_string(), axis=1)]
-            if query
-            else df
-        )
+        filtrados = []
+        for p in planes:
+            coincide_estado = estado_filtro == "Todos" or p.get("estado") == estado_filtro
+            coincide_texto = (
+                query.lower() in p.get("id_plan", "").lower()
+                or query.lower() in p.get("id_activo_tecnico", "").lower()
+            )
+            if coincide_estado and coincide_texto:
+                filtrados.append(p)
 
-        if df_filtered.empty:
-            st.info("🔍 No se encontraron registros")
+        if not filtrados:
+            st.warning("No se encontraron registros con esos filtros.")
         else:
-            st.dataframe(df_filtered, use_container_width=True)
+            agrupados = {}
+            for p in filtrados:
+                act = p.get("id_activo_tecnico", "⛔ Sin Activo")
+                agrupados.setdefault(act, []).append(p)
+
+            for act, lista in sorted(agrupados.items()):
+                st.markdown(
+                    f"<h4 style='text-align: left; margin-bottom: 0.5em;'>🔹 {act}</h4>",
+                    unsafe_allow_html=True,
+                )
+                for p in lista:
+                    st.code(f"ID del Plan: {p.get('id_plan', '')}", language="yaml")
+                    freq = f"{p.get('frecuencia')} {p.get('unidad_frecuencia')}"
+                    st.markdown(
+                        f"- **{freq}** (Próxima: {p.get('proxima_fecha', '-')}, Estado: {p.get('estado', '-')})"
+                    )
 
     elif choice == "Editar Plan":
         st.subheader("✏️ Editar Plan Preventivo")
