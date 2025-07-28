@@ -37,3 +37,24 @@ def test_filtrar_ultimo_por_evento():
     filtrado = filtrar_ultimo_por_activo(df)
     assert len(filtrado) == 1
     assert filtrado.iloc[0]["descripcion"] == "segundo"
+
+
+def test_filtrar_por_tarea_y_activo():
+    df = pd.DataFrame(
+        {
+            "fecha_evento": [
+                pd.Timestamp("2024-01-01"),
+                pd.Timestamp("2024-01-03"),
+                pd.Timestamp("2024-01-05"),
+            ],
+            "tipo_evento": ["test", "test", "test"],
+            "id_activo_tecnico": ["A1", "A2", "A1"],
+            "id_origen": ["EV1", "EV1", "EV1"],
+            "descripcion": ["a1-1", "a2-1", "a1-2"],
+            "usuario_registro": ["u", "u", "u"],
+        }
+    )
+    filtrado = filtrar_ultimo_por_activo(df)
+    assert len(filtrado) == 2
+    assert set(filtrado["id_activo_tecnico"]) == {"A1", "A2"}
+    assert filtrado.sort_values("id_activo_tecnico").iloc[1]["descripcion"] == "a1-2"
