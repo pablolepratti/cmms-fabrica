@@ -135,21 +135,47 @@ def app():
 
         st.markdown("### ⚠️ Calibraciones vencidas o próximas")
         if not df_alerta.empty:
-            st.dataframe(df_alerta[["id_activo_tecnico", "fecha_proxima", "resultado", "observaciones"]], use_container_width=True)
+            st.dataframe(
+                df_alerta[["id_activo_tecnico", "fecha_proxima", "resultado", "observaciones"]],
+                use_container_width=True,
+            )
         else:
             st.success("Todas las calibraciones están al día ✅")
 
-        query = st.text_input("Buscar...")
-        df_filtered = (
-            df[df.astype(str).apply(lambda row: query.lower() in row.str.lower().to_string(), axis=1)]
-            if query
-            else df
-        )
+        activos = sorted({r.get("id_activo_tecnico", "⛔ Sin Activo") for r in registros})
+        activo_filtro = st.selectbox("Filtrar por activo", ["Todos"] + activos)
+        texto_filtro = st.text_input("🔍 Buscar por ID o resultado")
 
-        if df_filtered.empty:
-            st.info("🔍 No se encontraron registros")
+        filtrados = []
+        for r in registros:
+            coincide_activo = activo_filtro == "Todos" or r.get("id_activo_tecnico") == activo_filtro
+            texto = (
+                r.get("id_calibracion", "")
+                + r.get("resultado", "")
+                + r.get("observaciones", "")
+            )
+            coincide_texto = texto_filtro.lower() in texto.lower()
+            if coincide_activo and coincide_texto:
+                filtrados.append(r)
+
+        if not filtrados:
+            st.warning("No se encontraron registros con esos filtros.")
         else:
-            st.dataframe(df_filtered, use_container_width=True)
+            agrupados = {}
+            for r in filtrados:
+                act = r.get("id_activo_tecnico", "⛔ Sin Activo")
+                agrupados.setdefault(act, []).append(r)
+
+            for act, lista in sorted(agrupados.items()):
+                st.markdown(
+                    f"<h4 style='text-align: left; margin-bottom: 0.5em;'>🔹 {act}</h4>",
+                    unsafe_allow_html=True,
+                )
+                for r in lista:
+                    st.code(f"ID Calibración: {r.get('id_calibracion', '')}", language="yaml")
+                    st.markdown(
+                        f"- **{r.get('resultado', '')}** ({r.get('fecha_calibracion', '')}) Próxima: {r.get('fecha_proxima', '-') }"
+                    )
 
     elif choice == "Editar Calibración":
         st.subheader("✏️ Editar Calibración")

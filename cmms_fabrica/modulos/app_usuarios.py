@@ -33,7 +33,9 @@ def app_usuarios(usuario_logueado: str, rol_logueado: str) -> None:
         if df.empty:
             st.info("No hay usuarios registrados.")
         else:
-            st.dataframe(df.drop(columns=["password_hash"]), use_container_width=True)
+            for u in sorted(datos, key=lambda x: x.get("usuario", "")):
+                st.code(f"Usuario: {u.get('usuario', '')}", language="yaml")
+                st.markdown(f"- **Rol:** {u.get('rol', '')}")
 
     elif accion == "Registrar Usuario":
         st.subheader("➕ Crear Nuevo Usuario")

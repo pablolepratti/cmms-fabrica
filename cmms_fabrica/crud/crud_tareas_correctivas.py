@@ -129,31 +129,48 @@ def app():
     elif choice == "Ver Tareas":
         st.subheader("📋 Tareas Correctivas por Activo Técnico")
         mostrar_incompletas = st.checkbox("🔧 Mostrar solo tareas incompletas")
-        query = {"incompleto": True} if mostrar_incompletas else {}
-        tareas = list(coleccion.find(query).sort("fecha_evento", -1))
+        query_base = {"incompleto": True} if mostrar_incompletas else {}
+        tareas = list(coleccion.find(query_base).sort("fecha_evento", -1))
 
         if not tareas:
             st.info("No hay tareas registradas.")
             return
 
-        df = pd.DataFrame(tareas)
-        df.drop(columns=["_id"], inplace=True, errors="ignore")
-
-        estados_existentes = sorted(df["estado"].dropna().unique()) if "estado" in df else []
+        estados_existentes = sorted({t.get("estado", "⛔ Sin Estado") for t in tareas})
         estado_filtro = st.selectbox("Filtrar por estado", ["Todos"] + estados_existentes)
-        df_estado = df if estado_filtro == "Todos" else df[df["estado"] == estado_filtro]
+        texto_filtro = st.text_input("🔍 Buscar por descripción o ID")
 
-        query_txt = st.text_input("Buscar...")
-        df_filtered = (
-            df_estado[df_estado.astype(str).apply(lambda row: query_txt.lower() in row.str.lower().to_string(), axis=1)]
-            if query_txt
-            else df_estado
-        )
+        filtradas = []
+        for t in tareas:
+            coincide_estado = estado_filtro == "Todos" or t.get("estado") == estado_filtro
+            texto = (
+                t.get("descripcion_falla", "")
+                + t.get("id_activo_tecnico", "")
+                + t.get("id_tarea", "")
+            )
+            coincide_texto = texto_filtro.lower() in texto.lower()
+            if coincide_estado and coincide_texto:
+                filtradas.append(t)
 
-        if df_filtered.empty:
-            st.info("🔍 No se encontraron registros")
+        if not filtradas:
+            st.warning("No se encontraron registros con esos filtros.")
         else:
-            st.dataframe(df_filtered, use_container_width=True)
+            agrupados = {}
+            for t in filtradas:
+                clave = t.get("estado", "⛔ Sin Estado")
+                agrupados.setdefault(clave, []).append(t)
+
+            for estado, lista in sorted(agrupados.items()):
+                st.markdown(
+                    f"<h4 style='text-align: left; margin-bottom: 0.5em;'>🔹 {estado}</h4>",
+                    unsafe_allow_html=True,
+                )
+                for t in lista:
+                    id_info = f"ID: {t.get('id_tarea', '')} | Activo: {t.get('id_activo_tecnico', '')}"
+                    st.code(id_info, language="yaml")
+                    st.markdown(
+                        f"- **{t.get('descripcion_falla', '')[:80]}** ({t.get('fecha_evento', '')})"
+                    )
 
     elif choice == "Editar Tarea":
         st.subheader("✏️ Editar Tarea Correctiva")

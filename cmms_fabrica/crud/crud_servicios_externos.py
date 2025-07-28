@@ -83,20 +83,26 @@ def app():
             st.info("No hay proveedores cargados.")
             return
 
-        df = pd.DataFrame(proveedores)
-        df.drop(columns=["_id"], inplace=True, errors="ignore")
+        texto_filtro = st.text_input("🔍 Buscar por nombre o ID")
 
-        query = st.text_input("Buscar...")
-        df_filtered = (
-            df[df.astype(str).apply(lambda row: query.lower() in row.str.lower().to_string(), axis=1)]
-            if query
-            else df
-        )
+        filtrados = []
+        for p in proveedores:
+            texto = (
+                p.get("nombre", "")
+                + p.get("id_proveedor", "")
+                + p.get("especialidad", "")
+            )
+            if texto_filtro.lower() in texto.lower():
+                filtrados.append(p)
 
-        if df_filtered.empty:
-            st.info("🔍 No se encontraron registros")
+        if not filtrados:
+            st.warning("No se encontraron registros con esos filtros.")
         else:
-            st.dataframe(df_filtered, use_container_width=True)
+            for p in filtrados:
+                st.code(f"ID Proveedor: {p.get('id_proveedor', '')}", language="yaml")
+                st.markdown(
+                    f"- **{p.get('nombre', '')}** ({p.get('especialidad', '')})"
+                )
 
     elif choice == "Editar Proveedor":
         st.subheader("✏️ Editar Proveedor Técnico")
