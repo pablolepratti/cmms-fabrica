@@ -6,6 +6,7 @@
 # Cada evento queda trazado automáticamente en la colección `historial`.
 
 import streamlit as st
+import pandas as pd
 from datetime import datetime
 from modulos.conexion_mongo import db
 from crud.generador_historial import registrar_evento_historial
@@ -105,35 +106,23 @@ def app():
             st.info("No hay observaciones registradas.")
             return
 
+        df = pd.DataFrame(observaciones)
+        df.drop(columns=["_id"], inplace=True, errors="ignore")
+
         estado_filtro = st.selectbox("Filtrar por estado", ["Todos"] + estados_posibles)
-        texto_filtro = st.text_input("🔍 Buscar por ID, tipo o texto")
+        df_estado = df if estado_filtro == "Todos" else df[df["estado"] == estado_filtro]
 
-        filtradas = []
-        for o in observaciones:
-            coincide_estado = (estado_filtro == "Todos") or (o.get("estado") == estado_filtro)
-            coincide_texto = texto_filtro.lower() in o.get("id_activo_tecnico", "").lower() or \
-                             texto_filtro.lower() in o.get("descripcion", "").lower() or \
-                             texto_filtro.lower() in o.get("tipo_observacion", "").lower()
-            if coincide_estado and coincide_texto:
-                filtradas.append(o)
+        query = st.text_input("Buscar...")
+        df_filtered = (
+            df_estado[df_estado.astype(str).apply(lambda row: query.lower() in row.str.lower().to_string(), axis=1)]
+            if query
+            else df_estado
+        )
 
-        if not filtradas:
-            st.warning("No se encontraron observaciones con esos filtros.")
-            return
-
-        activos_listados = sorted(set(o.get("id_activo_tecnico", "⛔ Sin ID") for o in filtradas))
-        for activo in activos_listados:
-            st.markdown(f"### 🏷️ Activo Técnico: `{activo}`")
-            obs_activas = [o for o in filtradas if o.get("id_activo_tecnico") == activo]
-            for o in obs_activas:
-                st.code(f"ID Observación: {o.get('id_observacion', '❌ No definido')}", language="yaml")
-                fecha = o.get("fecha_evento", "Sin Fecha")
-                tipo = o.get("tipo_observacion", "Sin Tipo")
-                estado = o.get("estado", "Sin Estado")
-                descripcion = o.get("descripcion", "")
-                st.markdown(f"- 📅 **{fecha}** | 🔍 **Tipo:** {tipo} | 🛠️ **Estado:** {estado}")
-                st.write(descripcion)
-            st.markdown("---")
+        if df_filtered.empty:
+            st.info("🔍 No se encontraron registros")
+        else:
+            st.dataframe(df_filtered, use_container_width=True)
 
     elif choice == "Editar Observación":
         st.subheader("✏️ Editar Observación Técnica")

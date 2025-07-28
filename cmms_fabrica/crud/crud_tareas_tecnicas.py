@@ -9,6 +9,7 @@ Normas aplicables: ISO 9001:2015 | ISO 55001 | ISO 14224
 """
 
 import streamlit as st
+import pandas as pd
 from datetime import datetime
 from modulos.conexion_mongo import db
 from crud.generador_historial import registrar_evento_historial
@@ -133,21 +134,20 @@ def app():
             st.info("No hay tareas técnicas registradas.")
             return
 
-        activos = sorted(set(t.get("id_activo_tecnico", "⛔ Sin ID") for t in tareas))
-        for activo in activos:
-            st.markdown(f"### 🏷️ Activo Técnico: `{activo}`")
-            tareas_activo = [t for t in tareas if t.get("id_activo_tecnico") == activo]
-            for t in tareas_activo:
-                fecha = t.get("fecha_evento", "Sin Fecha")
-                estado = t.get("estado", "Sin Estado")
-                descripcion = t.get("descripcion", "")
-                proveedor = t.get("proveedor_externo", "")
-                st.code(f"ID Tarea: {t.get('id_tarea_tecnica', '❌ No definido')}", language="yaml")
-                st.markdown(f"- 📅 **{fecha}** | 📌 **Estado:** {estado}")
-                if proveedor:
-                    st.markdown(f"- 🔧 **Proveedor externo:** `{proveedor}`")
-                st.markdown(f"- 📝 {descripcion}")
-            st.markdown("---")
+        df = pd.DataFrame(tareas)
+        df.drop(columns=["_id"], inplace=True, errors="ignore")
+
+        query = st.text_input("Buscar...")
+        df_filtered = (
+            df[df.astype(str).apply(lambda row: query.lower() in row.str.lower().to_string(), axis=1)]
+            if query
+            else df
+        )
+
+        if df_filtered.empty:
+            st.info("🔍 No se encontraron registros")
+        else:
+            st.dataframe(df_filtered, use_container_width=True)
 
     elif choice == "Editar Tarea":
         st.subheader("✏️ Editar Tarea Técnica")

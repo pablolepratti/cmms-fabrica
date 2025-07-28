@@ -139,17 +139,17 @@ def app():
         else:
             st.success("Todas las calibraciones están al día ✅")
 
-        texto = st.text_input("🔍 Buscar por ID, resultado o responsable")
-        filtrado = df[df.apply(lambda x: texto.lower() in str(x.values).lower(), axis=1)] if texto else df
+        query = st.text_input("Buscar...")
+        df_filtered = (
+            df[df.astype(str).apply(lambda row: query.lower() in row.str.lower().to_string(), axis=1)]
+            if query
+            else df
+        )
 
-        for instrumento in sorted(filtrado["id_activo_tecnico"].unique()):
-            st.markdown(f"### 🏷️ Instrumento: `{instrumento}`")
-            for _, c in filtrado[filtrado["id_activo_tecnico"] == instrumento].iterrows():
-                st.code(f"ID Calibración: {c.get('id_calibracion', '❌ No definido')}", language="yaml")
-                st.markdown(f"- 📅 **{c['fecha_calibracion']}** → 📆 **Próxima:** {c['fecha_proxima'].date()}")
-                st.markdown(f"- 🧪 **Resultado:** {c['resultado']} | 👤 **Responsable:** {c['responsable']}")
-                st.markdown(f"- 📝 {c.get('observaciones', '')}")
-            st.markdown("---")
+        if df_filtered.empty:
+            st.info("🔍 No se encontraron registros")
+        else:
+            st.dataframe(df_filtered, use_container_width=True)
 
     elif choice == "Editar Calibración":
         st.subheader("✏️ Editar Calibración")

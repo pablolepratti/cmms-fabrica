@@ -10,6 +10,7 @@ Cada cambio se documenta automáticamente en la colección `historial`.
 """
 
 import streamlit as st
+import pandas as pd
 from datetime import datetime
 from modulos.conexion_mongo import db
 from crud.generador_historial import registrar_evento_historial
@@ -81,12 +82,21 @@ def app():
         if not proveedores:
             st.info("No hay proveedores cargados.")
             return
-        for p in proveedores:
-            st.code(f"ID Proveedor: {p.get('id_proveedor', '❌ No definido')}", language="yaml")
-            st.markdown(f"**{p['nombre']}** ({p['especialidad']})")
-            st.write(f"Contacto: {p['contacto']} | Tel: {p['telefono']} | Correo: {p['correo']}")
-            st.write(p.get("observaciones", ""))
-            st.write("---")
+
+        df = pd.DataFrame(proveedores)
+        df.drop(columns=["_id"], inplace=True, errors="ignore")
+
+        query = st.text_input("Buscar...")
+        df_filtered = (
+            df[df.astype(str).apply(lambda row: query.lower() in row.str.lower().to_string(), axis=1)]
+            if query
+            else df
+        )
+
+        if df_filtered.empty:
+            st.info("🔍 No se encontraron registros")
+        else:
+            st.dataframe(df_filtered, use_container_width=True)
 
     elif choice == "Editar Proveedor":
         st.subheader("✏️ Editar Proveedor Técnico")
