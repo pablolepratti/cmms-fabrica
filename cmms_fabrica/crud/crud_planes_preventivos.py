@@ -11,6 +11,7 @@ Cada acción se registra en la colección `historial` para trazabilidad operativ
 """
 
 import streamlit as st
+import pandas as pd
 from datetime import datetime
 from modulos.conexion_mongo import db
 from crud.generador_historial import registrar_evento_historial
@@ -125,23 +126,20 @@ def app():
             st.info("No hay planes cargados.")
             return
 
-        hoy = datetime.today().date()
-        activos = sorted(set(p["id_activo_tecnico"] for p in planes))
-        for activo in activos:
-            st.markdown(f"### 🏷️ Activo Técnico: `{activo}`")
-            planes_activo = [p for p in planes if p["id_activo_tecnico"] == activo]
-            for p in planes_activo:
-                proxima = datetime.strptime(p["proxima_fecha"], "%Y-%m-%d").date()
-                vencido = proxima < hoy
-                estado = p.get("estado", "Desconocido")
-                proveedor = p.get("proveedor_externo", "")
+        df = pd.DataFrame(planes)
+        df.drop(columns=["_id"], inplace=True, errors="ignore")
 
-                st.code(f"ID Plan: {p['id_plan']}", language="yaml")
-                st.markdown(f"- 📅 **Próxima:** {proxima} {'❌ VENCIDO' if vencido else '✅ Vigente'}")
-                st.markdown(f"- 📌 **Estado:** {estado}")
-                if proveedor:
-                    st.markdown(f"- 🔧 **Proveedor externo:** `{proveedor}`")
-            st.markdown("---")
+        query = st.text_input("Buscar...")
+        df_filtered = (
+            df[df.astype(str).apply(lambda row: query.lower() in row.str.lower().to_string(), axis=1)]
+            if query
+            else df
+        )
+
+        if df_filtered.empty:
+            st.info("🔍 No se encontraron registros")
+        else:
+            st.dataframe(df_filtered, use_container_width=True)
 
     elif choice == "Editar Plan":
         st.subheader("✏️ Editar Plan Preventivo")

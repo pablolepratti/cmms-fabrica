@@ -11,6 +11,7 @@ Registra automáticamente en la colección `historial` cada evento para asegurar
 """
 
 import streamlit as st
+import pandas as pd
 from datetime import datetime
 from modulos.conexion_mongo import db
 from crud.generador_historial import registrar_evento_historial
@@ -135,35 +136,24 @@ def app():
             st.info("No hay tareas registradas.")
             return
 
-        estados_existentes = sorted(set(t.get("estado", "Abierta") for t in tareas))
+        df = pd.DataFrame(tareas)
+        df.drop(columns=["_id"], inplace=True, errors="ignore")
+
+        estados_existentes = sorted(df["estado"].dropna().unique()) if "estado" in df else []
         estado_filtro = st.selectbox("Filtrar por estado", ["Todos"] + estados_existentes)
-        texto_filtro = st.text_input("🔍 Buscar por ID, modo de falla o descripción")
+        df_estado = df if estado_filtro == "Todos" else df[df["estado"] == estado_filtro]
 
-        filtradas = []
-        for t in tareas:
-            coincide_estado = estado_filtro == "Todos" or t.get("estado") == estado_filtro
-            coincide_texto = texto_filtro.lower() in t.get("id_activo_tecnico", "").lower() or \
-                             texto_filtro.lower() in t.get("descripcion_falla", "").lower() or \
-                             texto_filtro.lower() in t.get("modo_falla", "").lower()
-            if coincide_estado and coincide_texto:
-                filtradas.append(t)
+        query_txt = st.text_input("Buscar...")
+        df_filtered = (
+            df_estado[df_estado.astype(str).apply(lambda row: query_txt.lower() in row.str.lower().to_string(), axis=1)]
+            if query_txt
+            else df_estado
+        )
 
-        if not filtradas:
-            st.warning("No se encontraron tareas con esos filtros.")
-            return
-
-        activos = sorted(set(t.get("id_activo_tecnico", "⛔ Sin ID") for t in filtradas))
-        for activo in activos:
-            st.markdown(f"### 🏷️ Activo Técnico: `{activo}`")
-            tareas_activo = [t for t in filtradas if t.get("id_activo_tecnico") == activo]
-            for t in tareas_activo:
-                fecha = t.get("fecha_evento", "Sin Fecha")
-                estado = t.get("estado", "Sin Estado")
-                descripcion = t.get("descripcion_falla") or t.get("descripcion", "")
-                st.code(f"ID Tarea: {t.get('id_tarea', '❌ No definido')}", language="yaml")
-                st.markdown(f"- 📅 **{fecha}** | 🛠️ **Estado:** {estado}")
-                st.write(descripcion)
-            st.markdown("---")
+        if df_filtered.empty:
+            st.info("🔍 No se encontraron registros")
+        else:
+            st.dataframe(df_filtered, use_container_width=True)
 
     elif choice == "Editar Tarea":
         st.subheader("✏️ Editar Tarea Correctiva")
