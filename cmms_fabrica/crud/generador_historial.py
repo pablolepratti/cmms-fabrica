@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 def registrar_evento_historial(
     tipo_evento: str,
     id_activo: str | None,
-    id_origen: str,
+    id_origen: str | None = None,
     descripcion: str,
     usuario: str,
     proveedor_externo: str | None = None,
@@ -38,7 +38,7 @@ def registrar_evento_historial(
         "id_activo_tecnico": id_activo,
         "fecha_evento": datetime.now(),
         "tipo_evento": tipo_evento,
-        "id_origen": id_origen,
+        "id_origen": id_origen or "HUÉRFANO",
         "descripcion": descripcion,
         "usuario_registro": usuario,
         "proveedor_externo": proveedor_externo,
