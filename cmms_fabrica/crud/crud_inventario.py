@@ -13,7 +13,21 @@ from datetime import datetime
 from modulos.conexion_mongo import db
 from crud.generador_historial import registrar_evento_historial
 
-coleccion = db["inventario"]
+
+def crear_item_inventario(data: dict, database=db):
+    """Inserta un item de inventario y registra el evento."""
+    if database is None:
+        return None
+    coleccion = database["inventario"]
+    coleccion.insert_one(data)
+    registrar_evento_historial(
+        "Alta de inventario",
+        data.get("id_activo_tecnico"),
+        data.get("id_item"),
+        f"Ingreso de ítem {data.get('descripcion', '')}",
+        data.get("usuario_registro", ""),
+    )
+    return data.get("id_item")
 
 
 def cargar_inventario() -> pd.DataFrame:
@@ -127,6 +141,10 @@ def visualizar_inventario() -> None:
 
 def app_inventario(usuario: str) -> None:
     """Interfaz principal para gestionar el inventario técnico."""
+    if db is None:
+        st.error("MongoDB no disponible")
+        return
+    coleccion = db["inventario"]
     st.title("📦 Gestión de Inventario Técnico")
 
     menu = ["Agregar", "Ver", "Editar", "Eliminar"]
@@ -141,14 +159,7 @@ def app_inventario(usuario: str) -> None:
             else:
                 data["usuario_registro"] = usuario
                 data["fecha_registro"] = datetime.now()
-                coleccion.insert_one(data)
-                registrar_evento_historial(
-                    "Alta de ítem inventario",
-                    data.get("maquina_compatible", ""),
-                    data["id_item"],
-                    f"Alta de ítem: {data['descripcion']}",
-                    usuario,
-                )
+                crear_item_inventario(data, db)
                 st.success("Ítem agregado correctamente.")
 
     elif accion == "Ver":

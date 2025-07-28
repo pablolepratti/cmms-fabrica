@@ -14,10 +14,30 @@ import streamlit as st
 from datetime import datetime
 from modulos.conexion_mongo import db
 from crud.generador_historial import registrar_evento_historial
+from modulos.utilidades_formularios import select_usuarios
 
-coleccion = db["activos_tecnicos"]
+
+def crear_activo(data: dict, database=db):
+    """Inserta un activo y registra el evento en historial."""
+    if database is None:
+        return None
+    coleccion = database["activos_tecnicos"]
+    coleccion.insert_one(data)
+    registrar_evento_historial(
+        "Alta de activo técnico",
+        data["id_activo_tecnico"],
+        data["id_activo_tecnico"],
+        f"Se dio de alta el activo '{data['nombre']}'",
+        data["usuario_registro"],
+    )
+    return data["id_activo_tecnico"]
 
 def app():
+    if db is None:
+        st.error("MongoDB no disponible")
+        return
+    coleccion = db["activos_tecnicos"]
+
     st.title("🔧 Gestión de Activos Técnicos")
 
     menu = ["Agregar", "Ver", "Editar", "Eliminar"]
@@ -35,7 +55,7 @@ def app():
         estado_index = opciones_estado.index(estado_default) if estado_default in opciones_estado else 0
 
         # Cargar responsables desde la colección usuarios
-        usuarios = [u.get("nombre") for u in db["usuarios"].find({}, {"_id": 0, "nombre": 1})]
+        usuarios = select_usuarios(db)
         responsables = usuarios if usuarios else ["Pablo"]
         responsable_default = defaults.get("responsable") if defaults else responsables[0]
         responsable_index = responsables.index(responsable_default) if responsable_default in responsables else 0
@@ -79,14 +99,7 @@ def app():
         st.subheader("➕ Agregar nuevo activo técnico")
         data = form_activo()
         if data:
-            coleccion.insert_one(data)
-            registrar_evento_historial(
-                "Alta de activo técnico",
-                data["id_activo_tecnico"],
-                data["id_activo_tecnico"],
-                f"Se dio de alta el activo '{data['nombre']}'",
-                data["usuario_registro"],
-            )
+            crear_activo(data, db)
             st.success("Activo técnico agregado correctamente.")
 
     elif choice == "Ver":

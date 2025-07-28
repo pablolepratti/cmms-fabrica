@@ -14,13 +14,36 @@ import streamlit as st
 from datetime import datetime
 from modulos.conexion_mongo import db
 from crud.generador_historial import registrar_evento_historial
+from modulos.utilidades_formularios import (
+    select_activo_tecnico,
+    select_proveedores_externos,
+)
 
-coleccion = db["planes_preventivos"]
+
+def crear_plan_preventivo(data: dict, database=db):
+    """Inserta un plan preventivo y registra el evento."""
+    if database is None:
+        return None
+    coleccion = database["planes_preventivos"]
+    coleccion.insert_one(data)
+    registrar_evento_historial(
+        "Alta de plan preventivo",
+        data["id_activo_tecnico"],
+        data["id_plan"],
+        f"Alta de plan para activo: {data['id_activo_tecnico']}",
+        data["usuario_registro"],
+    )
+    return data["id_plan"]
 
 def generar_id_plan():
     return f"PP-{int(datetime.now().timestamp())}"
 
 def app():
+    if db is None:
+        st.error("MongoDB no disponible")
+        return
+    coleccion = db["planes_preventivos"]
+
     st.title("🗓️ Gestión de Planes Preventivos")
     menu = ["Registrar Plan", "Ver Planes", "Editar Plan", "Eliminar Plan"]
     choice = st.sidebar.radio("Acción", menu)
@@ -29,8 +52,7 @@ def app():
         with st.form("form_plan_preventivo"):
             id_plan = st.text_input("ID del Plan", value=defaults.get("id_plan") if defaults else generar_id_plan())
 
-            activos = db["activos_tecnicos"]
-            activos_lista = list(activos.find({}, {"_id": 0, "id_activo_tecnico": 1, "nombre": 1}))
+            activos_lista = list(db["activos_tecnicos"].find({}, {"_id": 0, "id_activo_tecnico": 1, "nombre": 1}))
             opciones = [f"{a['id_activo_tecnico']} – {a.get('nombre', 'Sin nombre')}" for a in activos_lista]
             map_id = {f"{a['id_activo_tecnico']} – {a.get('nombre', 'Sin nombre')}": a["id_activo_tecnico"] for a in activos_lista}
 
@@ -50,8 +72,7 @@ def app():
             tipo_ejecucion = st.radio("¿Quién ejecuta la tarea preventiva?", ["Interno", "Externo"],
                                       index=0 if defaults is None or defaults.get("proveedor_externo") in [None, ""] else 1)
 
-            proveedores = list(db["servicios_externos"].find({}, {"_id": 0, "nombre": 1}))
-            nombres_proveedores = sorted([p["nombre"] for p in proveedores if "nombre" in p])
+            nombres_proveedores = select_proveedores_externos(db)
             proveedor_default = defaults.get("proveedor_externo") if defaults else None
             index_proveedor = nombres_proveedores.index(proveedor_default) if proveedor_default in nombres_proveedores else 0 if nombres_proveedores else -1
 
@@ -94,14 +115,7 @@ def app():
         st.subheader("➕ Alta de Plan Preventivo")
         data = form_plan()
         if data:
-            coleccion.insert_one(data)
-            registrar_evento_historial(
-                "Alta de plan preventivo",
-                data["id_activo_tecnico"],
-                data["id_plan"],
-                f"Alta de plan para activo: {data['id_activo_tecnico']}",
-                data["usuario_registro"]
-            )
+            crear_plan_preventivo(data, db)
             st.success("✅ Plan preventivo registrado correctamente.")
 
     elif choice == "Ver Planes":

@@ -14,8 +14,26 @@ import streamlit as st
 from datetime import datetime
 from modulos.conexion_mongo import db
 from crud.generador_historial import registrar_evento_historial
+from modulos.utilidades_formularios import (
+    select_activo_tecnico,
+    select_proveedores_externos,
+)
 
-coleccion = db["tareas_correctivas"]
+
+def crear_tarea_correctiva(data: dict, database=db):
+    """Inserta una tarea correctiva y registra el evento."""
+    if database is None:
+        return None
+    coleccion = database["tareas_correctivas"]
+    coleccion.insert_one(data)
+    registrar_evento_historial(
+        "Alta de tarea correctiva",
+        data["id_activo_tecnico"],
+        data["id_tarea"],
+        f"Tarea registrada por falla: {data['descripcion_falla'][:60]}...",
+        data["usuario_registro"],
+    )
+    return data["id_tarea"]
 
 def generar_id_tarea():
     return f"TC-{int(datetime.now().timestamp())}"
@@ -23,15 +41,13 @@ def generar_id_tarea():
 def form_tarea(defaults=None):
     with st.form("form_tarea_correctiva"):
 
-        activos = list(db["activos_tecnicos"].find({}, {"_id": 0, "id_activo_tecnico": 1}))
-        ids_activos = sorted([a["id_activo_tecnico"] for a in activos if "id_activo_tecnico" in a])
+        ids_activos = select_activo_tecnico(db)
         id_default = defaults.get("id_activo_tecnico") if defaults else None
         index_default = ids_activos.index(id_default) if id_default in ids_activos else 0 if ids_activos else -1
 
         id_activo = st.selectbox("ID del Activo Técnico", ids_activos, index=index_default) if ids_activos else st.text_input("ID del Activo Técnico")
 
-        proveedores = list(db["servicios_externos"].find({}, {"_id": 0, "nombre": 1}))
-        nombres_proveedores = sorted([p["nombre"] for p in proveedores if "nombre" in p])
+        nombres_proveedores = select_proveedores_externos(db)
         proveedor_default = defaults.get("proveedor_externo") if defaults else None
         index_proveedor = nombres_proveedores.index(proveedor_default) if proveedor_default in nombres_proveedores else 0 if nombres_proveedores else -1
 
@@ -93,6 +109,11 @@ def form_tarea(defaults=None):
     return None
 
 def app():
+    if db is None:
+        st.error("MongoDB no disponible")
+        return
+    coleccion = db["tareas_correctivas"]
+
     st.title("🛠️ Gestión de Tareas Correctivas")
     menu = ["Registrar Falla", "Ver Tareas", "Editar Tarea", "Eliminar Tarea"]
     choice = st.sidebar.radio("Acción", menu)
@@ -101,14 +122,7 @@ def app():
         st.subheader("➕ Nueva Tarea Correctiva")
         data = form_tarea()
         if data:
-            coleccion.insert_one(data)
-            registrar_evento_historial(
-                "Alta de tarea correctiva",
-                data["id_activo_tecnico"],
-                data["id_tarea"],
-                f"Tarea registrada por falla: {data['descripcion_falla'][:60]}...",
-                data["usuario_registro"],
-            )
+            crear_tarea_correctiva(data, db)
             st.success("Tarea correctiva registrada correctamente.")
 
     elif choice == "Ver Tareas":

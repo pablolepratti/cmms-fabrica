@@ -22,8 +22,6 @@ from crud.crud_inventario import app_inventario
 # Módulo de usuarios (admin)
 from modulos.app_usuarios import app_usuarios
 
-# Gestión de IDs manuales
-from modulos.cambiar_ids import app as cambiar_ids
 
 # Reportes técnicos
 from modulos.app_reportes import app as app_reportes
@@ -61,7 +59,6 @@ menu = [
     "📄 Reportes Técnicos",
     "🤖 Asistente Técnico",
     "🧰 Asistente de Mejora Continua",
-    "🆔 Cambiar IDs manuales" if rol == "admin" else None,
     "👥 Usuarios" if rol == "admin" else None,
 ]
 menu = [m for m in menu if m is not None]
@@ -129,9 +126,6 @@ elif opcion == "🤖 Asistente Técnico":
 
 elif opcion == "🧰 Asistente de Mejora Continua":
     asistente_mejora()
-
-elif opcion == "🆔 Cambiar IDs manuales":
-    cambiar_ids()
 
 elif opcion == "👥 Usuarios" and rol == "admin":
     app_usuarios(usuario, rol)

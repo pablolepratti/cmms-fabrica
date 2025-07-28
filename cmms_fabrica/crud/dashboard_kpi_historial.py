@@ -17,10 +17,13 @@ import matplotlib.dates as mdates
 from datetime import datetime
 from modulos.conexion_mongo import db
 
-coleccion = db["historial"]
-activos_tecnicos = db["activos_tecnicos"]
-
 def app():
+    if db is None:
+        st.error("MongoDB no disponible")
+        return
+    coleccion = db["historial"]
+    activos_tecnicos = db["activos_tecnicos"]
+
     st.title("📊 Dashboard de KPIs – Historial Técnico")
     
     # Filtros
