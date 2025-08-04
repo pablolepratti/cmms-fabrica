@@ -16,6 +16,7 @@ from crud.crud_tareas_tecnicas import app as crud_tareas_tecnicas
 from crud.crud_observaciones import app as crud_observaciones
 from crud.crud_calibraciones_instrumentos import app as crud_calibraciones
 from crud.crud_servicios_externos import app as crud_servicios
+from crud.crud_consumos import app as crud_consumos
 from crud.dashboard_kpi_historial import app as kpi_historial
 from crud.crud_inventario import app_inventario
 
@@ -55,6 +56,7 @@ menu = [
     "📦 Inventario Técnico",
     "🧪 Calibraciones",
     "🏢 Servicios Técnicos",
+    "⚡ Consumos Técnicos",
     "📊 KPIs Globales",
     "📄 Reportes Técnicos",
     "🤖 Asistente Técnico",
@@ -114,6 +116,9 @@ elif opcion == "🧪 Calibraciones":
 
 elif opcion == "🏢 Servicios Técnicos":
     crud_servicios()
+
+elif opcion == "⚡ Consumos Técnicos":
+    crud_consumos(db, usuario)
 
 elif opcion == "📊 KPIs Globales":
     kpi_historial()
