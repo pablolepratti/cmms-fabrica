@@ -1,20 +1,21 @@
-"""Visualización de grafo CMMS con Streamlit, NetworkX y Pyvis."""
+# modulos/app_grafo_cmms.py
+"""
+Visualización de grafo CMMS con Streamlit, NetworkX y Pyvis.
+"""
 
 from __future__ import annotations
-
 from typing import Dict, Optional, TYPE_CHECKING
-
 import importlib
-
 import streamlit as st
 import streamlit.components.v1 as components
 
+# Verificación de dependencias
 NETWORKX_SPEC = importlib.util.find_spec("networkx")
 PYVIS_SPEC = importlib.util.find_spec("pyvis.network")
 
 if TYPE_CHECKING or NETWORKX_SPEC:
     import networkx as nx  # type: ignore[import]
-else:  # pragma: no cover - fallback path when NetworkX no está disponible
+else:  # pragma: no cover - fallback path cuando NetworkX no está disponible
     nx = None  # type: ignore[assignment]
 
 if TYPE_CHECKING or PYVIS_SPEC:
@@ -25,13 +26,13 @@ else:  # pragma: no cover - fallback path cuando Pyvis no está disponible
 from modulos.conexion_mongo import get_db
 
 # Colores corporativos consistentes para cada tipo de nodo
-COLOR_ACTIVO = "#1f77b4"
-COLOR_HISTORIAL = "#aaaaaa"
-COLOR_ORIGEN = "#ff7f0e"
-COLOR_USUARIO = "#2ca02c"
-COLOR_PROVEEDOR = "#d62728"
+COLOR_ACTIVO = "#1976d2"
+COLOR_HISTORIAL = "#b0bec5"
+COLOR_ORIGEN = "#ff9800"
+COLOR_USUARIO = "#43a047"
+COLOR_PROVEEDOR = "#e53935"
 
-
+# Función para construir el grafo
 def construir_grafo(db, filtros: Optional[Dict[str, str]] = None) -> "nx.DiGraph":
     if nx is None:
         raise RuntimeError(
@@ -48,9 +49,12 @@ def construir_grafo(db, filtros: Optional[Dict[str, str]] = None) -> "nx.DiGraph
         activos_filter["id_activo_tecnico"] = filtros["id_activo_tecnico"]
         historial_filter["id_activo_tecnico"] = filtros["id_activo_tecnico"]
 
+    # Obtener los activos
     activos = list(db["activos_tecnicos"].find(activos_filter))
+    # Obtener el historial
     historial = list(db["historial"].find(historial_filter))
 
+    # Añadir activos al grafo
     for activo in activos:
         activo_id = activo.get("id_activo_tecnico")
         if not activo_id:
@@ -63,6 +67,7 @@ def construir_grafo(db, filtros: Optional[Dict[str, str]] = None) -> "nx.DiGraph
             color=COLOR_ACTIVO,
         )
 
+    # Añadir historial y relaciones
     for evento in historial:
         activo_id = evento.get("id_activo_tecnico")
         if not activo_id:
@@ -123,7 +128,7 @@ def construir_grafo(db, filtros: Optional[Dict[str, str]] = None) -> "nx.DiGraph
 
     return grafo
 
-
+# Función para mostrar el grafo en Streamlit
 def mostrar_grafo(grafo: "nx.DiGraph") -> None:
     if Network is None:
         raise RuntimeError(
@@ -139,43 +144,36 @@ def mostrar_grafo(grafo: "nx.DiGraph") -> None:
     for origen, destino, atributos in grafo.edges(data=True):
         net.add_edge(origen, destino, **atributos)
 
-    net.write_html("grafo_cmms.html")
+    # Render en memoria, no escribimos a disco
+    html = net.generate_html()
+    components.html(html, height=750, scrolling=True)
 
-    with open("grafo_cmms.html", "r", encoding="utf-8") as archivo_html:
-        components.html(archivo_html.read(), height=750, scrolling=True)
-
-
+# Función principal del módulo Streamlit
 def app() -> None:
     """Punto de entrada principal del módulo Streamlit."""
     st.title("🔗 Grafo CMMS")
     db = get_db()
 
     if db is None:
-        st.error("No se pudo conectar a la base de datos. Verifique la configuración de MongoDB.")
-        return
-
-    if nx is None or Network is None:
-        st.error(
-            "Dependencias faltantes para el grafo: asegúrese de instalar `networkx` y `pyvis`"
-            " en el entorno de despliegue."
-        )
-        st.info(
-            "Ejecute `pip install networkx pyvis` para habilitar la visualización conforme a las"
-            " buenas prácticas de trazabilidad de datos (ISO 14224)."
-        )
+        st.error("No se pudo conectar a la base de datos.")
         return
 
     activos_cursor = db["activos_tecnicos"].find({}, {"_id": 0, "id_activo_tecnico": 1})
-    activos_disponibles = sorted({doc.get("id_activo_tecnico") for doc in activos_cursor if doc.get("id_activo_tecnico")})
-    opciones = ["(all)"] + activos_disponibles
+    activos_disponibles = sorted({
+        doc.get("id_activo_tecnico")
+        for doc in activos_cursor
+        if doc.get("id_activo_tecnico")
+    })
+    opciones = ["(todos)"] + activos_disponibles
 
-    seleccion = st.selectbox("Filtrar por activo técnico", opciones)
+    seleccionado = st.selectbox("Activo técnico", opciones)
+    limite = st.slider("Cantidad máxima de eventos", 50, 1000, 400, 50)
+    ver_documentos = st.checkbox("Incluir documentos de origen", value=True)
 
-    filtros: Optional[Dict[str, str]] = None
-    if seleccion != "(all)":
-        filtros = {"id_activo_tecnico": seleccion}
+    filtros = None
+    if seleccionado != "(todos)":
+        filtros = {"id_activo_tecnico": seleccionado}
 
     grafo = construir_grafo(db, filtros)
-
     st.info(f"Nodos: {grafo.number_of_nodes()} | Aristas: {grafo.number_of_edges()}")
     mostrar_grafo(grafo)
