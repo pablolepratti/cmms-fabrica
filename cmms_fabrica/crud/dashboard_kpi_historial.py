@@ -12,6 +12,12 @@ que consolida eventos preventivos, correctivos, técnicos, observaciones y calib
 
 import streamlit as st
 import pandas as pd
+import matplotlib
+
+# Configurar backend sin interfaz gráfica para compatibilidad con Render y otros entornos headless.
+if not matplotlib.get_backend().lower().startswith("agg"):
+    matplotlib.use("Agg", force=True)
+
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from datetime import datetime
