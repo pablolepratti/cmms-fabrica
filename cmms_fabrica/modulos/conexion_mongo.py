@@ -22,3 +22,8 @@ if MONGO_URI:
 else:
     # MODO TEST sin variables de entorno
     db = None
+
+
+def get_db():
+    """Devuelve la instancia de base de datos activa, si está disponible."""
+    return db
