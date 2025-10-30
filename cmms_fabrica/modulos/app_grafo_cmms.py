@@ -4,31 +4,22 @@ from __future__ import annotations
 
 from typing import Dict, Optional, TYPE_CHECKING
 
-import importlib
-from importlib.machinery import ModuleSpec
-
 import streamlit as st
 import streamlit.components.v1 as components
 
-def _safe_find_spec(module_name: str) -> Optional[ModuleSpec]:
+if TYPE_CHECKING:
+    import networkx as nx
+    from pyvis.network import Network
+else:  # pragma: no cover - ejecución en tiempo de importación
     try:
-        return importlib.util.find_spec(module_name)
-    except ModuleNotFoundError:  # pragma: no cover - depende del entorno
-        return None
+        import networkx as nx  # type: ignore[import]
+    except ModuleNotFoundError:  # pragma: no cover - depende del despliegue
+        nx = None  # type: ignore[assignment]
 
-
-NETWORKX_SPEC = _safe_find_spec("networkx")
-PYVIS_SPEC = _safe_find_spec("pyvis.network")
-
-if TYPE_CHECKING or NETWORKX_SPEC:
-    import networkx as nx  # type: ignore[import]
-else:  # pragma: no cover - fallback path when NetworkX no está disponible
-    nx = None  # type: ignore[assignment]
-
-if TYPE_CHECKING or PYVIS_SPEC:
-    from pyvis.network import Network  # type: ignore[import]
-else:  # pragma: no cover - fallback path cuando Pyvis no está disponible
-    Network = None  # type: ignore[assignment]
+    try:
+        from pyvis.network import Network  # type: ignore[import]
+    except ModuleNotFoundError:  # pragma: no cover - depende del despliegue
+        Network = None  # type: ignore[assignment]
 
 from modulos.conexion_mongo import get_db
 
