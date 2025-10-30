@@ -8,3 +8,5 @@ numpy>=1.20
 calplot>=0.1.7
 XlsxWriter>=3.0
 openai>=1.0.0
+networkx>=3.3
+pyvis>=0.3.2
