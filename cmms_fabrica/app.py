@@ -1,4 +1,7 @@
+from typing import Any, Dict, List
+
 import streamlit as st
+
 st.set_page_config(page_title="CMMS Fábrica", layout="wide")
 
 # 🔐 Login y cierre de sesión
@@ -23,9 +26,11 @@ from crud.crud_inventario import app_inventario
 # Módulo de usuarios (admin)
 from modulos.app_usuarios import app_usuarios
 
-
 # Reportes técnicos
 from modulos.app_reportes import app as app_reportes
+
+# Visualización de grafo CMMS
+from modulos.app_grafo_cmms import app as app_grafo_cmms
 
 # Asistentes GPT
 from modulos.app_asistente_tecnico import app as asistente_tecnico
@@ -45,40 +50,18 @@ with st.sidebar:
     st.markdown(f"👤 **{usuario}** ({rol})")
     st.button("Cerrar sesión", on_click=cerrar_sesion, use_container_width=True)
 
-# 📋 Menú lateral
-menu = [
-    "🏠 Inicio",
-    "🧱 Activos Técnicos",
-    "📑 Planes Preventivos",
-    "🚨 Tareas Correctivas",
-    "📂 Tareas Técnicas",
-    "🔍 Observaciones Técnicas",
-    "📦 Inventario Técnico",
-    "🧪 Calibraciones",
-    "🏢 Servicios Técnicos",
-    "⚡ Consumos Técnicos",
-    "📊 KPIs Globales",
-    "📄 Reportes Técnicos",
-    "🤖 Asistente Técnico",
-    "🧰 Asistente de Mejora Continua",
-    "👥 Usuarios" if rol == "admin" else None,
-]
-menu = [m for m in menu if m is not None]
-
-opcion = st.sidebar.radio("Menú principal", menu)
-
-# 🧭 Enrutamiento
-if opcion == "🏠 Inicio":
+def render_home(context: Dict[str, Any]) -> None:
     st.title("Bienvenido al CMMS de la Fábrica")
     kpi_historial()
 
-    if rol == "admin":
+    if context["rol"] == "admin":
         st.markdown("## 🧹 Mantenimiento de Almacenamiento (MongoDB)")
         from modulos.almacenamiento import (
-            obtener_tamano_total_mb,
             listar_colecciones_ordenadas,
-            limpiar_coleccion_mas_cargada
+            limpiar_coleccion_mas_cargada,
+            obtener_tamano_total_mb,
         )
+
         uso_actual = obtener_tamano_total_mb()
         st.markdown(f"**Uso actual estimado de la base de datos:** `{uso_actual:.2f} MB`")
         st.markdown("### 📁 Colecciones rotables ordenadas por carga:")
@@ -93,44 +76,55 @@ if opcion == "🏠 Inicio":
             else:
                 st.info("ℹ️ No se requería limpieza: colecciones por debajo del mínimo.")
 
-elif opcion == "🧱 Activos Técnicos":
-    crud_activos_tecnicos()
 
-elif opcion == "📑 Planes Preventivos":
-    crud_planes_preventivos()
+def _render_inventario(context: Dict[str, Any]) -> None:
+    app_inventario(context["usuario"])
 
-elif opcion == "🚨 Tareas Correctivas":
-    crud_tareas_correctivas()
 
-elif opcion == "📂 Tareas Técnicas":
-    crud_tareas_tecnicas()
+def _render_consumos(context: Dict[str, Any]) -> None:
+    crud_consumos(db, context["usuario"])
 
-elif opcion == "🔍 Observaciones Técnicas":
-    crud_observaciones()
 
-elif opcion == "📦 Inventario Técnico":
-    app_inventario(usuario)
+def _render_usuarios(context: Dict[str, Any]) -> None:
+    app_usuarios(context["usuario"], context["rol"])
 
-elif opcion == "🧪 Calibraciones":
-    crud_calibraciones()
 
-elif opcion == "🏢 Servicios Técnicos":
-    crud_servicios()
+MenuEntry = Dict[str, Any]
 
-elif opcion == "⚡ Consumos Técnicos":
-    crud_consumos(db, usuario)
+MENU_CONFIG: List[MenuEntry] = [
+    {"label": "🏠 Inicio", "callback": render_home},
+    {"label": "🧱 Activos Técnicos", "callback": lambda ctx: crud_activos_tecnicos()},
+    {"label": "📑 Planes Preventivos", "callback": lambda ctx: crud_planes_preventivos()},
+    {"label": "🚨 Tareas Correctivas", "callback": lambda ctx: crud_tareas_correctivas()},
+    {"label": "📂 Tareas Técnicas", "callback": lambda ctx: crud_tareas_tecnicas()},
+    {"label": "🔍 Observaciones Técnicas", "callback": lambda ctx: crud_observaciones()},
+    {"label": "📦 Inventario Técnico", "callback": _render_inventario},
+    {"label": "🧪 Calibraciones", "callback": lambda ctx: crud_calibraciones()},
+    {"label": "🏢 Servicios Técnicos", "callback": lambda ctx: crud_servicios()},
+    {"label": "⚡ Consumos Técnicos", "callback": _render_consumos},
+    {"label": "📊 KPIs Globales", "callback": lambda ctx: kpi_historial()},
+    {"label": "📄 Reportes Técnicos", "callback": lambda ctx: app_reportes()},
+    {"label": "🗺️ Grafo CMMS", "callback": lambda ctx: app_grafo_cmms()},
+    {"label": "🤖 Asistente Técnico", "callback": lambda ctx: asistente_tecnico()},
+    {"label": "🧰 Asistente de Mejora Continua", "callback": lambda ctx: asistente_mejora()},
+    {"label": "👥 Usuarios", "callback": _render_usuarios, "roles": {"admin"}},
+]
 
-elif opcion == "📊 KPIs Globales":
-    kpi_historial()
 
-elif opcion == "📄 Reportes Técnicos":
-    app_reportes()
+def _allowed(entry: MenuEntry, context: Dict[str, Any]) -> bool:
+    roles = entry.get("roles")
+    if not roles:
+        return True
+    return context["rol"] in roles
 
-elif opcion == "🤖 Asistente Técnico":
-    asistente_tecnico()
 
-elif opcion == "🧰 Asistente de Mejora Continua":
-    asistente_mejora()
+context = {"usuario": usuario, "rol": rol}
+menu_entries = [entry for entry in MENU_CONFIG if _allowed(entry, context)]
+labels = [entry["label"] for entry in menu_entries]
 
-elif opcion == "👥 Usuarios" and rol == "admin":
-    app_usuarios(usuario, rol)
+opcion = st.sidebar.radio("Menú principal", labels)
+
+for entry in menu_entries:
+    if entry["label"] == opcion:
+        entry["callback"](context)
+        break
