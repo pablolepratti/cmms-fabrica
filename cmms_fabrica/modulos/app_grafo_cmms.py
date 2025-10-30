@@ -2,12 +2,25 @@
 
 from __future__ import annotations
 
-from typing import Dict, Optional
+from typing import Dict, Optional, TYPE_CHECKING
 
-import networkx as nx
+import importlib
+
 import streamlit as st
 import streamlit.components.v1 as components
-from pyvis.network import Network
+
+NETWORKX_SPEC = importlib.util.find_spec("networkx")
+PYVIS_SPEC = importlib.util.find_spec("pyvis.network")
+
+if TYPE_CHECKING or NETWORKX_SPEC:
+    import networkx as nx  # type: ignore[import]
+else:  # pragma: no cover - fallback path when NetworkX no está disponible
+    nx = None  # type: ignore[assignment]
+
+if TYPE_CHECKING or PYVIS_SPEC:
+    from pyvis.network import Network  # type: ignore[import]
+else:  # pragma: no cover - fallback path cuando Pyvis no está disponible
+    Network = None  # type: ignore[assignment]
 
 from modulos.conexion_mongo import get_db
 
@@ -19,7 +32,11 @@ COLOR_USUARIO = "#2ca02c"
 COLOR_PROVEEDOR = "#d62728"
 
 
-def construir_grafo(db, filtros: Optional[Dict[str, str]] = None) -> nx.DiGraph:
+def construir_grafo(db, filtros: Optional[Dict[str, str]] = None) -> "nx.DiGraph":
+    if nx is None:
+        raise RuntimeError(
+            "NetworkX no está instalado. Instale el paquete `networkx` para construir el grafo."
+        )
     """Construye un grafo dirigido representando las relaciones del CMMS."""
     filtros = filtros or {}
     grafo = nx.DiGraph()
@@ -107,7 +124,11 @@ def construir_grafo(db, filtros: Optional[Dict[str, str]] = None) -> nx.DiGraph:
     return grafo
 
 
-def mostrar_grafo(grafo: nx.DiGraph) -> None:
+def mostrar_grafo(grafo: "nx.DiGraph") -> None:
+    if Network is None:
+        raise RuntimeError(
+            "Pyvis no está instalado. Instale el paquete `pyvis` para visualizar el grafo."
+        )
     """Renderiza el grafo utilizando Pyvis y lo incrusta en Streamlit."""
     net = Network(height="700px", width="100%", directed=True, notebook=False)
     net.toggle_physics(True)
@@ -131,6 +152,17 @@ def app() -> None:
 
     if db is None:
         st.error("No se pudo conectar a la base de datos. Verifique la configuración de MongoDB.")
+        return
+
+    if nx is None or Network is None:
+        st.error(
+            "Dependencias faltantes para el grafo: asegúrese de instalar `networkx` y `pyvis`"
+            " en el entorno de despliegue."
+        )
+        st.info(
+            "Ejecute `pip install networkx pyvis` para habilitar la visualización conforme a las"
+            " buenas prácticas de trazabilidad de datos (ISO 14224)."
+        )
         return
 
     activos_cursor = db["activos_tecnicos"].find({}, {"_id": 0, "id_activo_tecnico": 1})
