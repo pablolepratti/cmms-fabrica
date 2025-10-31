@@ -50,6 +50,11 @@ with st.sidebar:
     st.markdown(f"👤 **{usuario}** ({rol})")
     st.button("Cerrar sesión", on_click=cerrar_sesion, use_container_width=True)
 
+# Verificamos la conexión a la base de datos
+if db is None:
+    st.error("Error: No se pudo conectar a la base de datos MongoDB.")
+    st.stop()
+
 def render_home(context: Dict[str, Any]) -> None:
     st.title("Bienvenido al CMMS de la Fábrica")
     kpi_historial()
@@ -76,18 +81,14 @@ def render_home(context: Dict[str, Any]) -> None:
             else:
                 st.info("ℹ️ No se requería limpieza: colecciones por debajo del mínimo.")
 
-
 def _render_inventario(context: Dict[str, Any]) -> None:
     app_inventario(context["usuario"])
-
 
 def _render_consumos(context: Dict[str, Any]) -> None:
     crud_consumos(db, context["usuario"])
 
-
 def _render_usuarios(context: Dict[str, Any]) -> None:
     app_usuarios(context["usuario"], context["rol"])
-
 
 MenuEntry = Dict[str, Any]
 
@@ -110,13 +111,11 @@ MENU_CONFIG: List[MenuEntry] = [
     {"label": "👥 Usuarios", "callback": _render_usuarios, "roles": {"admin"}},
 ]
 
-
 def _allowed(entry: MenuEntry, context: Dict[str, Any]) -> bool:
     roles = entry.get("roles")
     if not roles:
         return True
     return context["rol"] in roles
-
 
 context = {"usuario": usuario, "rol": rol}
 menu_entries = [entry for entry in MENU_CONFIG if _allowed(entry, context)]
