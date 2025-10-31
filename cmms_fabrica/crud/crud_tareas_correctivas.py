@@ -29,6 +29,7 @@ from modulos.utilidades_formularios import (
 def generar_id_tarea():
     return f"TC-{int(datetime.now().timestamp())}"
 
+
 def _to_date(value: Optional[object]) -> date:
     if isinstance(value, datetime):
         return value.date()
@@ -84,7 +85,7 @@ def form_tarea(database, defaults: Optional[Dict[str, Any]] = None):
         id_tarea = defaults.get("id_tarea") or generar_id_tarea()
         fecha_evento_valor = st.date_input(
             "Fecha del Evento",
-            value=_to_date(defaults.get("fecha_evento")),
+            value=_to_date(defaults.get("fecha_evento")) if defaults.get("fecha_evento") else datetime.today().date(),
         )
         descripcion_falla = st.text_area(
             "Descripción de la Falla",
@@ -185,6 +186,7 @@ def form_tarea(database, defaults: Optional[Dict[str, Any]] = None):
             "incompleto": False,
         }
     return None
+
 
 def app():
     database = get_db()
@@ -356,6 +358,7 @@ def app():
             else:
                 st.info("No hay tareas disponibles para eliminar.")
         st.divider()
+
 
 if __name__ == "__main__":
     app()
