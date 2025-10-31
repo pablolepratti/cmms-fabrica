@@ -25,7 +25,6 @@ from modulos.conexion_mongo import get_db
 
 def _coerce_mapping(data: Mapping[str, Any]) -> MutableMapping[str, Any]:
     """Crea una copia mutable asegurando que ``data`` no se modifique in-situ."""
-
     return dict(data)
 
 
@@ -47,7 +46,7 @@ class CMMSRepository:
     def __init__(self, collection_name: str, database: Optional[Database] = None):
         self._db: Optional[Database] = database or get_db()
         if self._db is None:
-            raise ConnectionError("MongoDB no disponible")
+            raise ConnectionError("MongoDB no disponible")  # Aseguramos que la conexión se maneje adecuadamente
         self._collection: Collection = self._db[collection_name]
 
     @property
@@ -125,6 +124,7 @@ class CMMSRepository:
         event: HistorialEvent,
         document: Optional[Mapping[str, Any]] = None,
     ) -> int:
+        # Si no se pasa el documento, lo buscamos en la base de datos con el filtro
         registro = dict(document) if document is not None else self._collection.find_one(filtro)
         if registro is None:
             return 0
