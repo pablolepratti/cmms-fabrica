@@ -1,21 +1,31 @@
 """
 🗓️ CRUD de Planes Preventivos – CMMS Fábrica
-Extendido para planes por USO (horas/km/ciclos)
+Versión extendida (tiempo + uso + ambos)
+- tiempo  -> como el original: vence por fecha
+- uso     -> vence por horas/km/ciclos según lectura
+- ambos   -> vence por el primero que se cumpla
 
-- tiempo  -> como lo tenías
-- uso     -> compara lecturas de uso contra un umbral
-- ambos   -> vence si vence por fecha O por uso
+✅ Alineado con:
+- ISO 55001 (activo como eje)
+- ISO 9001:2015 (control operacional)
+- ISO 14224 (datos de mantenimiento)
 """
 
-import streamlit as st
-import pandas as pd
 from datetime import datetime, date
-from modulos.conexion_mongo import db
+
+import pandas as pd
+import streamlit as st
+
 from crud.generador_historial import registrar_evento_historial
+from modulos.conexion_mongo import db
 from modulos.utilidades_formularios import select_proveedores_externos
 
 
+# ---------------------------------------------------------------------
+# Helpers básicos
+# ---------------------------------------------------------------------
 def crear_plan_preventivo(data: dict, database=db):
+    """Inserta un plan preventivo y registra el evento en historial."""
     if database is None:
         return None
     coleccion = database["planes_preventivos"]
@@ -30,108 +40,150 @@ def crear_plan_preventivo(data: dict, database=db):
     return data["id_plan"]
 
 
-def generar_id_plan():
+def generar_id_plan() -> str:
+    """Genera un ID único simple para el plan."""
     return f"PP-{int(datetime.now().timestamp())}"
 
 
+# ---------------------------------------------------------------------
+# App principal
+# ---------------------------------------------------------------------
 def app():
     if db is None:
         st.error("MongoDB no disponible")
         return
+
     coleccion = db["planes_preventivos"]
 
     st.title("🗓️ Gestión de Planes Preventivos")
-    menu = ["Registrar Plan", "Ver Planes", "Planes vencidos", "Editar Plan", "Eliminar Plan"]
+    menu = [
+        "Registrar Plan",
+        "Ver Planes",
+        "Planes vencidos",
+        "Editar Plan",
+        "Eliminar Plan",
+    ]
     choice = st.sidebar.radio("Acción", menu)
 
+    # -----------------------------------------------------------------
+    # Formulario reutilizable
+    # -----------------------------------------------------------------
     def form_plan(defaults=None):
+        # normalizamos para no hacer `if defaults` por todos lados
+        if defaults is None:
+            defaults = {}
+
         with st.form("form_plan_preventivo"):
+            # ---------------------------------------------------------
+            # ID del plan
+            # ---------------------------------------------------------
             id_plan = st.text_input(
                 "ID del Plan",
-                value=defaults.get("id_plan") if defaults else generar_id_plan(),
+                value=defaults.get("id_plan", generar_id_plan()),
             )
 
-            # activos
+            # ---------------------------------------------------------
+            # Activo técnico asociado (obligatorio)
+            # ---------------------------------------------------------
             activos_lista = list(
                 db["activos_tecnicos"].find(
                     {}, {"_id": 0, "id_activo_tecnico": 1, "nombre": 1}
                 )
             )
-            opciones = [
-                f"{a['id_activo_tecnico']} – {a.get('nombre', 'Sin nombre')}"
-                for a in activos_lista
-            ]
-            map_id = {
-                f"{a['id_activo_tecnico']} – {a.get('nombre', 'Sin nombre')}": a[
-                    "id_activo_tecnico"
+            if activos_lista:
+                opciones = [
+                    f"{a['id_activo_tecnico']} – {a.get('nombre', 'Sin nombre')}"
+                    for a in activos_lista
                 ]
-                for a in activos_lista
-            }
-            default_id = defaults.get("id_activo_tecnico") if defaults else None
-            default_label = next(
-                (k for k, v in map_id.items() if v == default_id),
-                opciones[0] if opciones else "",
-            )
-            index_default = (
-                opciones.index(default_label) if default_label in opciones else 0
-            )
+                map_id = {
+                    f"{a['id_activo_tecnico']} – {a.get('nombre', 'Sin nombre')}": a[
+                        "id_activo_tecnico"
+                    ]
+                    for a in activos_lista
+                }
 
-            id_activo_sel = st.selectbox(
-                "Activo Técnico asociado", opciones, index=index_default
-            )
-            id_activo_tecnico = map_id.get(id_activo_sel)
+                default_id = defaults.get("id_activo_tecnico")
+                default_label = (
+                    next((k for k, v in map_id.items() if v == default_id), None)
+                    or opciones[0]
+                )
 
-            # 🔁 NUEVO: tipo de programación
+                index_default = (
+                    opciones.index(default_label) if default_label in opciones else 0
+                )
+
+                id_activo_sel = st.selectbox(
+                    "Activo Técnico asociado", opciones, index=index_default
+                )
+                id_activo_tecnico = map_id.get(id_activo_sel, "")
+            else:
+                st.warning("⚠️ No hay activos técnicos cargados. Primero cargá uno.")
+                st.form_submit_button("Guardar", disabled=True)
+                return None  # no seguimos
+
+            # ---------------------------------------------------------
+            # Tipo de programación (novedad)
+            # ---------------------------------------------------------
             tipo_programacion = st.selectbox(
                 "Tipo de programación",
                 ["tiempo", "uso", "ambos"],
                 index=["tiempo", "uso", "ambos"].index(
                     defaults.get("tipo_programacion", "tiempo")
-                )
-                if defaults
-                else 0,
-                help="‘tiempo’: por fecha. ‘uso’: por horas/km. ‘ambos’: el que venza primero.",
+                ),
+                help="‘tiempo’: por fecha. ‘uso’: por horas/km. ‘ambos’: vence por el primero.",
             )
 
-            # --- bloque por TIEMPO (igual que antes)
+            # ---------------------------------------------------------
+            # BLOQUE POR TIEMPO
+            # ---------------------------------------------------------
             frecuencia = st.number_input(
                 "Frecuencia (para tiempo)",
                 min_value=1,
-                value=defaults.get("frecuencia", 1) if defaults else 1,
+                value=int(defaults.get("frecuencia", 1)),
             )
             unidad_frecuencia = st.selectbox(
                 "Unidad",
                 ["días", "semanas", "meses"],
                 index=["días", "semanas", "meses"].index(
                     defaults.get("unidad_frecuencia", "días")
-                )
-                if defaults
-                else 0,
-            )
-            proxima_fecha = st.date_input(
-                "Próxima Ejecución (por tiempo)",
-                value=(
-                    datetime.strptime(defaults.get("proxima_fecha"), "%Y-%m-%d").date()
-                    if defaults and defaults.get("proxima_fecha")
-                    else date.today()
-                ),
-            )
-            ultima_fecha = st.date_input(
-                "Última Ejecución (por tiempo)",
-                value=(
-                    datetime.strptime(defaults.get("ultima_fecha"), "%Y-%m-%d").date()
-                    if defaults and defaults.get("ultima_fecha")
-                    else date.today()
                 ),
             )
 
-            # --- 🔁 bloque por USO (nuevo)
+            # fechas seguras
+            proxima_raw = defaults.get("proxima_fecha")
+            if proxima_raw:
+                try:
+                    proxima_default = datetime.strptime(proxima_raw, "%Y-%m-%d").date()
+                except ValueError:
+                    proxima_default = date.today()
+            else:
+                proxima_default = date.today()
+
+            ultima_raw = defaults.get("ultima_fecha")
+            if ultima_raw:
+                try:
+                    ultima_default = datetime.strptime(ultima_raw, "%Y-%m-%d").date()
+                except ValueError:
+                    ultima_default = date.today()
+            else:
+                ultima_default = date.today()
+
+            proxima_fecha = st.date_input(
+                "Próxima Ejecución (por tiempo)", value=proxima_default
+            )
+            ultima_fecha = st.date_input(
+                "Última Ejecución (por tiempo)", value=ultima_default
+            )
+
+            # ---------------------------------------------------------
+            # BLOQUE POR USO (horas/km/ciclos)
+            # ---------------------------------------------------------
             col1, col2 = st.columns(2)
             with col1:
                 umbral_uso = st.number_input(
                     "Umbral de uso (ej. 250 h / 500 km)",
                     min_value=0.0,
-                    value=float(defaults.get("umbral_uso", 0.0)) if defaults else 0.0,
+                    value=float(defaults.get("umbral_uso", 0.0)),
                 )
             with col2:
                 unidad_uso = st.text_input(
@@ -143,53 +195,46 @@ def app():
                 ultima_lectura_uso = st.number_input(
                     "Lectura al último mantenimiento",
                     min_value=0.0,
-                    value=float(defaults.get("ultima_lectura_uso", 0.0))
-                    if defaults
-                    else 0.0,
-                    help="Valor del horómetro/odómetro cuando se hizo la última vez.",
+                    value=float(defaults.get("ultima_lectura_uso", 0.0)),
+                    help="Lectura de horómetro/odómetro cuando se hizo el último mantenimiento.",
                 )
             with col4:
                 lectura_actual_uso = st.number_input(
                     "Lectura actual de uso",
                     min_value=0.0,
-                    value=float(defaults.get("lectura_actual_uso", 0.0))
-                    if defaults
-                    else 0.0,
-                    help="Cargá la lectura real de hoy. Si no la tenés, dejá el valor anterior.",
+                    value=float(defaults.get("lectura_actual_uso", 0.0)),
+                    help="Lectura real de hoy. Si no la tenés, dejá el valor anterior.",
                 )
 
+            # ---------------------------------------------------------
+            # Datos generales
+            # ---------------------------------------------------------
             responsable = st.text_input(
-                "Responsable", value=defaults.get("responsable", "") if defaults else ""
+                "Responsable", value=defaults.get("responsable", "")
             )
 
             tipo_ejecucion = st.radio(
                 "¿Quién ejecuta la tarea preventiva?",
                 ["Interno", "Externo"],
-                index=0
-                if defaults is None or defaults.get("proveedor_externo") in [None, ""]
-                else 1,
+                index=0 if defaults.get("proveedor_externo", "") in ["", None] else 1,
             )
 
             nombres_proveedores = select_proveedores_externos(db)
-            proveedor_default = defaults.get("proveedor_externo") if defaults else None
-            index_proveedor = (
-                nombres_proveedores.index(proveedor_default)
-                if proveedor_default in nombres_proveedores
-                else 0
-                if nombres_proveedores
-                else -1
-            )
-
+            proveedor_externo = ""
             if tipo_ejecucion == "Externo":
-                proveedor_externo = (
-                    st.selectbox(
-                        "Proveedor Externo",
-                        nombres_proveedores,
-                        index=index_proveedor,
+                if nombres_proveedores:
+                    prov_def = defaults.get("proveedor_externo", "")
+                    idx = (
+                        nombres_proveedores.index(prov_def)
+                        if prov_def in nombres_proveedores
+                        else 0
                     )
-                    if nombres_proveedores
-                    else ""
-                )
+                    proveedor_externo = st.selectbox(
+                        "Proveedor Externo", nombres_proveedores, index=idx
+                    )
+                else:
+                    st.info("No hay proveedores externos cargados.")
+                    proveedor_externo = ""
             else:
                 proveedor_externo = ""
 
@@ -198,24 +243,24 @@ def app():
                 ["Activo", "Suspendido", "Finalizado"],
                 index=["Activo", "Suspendido", "Finalizado"].index(
                     defaults.get("estado", "Activo")
-                )
-                if defaults
-                else 0,
+                ),
             )
 
             adjunto_plan = st.text_input(
-                "Documento o Link del Plan",
-                value=defaults.get("adjunto_plan", "") if defaults else "",
+                "Documento o Link del Plan", value=defaults.get("adjunto_plan", "")
             )
             usuario = st.text_input(
-                "Usuario que registra",
-                value=defaults.get("usuario_registro", "") if defaults else "",
+                "Usuario que registra", value=defaults.get("usuario_registro", "")
             )
             observaciones = st.text_area(
-                "Observaciones", value=defaults.get("observaciones", "") if defaults else ""
+                "Observaciones", value=defaults.get("observaciones", "")
             )
+
             submit = st.form_submit_button("Guardar")
 
+        # -------------------------------------------------------------
+        # Validación final
+        # -------------------------------------------------------------
         if submit:
             if not responsable or not usuario:
                 st.error("Debe completar los campos obligatorios: Responsable y Usuario.")
@@ -246,7 +291,9 @@ def app():
             }
         return None
 
-    # --- ACCIONES ---
+    # -----------------------------------------------------------------
+    # 1) Registrar Plan
+    # -----------------------------------------------------------------
     if choice == "Registrar Plan":
         st.subheader("➕ Alta de Plan Preventivo")
         data = form_plan()
@@ -254,6 +301,9 @@ def app():
             crear_plan_preventivo(data, db)
             st.success("✅ Plan preventivo registrado correctamente.")
 
+    # -----------------------------------------------------------------
+    # 2) Ver Planes
+    # -----------------------------------------------------------------
     elif choice == "Ver Planes":
         st.subheader("📋 Planes Preventivos Registrados")
         planes = list(coleccion.find().sort("proxima_fecha", 1))
@@ -278,6 +328,7 @@ def app():
         if not filtrados:
             st.warning("No se encontraron registros con esos filtros.")
         else:
+            # agrupamos por activo
             agrupados = {}
             for p in filtrados:
                 act = p.get("id_activo_tecnico", "⛔ Sin Activo")
@@ -293,9 +344,14 @@ def app():
                     tipo_prog = p.get("tipo_programacion", "tiempo")
                     st.code(f"ID del Plan: {p.get('id_plan', '')}", language="yaml")
                     st.markdown(
-                        f"- **Tipo:** {tipo_prog} | **Próxima (tiempo):** {p.get('proxima_fecha', '-')} | **Uso umbral:** {p.get('umbral_uso', '-') } {p.get('unidad_uso', '')} | **Estado:** {p.get('estado', '-')}"
+                        f"- **Tipo:** {tipo_prog} | **Próxima (tiempo):** {p.get('proxima_fecha', '-')} | "
+                        f"**Uso umbral:** {p.get('umbral_uso', '-') } {p.get('unidad_uso', '')} | "
+                        f"**Frecuencia:** {freq} | **Estado:** {p.get('estado', '-')}"
                     )
 
+    # -----------------------------------------------------------------
+    # 3) Planes vencidos (tiempo, uso o ambos)
+    # -----------------------------------------------------------------
     elif choice == "Planes vencidos":
         st.subheader("⏰ Planes preventivos vencidos")
         hoy = date.today()
@@ -303,15 +359,15 @@ def app():
         vencidos = []
 
         for p in planes:
+            # solo activos
             if p.get("estado") != "Activo":
                 continue
 
             tipo_prog = p.get("tipo_programacion", "tiempo")
-
             vencio_por_tiempo = False
             vencio_por_uso = False
 
-            # --- tiempo
+            # --- por tiempo
             if tipo_prog in ("tiempo", "ambos"):
                 pf = p.get("proxima_fecha")
                 if pf:
@@ -320,9 +376,10 @@ def app():
                         if fecha_plan < hoy:
                             vencio_por_tiempo = True
                     except ValueError:
+                        # fecha mal cargada: la ignoramos
                         pass
 
-            # --- uso
+            # --- por uso
             if tipo_prog in ("uso", "ambos"):
                 umbral = float(p.get("umbral_uso", 0) or 0)
                 ult = float(p.get("ultima_lectura_uso", 0) or 0)
@@ -337,7 +394,7 @@ def app():
                 vencidos.append(p)
 
         if not vencidos:
-            st.success("👌 No hay planes vencidos (tiempo/uso).")
+            st.success("👌 No hay planes vencidos (ni por tiempo ni por uso).")
         else:
             rows = []
             for p in vencidos:
@@ -359,14 +416,19 @@ def app():
                         "responsable": p.get("responsable", ""),
                     }
                 )
+
             df = pd.DataFrame(rows)
             st.dataframe(df, use_container_width=True)
             st.info(f"📦 Total de planes vencidos: **{len(vencidos)}**")
 
+    # -----------------------------------------------------------------
+    # 4) Editar plan
+    # -----------------------------------------------------------------
     elif choice == "Editar Plan":
         st.subheader("✏️ Editar Plan Preventivo")
         planes = list(coleccion.find())
         opciones = {f"{p['id_plan']} | {p['id_activo_tecnico']}": p for p in planes}
+
         if opciones:
             seleccion = st.selectbox("Seleccionar plan", list(opciones.keys()))
             datos = opciones.get(seleccion)
@@ -385,10 +447,14 @@ def app():
         else:
             st.info("No hay planes para editar.")
 
+    # -----------------------------------------------------------------
+    # 5) Eliminar plan
+    # -----------------------------------------------------------------
     elif choice == "Eliminar Plan":
         st.subheader("🗑️ Eliminar Plan Preventivo")
         planes = list(coleccion.find())
         opciones = {f"{p['id_plan']} | {p['id_activo_tecnico']}": p for p in planes}
+
         if opciones:
             seleccion = st.selectbox("Seleccionar plan", list(opciones.keys()))
             datos = opciones.get(seleccion)
@@ -406,5 +472,8 @@ def app():
             st.info("No hay planes para eliminar.")
 
 
+# ---------------------------------------------------------------------
+# Ejecutable directo
+# ---------------------------------------------------------------------
 if __name__ == "__main__":
     app()
