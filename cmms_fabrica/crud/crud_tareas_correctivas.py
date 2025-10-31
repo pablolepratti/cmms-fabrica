@@ -26,7 +26,7 @@ from modulos.utilidades_formularios import (
 )
 
 
-def generar_id_tarea():
+def generar_id_tarea() -> str:
     return f"TC-{int(datetime.now().timestamp())}"
 
 
@@ -242,15 +242,15 @@ def app():
             else:
                 estados_existentes = sorted({t.get("estado", "⛔ Sin Estado") for t in tareas})
                 estado_filtro = st.selectbox("Filtrar por estado", ["Todos"] + estados_existentes)
-                texto_filtro = st.text_input("🔍 Buscar por descripción o ID")
+                texto_filtro = st.text_input("🔍 Buscar por descripción, activo o ID")
 
-                filtradas = []
+                filtradas: List[Dict[str, Any]] = []
                 for t in tareas:
                     coincide_estado = estado_filtro == "Todos" or t.get("estado") == estado_filtro
                     texto = (
-                        t.get("descripcion_falla", "")
-                        + t.get("id_activo_tecnico", "")
-                        + t.get("id_tarea", "")
+                        (t.get("descripcion_falla", "") or "")
+                        + (t.get("id_activo_tecnico", "") or "")
+                        + (t.get("id_tarea", "") or "")
                     )
                     coincide_texto = texto_filtro.lower() in texto.lower()
                     if coincide_estado and coincide_texto:
@@ -259,20 +259,81 @@ def app():
                 if not filtradas:
                     st.warning("No se encontraron registros con esos filtros.")
                 else:
-                    df = pd.DataFrame(
-                        [
-                            {
-                                "ID tarea": t.get("id_tarea"),
-                                "Activo": t.get("id_activo_tecnico"),
-                                "Estado": t.get("estado"),
-                                "Descripción": t.get("descripcion_falla"),
-                                "Fecha evento": t.get("fecha_evento"),
-                                "Responsable": t.get("responsable"),
-                            }
-                            for t in filtradas
-                        ]
-                    )
-                    st.dataframe(df, use_container_width=True)
+                    # 🎨 Listado tipo “tarjetas” igual al de Activos Técnicos
+                    for t in filtradas:
+                        fecha_evt = t.get("fecha_evento")
+                        if isinstance(fecha_evt, (datetime, date)):
+                            fecha_str = fecha_evt.strftime("%d/%m/%Y")
+                        else:
+                            fecha_str = "—"
+
+                        estado = t.get("estado", "⛔ Sin estado")
+                        # Colores de estado parecidos al resto del sistema
+                        color_estado = {
+                            "Abierta": "#ff6b6b",
+                            "En proceso": "#f7b733",
+                            "Cerrada": "#06d6a0",
+                        }.get(estado, "#ffffff")
+
+                        descripcion = t.get("descripcion_falla", "").strip() or "Sin descripción"
+                        activo = t.get("id_activo_tecnico", "—")
+                        id_tarea = t.get("id_tarea", "—")
+                        responsable = t.get("responsable", "—")
+
+                        st.markdown(
+                            f"""
+<div style="
+    background-color: #111827;
+    border: 1px solid rgba(255,255,255,0.03);
+    border-radius: 0.75rem;
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.75rem;
+">
+  <p style="margin:0; font-weight:600; font-size:0.9rem;">
+    • {descripcion}
+  </p>
+  <p style="margin:0.35rem 0 0; font-size:0.75rem; color:#f97316;">
+    <strong>ID de la Tarea:</strong> {id_tarea}
+  </p>
+  <p style="margin:0.15rem 0 0; font-size:0.75rem; color:#e5e7eb;">
+    <strong>Activo:</strong> {activo}
+  </p>
+  <p style="margin:0.15rem 0 0; font-size:0.72rem; color:#9ca3af;">
+    <strong>Responsable:</strong> {responsable} · <strong>Fecha:</strong> {fecha_str}
+  </p>
+  <p style="margin:0.4rem 0 0; font-size:0.7rem;">
+    <span style="
+        background-color:{color_estado}20;
+        color:{color_estado};
+        padding:0.15rem 0.6rem;
+        border-radius:9999px;
+        font-weight:600;
+        font-size:0.68rem;
+    ">
+      {estado}
+    </span>
+  </p>
+</div>
+""",
+                            unsafe_allow_html=True,
+                        )
+
+                    # (Opcional) dejá la tabla para auditoría
+                    with st.expander("Ver en tabla"):
+                        df = pd.DataFrame(
+                            [
+                                {
+                                    "ID tarea": t.get("id_tarea"),
+                                    "Activo": t.get("id_activo_tecnico"),
+                                    "Estado": t.get("estado"),
+                                    "Descripción": t.get("descripcion_falla"),
+                                    "Fecha evento": t.get("fecha_evento"),
+                                    "Responsable": t.get("responsable"),
+                                }
+                                for t in filtradas
+                            ]
+                        )
+                        st.dataframe(df, use_container_width=True)
         st.divider()
 
     elif choice == "Editar Tarea":
