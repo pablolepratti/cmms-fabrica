@@ -66,7 +66,7 @@ def render_home(context: Dict[str, Any]) -> None:
         st.markdown(f"**Uso actual estimado de la base de datos:** `{uso_actual:.2f} MB`")
         st.markdown("### 📁 Colecciones rotables ordenadas por carga:")
         datos = listar_colecciones_ordenadas()
-        for nombre, cantidad, _ in datos:
+        for nombre, cantidad, campo_fecha, es_critica in datos:
             st.write(f"- `{nombre}` → {cantidad} documentos")
         if st.button("🧹 Ejecutar limpieza automática"):
             resultado = limpiar_coleccion_mas_cargada()
