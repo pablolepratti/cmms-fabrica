@@ -124,30 +124,32 @@ def app():
                     id_activo = a.get("id_activo_tecnico", "⛔ Sin ID")
                     subtitulo = f" (pertenece a {a['pertenece_a']})" if "pertenece_a" in a else ""
                     st.code(f"ID del Activo: {id_activo}", language="yaml")
-                    # Crear un enlace para redirigir a la página de edición del activo
-                    st.markdown(f"[Editar {nombre}](#edit_{id_activo})")
+                    # Cambiar la acción para manejar el enlace sin abrir nuevas pestañas
+                    st.markdown(f"[Editar {nombre}](?edit={id_activo})")
 
     elif choice == "Editar":
-        st.subheader("✏️ Editar activo técnico")
-        activos = list(coleccion.find())
-        opciones = {f"{a.get('id_activo_tecnico', '⛔ Sin ID')} - {a.get('nombre', '')}": a for a in activos}
-        if opciones:
-            seleccion = st.selectbox("Seleccionar activo", list(opciones.keys()))
-            datos = opciones[seleccion]
-
-            nuevos_datos = form_activo(defaults=datos)
-            if nuevos_datos:
-                coleccion.update_one({"_id": datos["_id"]}, {"$set": nuevos_datos})
-                registrar_evento_historial(
-                    "Edición de activo técnico",
-                    nuevos_datos["id_activo_tecnico"],
-                    nuevos_datos["id_activo_tecnico"],
-                    f"Se editó el activo '{nuevos_datos['nombre']}'",
-                    nuevos_datos["usuario_registro"],
-                )
-                st.success("Activo técnico actualizado correctamente.")
+        # Revisar si un parámetro de consulta fue pasado para editar el activo
+        edit_activo_id = st.experimental_get_query_params().get("edit", [None])[0]
+        if edit_activo_id:
+            st.subheader(f"✏️ Editar activo técnico: {edit_activo_id}")
+            activos = list(coleccion.find({"id_activo_tecnico": edit_activo_id}))
+            if activos:
+                datos = activos[0]
+                nuevos_datos = form_activo(defaults=datos)
+                if nuevos_datos:
+                    coleccion.update_one({"_id": datos["_id"]}, {"$set": nuevos_datos})
+                    registrar_evento_historial(
+                        "Edición de activo técnico",
+                        nuevos_datos["id_activo_tecnico"],
+                        nuevos_datos["id_activo_tecnico"],
+                        f"Se editó el activo '{nuevos_datos['nombre']}'",
+                        nuevos_datos["usuario_registro"],
+                    )
+                    st.success("Activo técnico actualizado correctamente.")
+            else:
+                st.warning("No se encontró el activo.")
         else:
-            st.info("No hay activos cargados.")
+            st.warning("Seleccione un activo para editar.")
 
     elif choice == "Eliminar":
         st.subheader("🗑️ Eliminar activo técnico")
