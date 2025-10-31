@@ -44,9 +44,16 @@ class CMMSRepository:
     """Repositorio genérico con logging automático en ``historial``."""
 
     def __init__(self, collection_name: str, database: Optional[Database] = None):
-        self._db: Optional[Database] = database or get_db()
+        # 🔴 IMPORTANTE: no usar "database or get_db()" porque Database no admite bool()
+        if database is not None:
+            self._db = database
+        else:
+            self._db = get_db()
+
         if self._db is None:
-            raise ConnectionError("MongoDB no disponible")  # Aseguramos que la conexión se maneje adecuadamente
+            # Si falló la conexión, cortamos ahí
+            raise ConnectionError("MongoDB no disponible")
+
         self._collection: Collection = self._db[collection_name]
 
     @property
@@ -65,6 +72,7 @@ class CMMSRepository:
             raise ValueError("id_activo_tecnico es obligatorio para mantener trazabilidad")
 
         result = self._collection.insert_one(payload)
+
         id_origen = (
             event.id_origen
             or payload.get("id_tarea")
@@ -106,6 +114,7 @@ class CMMSRepository:
             or payload.get("id_plan")
             or payload.get("id_documento")
         )
+
         registrar_evento_historial(
             event.tipo_evento,
             id_activo,
@@ -124,7 +133,7 @@ class CMMSRepository:
         event: HistorialEvent,
         document: Optional[Mapping[str, Any]] = None,
     ) -> int:
-        # Si no se pasa el documento, lo buscamos en la base de datos con el filtro
+        # Si nos pasaron el documento desde afuera lo usamos, si no lo buscamos
         registro = dict(document) if document is not None else self._collection.find_one(filtro)
         if registro is None:
             return 0
@@ -134,6 +143,7 @@ class CMMSRepository:
             raise ValueError("id_activo_tecnico es obligatorio para mantener trazabilidad")
 
         result = self._collection.delete_one({"_id": registro["_id"]})
+
         if result.deleted_count:
             id_origen = (
                 event.id_origen
@@ -150,4 +160,5 @@ class CMMSRepository:
                 proveedor_externo=event.proveedor_externo or registro.get("proveedor_externo"),
                 observaciones=event.observaciones or registro.get("observaciones"),
             )
+
         return result.deleted_count
