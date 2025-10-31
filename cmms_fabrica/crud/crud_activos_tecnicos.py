@@ -1,21 +1,8 @@
-"""
-🔧 CRUD de Activos Técnicos – CMMS Fábrica
-
-Este módulo permite la gestión completa de activos técnicos (agregar, ver, editar, eliminar).
-Registra automáticamente los eventos en la colección `historial` para trazabilidad completa.
-
-✅ Normas aplicables:
-- ISO 14224
-- ISO 55001
-- ISO 9001:2015
-"""
-
 import streamlit as st
 from datetime import datetime
 from modulos.conexion_mongo import db
 from crud.generador_historial import registrar_evento_historial
 from modulos.utilidades_formularios import select_usuarios
-
 
 def crear_activo(data: dict, database=db):
     """Inserta un activo y registra el evento en historial."""
@@ -137,7 +124,8 @@ def app():
                     id_activo = a.get("id_activo_tecnico", "⛔ Sin ID")
                     subtitulo = f" (pertenece a {a['pertenece_a']})" if "pertenece_a" in a else ""
                     st.code(f"ID del Activo: {id_activo}", language="yaml")
-                    st.markdown(f"- **{nombre}** ({estado}){subtitulo}")
+                    # Crear un enlace para redirigir a la página de edición del activo
+                    st.markdown(f"[Editar {nombre}](#edit_{id_activo})")
 
     elif choice == "Editar":
         st.subheader("✏️ Editar activo técnico")
