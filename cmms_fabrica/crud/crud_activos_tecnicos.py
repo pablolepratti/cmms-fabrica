@@ -1,8 +1,21 @@
+"""
+🔧 CRUD de Activos Técnicos – CMMS Fábrica
+
+Este módulo permite la gestión completa de activos técnicos (agregar, ver, editar, eliminar).
+Registra automáticamente los eventos en la colección `historial` para trazabilidad completa.
+
+✅ Normas aplicables:
+- ISO 14224
+- ISO 55001
+- ISO 9001:2015
+"""
+
 import streamlit as st
 from datetime import datetime
 from modulos.conexion_mongo import db
 from crud.generador_historial import registrar_evento_historial
 from modulos.utilidades_formularios import select_usuarios
+
 
 def crear_activo(data: dict, database=db):
     """Inserta un activo y registra el evento en historial."""
@@ -19,6 +32,7 @@ def crear_activo(data: dict, database=db):
     )
     return data["id_activo_tecnico"]
 
+
 def app():
     if db is None:
         st.error("MongoDB no disponible")
@@ -30,7 +44,6 @@ def app():
     menu = ["Agregar", "Ver", "Editar", "Eliminar"]
     choice = st.sidebar.radio("Acción", menu)
 
-    # Función para mostrar el formulario de edición
     def form_activo(defaults=None):
         opciones_tipo = ["Sistema General", "Infraestructura", "Administración", "Producción",
                          "Logística", "Mantenimiento", "Instrumento Laboratorio", "Equipo en Cliente", "Componente"]
@@ -125,34 +138,29 @@ def app():
                     id_activo = a.get("id_activo_tecnico", "⛔ Sin ID")
                     subtitulo = f" (pertenece a {a['pertenece_a']})" if "pertenece_a" in a else ""
                     st.code(f"ID del Activo: {id_activo}", language="yaml")
-                    if st.button(f"Editar {nombre}", key=id_activo):
-                        # Guardar el ID del activo seleccionado en session_state
-                        st.session_state.editar_activo = a["_id"]
-                        st.experimental_rerun()  # Recargar la página para mostrar la sección de edición
+                    st.markdown(f"- **{nombre}** ({estado}){subtitulo}")
 
     elif choice == "Editar":
         st.subheader("✏️ Editar activo técnico")
+        activos = list(coleccion.find())
+        opciones = {f"{a.get('id_activo_tecnico', '⛔ Sin ID')} - {a.get('nombre', '')}": a for a in activos}
+        if opciones:
+            seleccion = st.selectbox("Seleccionar activo", list(opciones.keys()))
+            datos = opciones[seleccion]
 
-        # Verifica si hay un activo seleccionado para editar
-        if "editar_activo" in st.session_state:
-            activo_id = st.session_state.editar_activo
-            activo = coleccion.find_one({"_id": activo_id})
-            if activo:
-                nuevos_datos = form_activo(defaults=activo)
-                if nuevos_datos:
-                    coleccion.update_one({"_id": activo["_id"]}, {"$set": nuevos_datos})
-                    registrar_evento_historial(
-                        "Edición de activo técnico",
-                        nuevos_datos["id_activo_tecnico"],
-                        nuevos_datos["id_activo_tecnico"],
-                        f"Se editó el activo '{nuevos_datos['nombre']}'",
-                        nuevos_datos["usuario_registro"],
-                    )
-                    st.success("Activo técnico actualizado correctamente.")
-            else:
-                st.warning("Activo no encontrado.")
+            nuevos_datos = form_activo(defaults=datos)
+            if nuevos_datos:
+                coleccion.update_one({"_id": datos["_id"]}, {"$set": nuevos_datos})
+                registrar_evento_historial(
+                    "Edición de activo técnico",
+                    nuevos_datos["id_activo_tecnico"],
+                    nuevos_datos["id_activo_tecnico"],
+                    f"Se editó el activo '{nuevos_datos['nombre']}'",
+                    nuevos_datos["usuario_registro"],
+                )
+                st.success("Activo técnico actualizado correctamente.")
         else:
-            st.warning("Seleccione un activo para editar.")
+            st.info("No hay activos cargados.")
 
     elif choice == "Eliminar":
         st.subheader("🗑️ Eliminar activo técnico")
