@@ -29,7 +29,6 @@ from modulos.conexion_mongo import get_db
 COLOR_ACTIVO = "#1976d2"
 COLOR_HISTORIAL = "#b0bec5"
 COLOR_ORIGEN = "#ff9800"
-COLOR_USUARIO = "#43a047"
 COLOR_PROVEEDOR = "#e53935"
 
 # Función para construir el grafo
@@ -101,18 +100,6 @@ def construir_grafo(db, filtros: Optional[Dict[str, str]] = None) -> "nx.DiGraph
                 color=COLOR_ORIGEN,
             )
             grafo.add_edge(nodo_historial, nodo_origen)
-
-        usuario = evento.get("usuario_registro")
-        if usuario:
-            nodo_usuario = f"usuario::{usuario}"
-            grafo.add_node(
-                nodo_usuario,
-                label=usuario,
-                title=f"Usuario: {usuario}",
-                tipo="usuario",
-                color=COLOR_USUARIO,
-            )
-            grafo.add_edge(nodo_usuario, nodo_historial)
 
         proveedor = evento.get("proveedor_externo")
         if proveedor:
