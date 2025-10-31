@@ -125,11 +125,10 @@ def app():
                     id_activo = a.get("id_activo_tecnico", "⛔ Sin ID")
                     subtitulo = f" (pertenece a {a['pertenece_a']})" if "pertenece_a" in a else ""
                     st.code(f"ID del Activo: {id_activo}", language="yaml")
-                    # Mostrar un botón para editar el activo
                     if st.button(f"Editar {nombre}", key=id_activo):
-                        # Cambiar a la sección de editar para este activo específico
+                        # Guardar el ID del activo seleccionado en session_state
                         st.session_state.editar_activo = a["_id"]
-                        st.experimental_rerun()
+                        st.experimental_rerun()  # Recargar la página para mostrar la sección de edición
 
     elif choice == "Editar":
         st.subheader("✏️ Editar activo técnico")
