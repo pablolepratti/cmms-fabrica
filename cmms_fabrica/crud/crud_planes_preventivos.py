@@ -31,11 +31,11 @@ def crear_plan_preventivo(data: dict, database=db):
     coleccion = database["planes_preventivos"]
     coleccion.insert_one(data)
     registrar_evento_historial(
-        "Alta de plan preventivo",
-        data["id_activo_tecnico"],
-        data["id_plan"],
-        f"Alta de plan para activo: {data['id_activo_tecnico']}",
-        data["usuario_registro"],
+        tipo_evento="Alta de plan preventivo",
+        id_activo=data["id_activo_tecnico"],
+        descripcion=f"Alta de plan para activo: {data['id_activo_tecnico']}",
+        usuario=data["usuario_registro"],
+        id_origen=data["id_plan"],
     )
     return data["id_plan"]
 
@@ -437,11 +437,11 @@ def app():
                 if nuevos_datos:
                     coleccion.update_one({"_id": datos["_id"]}, {"$set": nuevos_datos})
                     registrar_evento_historial(
-                        "Edición de plan preventivo",
-                        nuevos_datos["id_activo_tecnico"],
-                        nuevos_datos["id_plan"],
-                        f"Edición de plan para activo: {nuevos_datos['id_activo_tecnico']}",
-                        nuevos_datos["usuario_registro"],
+                        tipo_evento="Edición de plan preventivo",
+                        id_activo=nuevos_datos["id_activo_tecnico"],
+                        descripcion=f"Edición de plan para activo: {nuevos_datos['id_activo_tecnico']}",
+                        usuario=nuevos_datos["usuario_registro"],
+                        id_origen=nuevos_datos["id_plan"],
                     )
                     st.success("✅ Plan actualizado correctamente.")
         else:
@@ -461,11 +461,11 @@ def app():
             if datos and st.button("Eliminar definitivamente"):
                 coleccion.delete_one({"_id": datos["_id"]})
                 registrar_evento_historial(
-                    "Baja de plan preventivo",
-                    datos["id_activo_tecnico"],
-                    datos["id_plan"],
-                    f"Eliminación del plan asociado al activo: {datos['id_activo_tecnico']}",
-                    datos["usuario_registro"],
+                    tipo_evento="Baja de plan preventivo",
+                    id_activo=datos["id_activo_tecnico"],
+                    descripcion=f"Eliminación del plan asociado al activo: {datos['id_activo_tecnico']}",
+                    usuario=datos["usuario_registro"],
+                    id_origen=datos["id_plan"],
                 )
                 st.success("🗑️ Plan eliminado correctamente.")
         else:

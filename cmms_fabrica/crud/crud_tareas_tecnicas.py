@@ -26,11 +26,11 @@ def crear_tarea_tecnica(data: dict, database=db):
     coleccion = database["tareas_tecnicas"]
     coleccion.insert_one(data)
     registrar_evento_historial(
-        "Alta de tarea técnica",
-        data.get("id_activo_tecnico", "Sin ID"),
-        data["id_tarea_tecnica"],
-        f"Tarea técnica: {data['descripcion'][:60]}...",
-        data["usuario_registro"],
+        tipo_evento="Alta de tarea técnica",
+        id_activo=data.get("id_activo_tecnico", "Sin ID"),
+        descripcion=f"Tarea técnica: {data['descripcion'][:60]}...",
+        usuario=data["usuario_registro"],
+        id_origen=data["id_tarea_tecnica"],
     )
     return data["id_tarea_tecnica"]
 
@@ -185,11 +185,11 @@ def app():
                 if nuevos_datos:
                     coleccion.update_one({"_id": datos["_id"]}, {"$set": nuevos_datos})
                     registrar_evento_historial(
-                        "Edición de tarea técnica",
-                        nuevos_datos.get("id_activo_tecnico", "Sin ID"),
-                        nuevos_datos["id_tarea_tecnica"],
-                        f"Tarea editada: {nuevos_datos['descripcion'][:60]}...",
-                        nuevos_datos["usuario_registro"]
+                        tipo_evento="Edición de tarea técnica",
+                        id_activo=nuevos_datos.get("id_activo_tecnico", "Sin ID"),
+                        descripcion=f"Tarea editada: {nuevos_datos['descripcion'][:60]}...",
+                        usuario=nuevos_datos["usuario_registro"],
+                        id_origen=nuevos_datos["id_tarea_tecnica"],
                     )
                     st.success("✅ Tarea técnica actualizada.")
         else:
@@ -208,11 +208,11 @@ def app():
             if datos and st.button("Eliminar definitivamente"):
                 coleccion.delete_one({"_id": datos["_id"]})
                 registrar_evento_historial(
-                    "Baja de tarea técnica",
-                    datos.get("id_activo_tecnico", "Sin ID"),
-                    datos.get("id_tarea_tecnica"),
-                    f"Se eliminó tarea técnica: {datos.get('descripcion', '')[:60]}...",
-                    datos.get("usuario_registro", "desconocido")
+                    tipo_evento="Baja de tarea técnica",
+                    id_activo=datos.get("id_activo_tecnico", "Sin ID"),
+                    descripcion=f"Se eliminó tarea técnica: {datos.get('descripcion', '')[:60]}...",
+                    usuario=datos.get("usuario_registro", "desconocido"),
+                    id_origen=datos.get("id_tarea_tecnica"),
                 )
                 st.success("🗑️ Tarea eliminada correctamente.")
         else:
