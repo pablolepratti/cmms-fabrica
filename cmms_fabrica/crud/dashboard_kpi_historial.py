@@ -21,7 +21,7 @@ if not matplotlib.get_backend().lower().startswith("agg"):
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from datetime import datetime
-from modulos.conexion_mongo import db
+from cmms_fabrica.modulos.conexion_mongo import db
 
 def app():
     if db is None:

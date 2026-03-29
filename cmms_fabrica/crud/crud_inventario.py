@@ -10,8 +10,8 @@ trazabilidad según ISO 9001 e ISO 55001.
 import pandas as pd
 import streamlit as st
 from datetime import datetime
-from modulos.conexion_mongo import db
-from crud.generador_historial import registrar_evento_historial
+from cmms_fabrica.modulos.conexion_mongo import db
+from cmms_fabrica.crud.generador_historial import registrar_evento_historial
 
 
 # --- Helper: obtener colección de inventario de forma consistente ---

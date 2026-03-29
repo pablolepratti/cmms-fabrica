@@ -11,9 +11,9 @@ Normas aplicables: ISO 9001:2015 | ISO 55001 | ISO 14224
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-from modulos.conexion_mongo import db
-from crud.generador_historial import registrar_evento_historial
-from modulos.utilidades_formularios import (
+from cmms_fabrica.modulos.conexion_mongo import db
+from cmms_fabrica.crud.generador_historial import registrar_evento_historial
+from cmms_fabrica.modulos.utilidades_formularios import (
     select_activo_tecnico,
     select_proveedores_externos,
 )

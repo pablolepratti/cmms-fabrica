@@ -2,7 +2,7 @@ import streamlit as st
 import hashlib
 import secrets
 import time
-from modulos.conexion_mongo import db, mongo_error
+from cmms_fabrica.modulos.conexion_mongo import db, mongo_error
 
 def hash_password(password: str) -> str:
     """Generate salted password hash in the form salt$hash."""

@@ -16,9 +16,9 @@ from datetime import datetime, date
 import pandas as pd
 import streamlit as st
 
-from crud.generador_historial import registrar_evento_historial
-from modulos.conexion_mongo import db
-from modulos.utilidades_formularios import select_proveedores_externos
+from cmms_fabrica.crud.generador_historial import registrar_evento_historial
+from cmms_fabrica.modulos.conexion_mongo import db
+from cmms_fabrica.modulos.utilidades_formularios import select_proveedores_externos
 
 
 # ---------------------------------------------------------------------

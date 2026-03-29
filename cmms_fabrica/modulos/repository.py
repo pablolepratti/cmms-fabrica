@@ -19,8 +19,8 @@ from typing import Any, Mapping, MutableMapping, Optional
 from pymongo.collection import Collection
 from pymongo.database import Database
 
-from crud.generador_historial import registrar_evento_historial
-from modulos.conexion_mongo import get_db
+from cmms_fabrica.crud.generador_historial import registrar_evento_historial
+from cmms_fabrica.modulos.conexion_mongo import get_db
 
 
 def _coerce_mapping(data: Mapping[str, Any]) -> MutableMapping[str, Any]:
