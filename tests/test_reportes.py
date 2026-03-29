@@ -1,5 +1,6 @@
 import pandas as pd
 from cmms_fabrica.modulos.app_reportes import (
+    categorizar_tipo_evento,
     generar_pdf,
     generar_excel,
     filtrar_ultimo_por_activo,
@@ -73,3 +74,26 @@ def test_filtrar_por_tarea_y_activo():
     assert len(filtrado) == 2
     assert set(filtrado["id_activo_tecnico"]) == {"A1", "A2"}
     assert filtrado.loc[filtrado["id_activo_tecnico"] == "A1", "descripcion"].iloc[0] == "a1-2"
+
+
+def test_categorizar_tipo_evento_variantes_texto_largo():
+    assert categorizar_tipo_evento("Registro de observación técnica") == "observacion"
+    assert categorizar_tipo_evento("Tarea correctiva registrada") == "correctiva"
+
+
+def test_filtrado_por_categoria_evento_en_dataframe():
+    df = pd.DataFrame(
+        {
+            "tipo_evento": [
+                "Registro de observación técnica",
+                "Tarea correctiva registrada",
+                "Mantenimiento preventivo ejecutado",
+            ]
+        }
+    )
+    categorias_ui = ["observacion", "correctiva"]
+    df["categoria_evento"] = df["tipo_evento"].apply(categorizar_tipo_evento)
+    filtrado = df[df["categoria_evento"].isin(categorias_ui)]
+
+    assert len(filtrado) == 2
+    assert set(filtrado["categoria_evento"]) == {"observacion", "correctiva"}

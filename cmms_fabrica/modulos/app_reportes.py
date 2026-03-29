@@ -17,6 +17,22 @@ from cmms_fabrica.modulos.conexion_mongo import db, mongo_error
 import os
 from io import BytesIO
 
+
+def categorizar_tipo_evento(tipo_evento: str) -> str:
+    """Normaliza descripciones de evento a categorías estándar para reportes."""
+    valor = (tipo_evento or "").lower()
+    if "observ" in valor:
+        return "observacion"
+    if "correctiv" in valor:
+        return "correctiva"
+    if "preventiv" in valor:
+        return "preventiva"
+    if "calibr" in valor:
+        return "calibracion"
+    if "tecnica" in valor or "técnica" in valor:
+        return "tecnica"
+    return "otro"
+
 # 🔐 Función para eliminar caracteres no soportados por PDF
 def safe_text(text):
     if not isinstance(text, str):
@@ -118,7 +134,7 @@ def app():
         fecha_desde = st.date_input("Desde", value=date(2025, 6, 1))
         fecha_hasta = st.date_input("Hasta", value=date.today())
         tipo_evento = st.multiselect("Tipo de Evento", ["preventiva", "correctiva", "tecnica", "calibracion", "observacion"],
-                                     default=["preventiva", "correctiva", "tecnica", "calibracion"])
+                                     default=["preventiva", "correctiva", "tecnica", "calibracion", "observacion"])
         activos = list(activos_tecnicos.find({}, {"_id": 0, "id_activo_tecnico": 1, "pertenece_a": 1}))
         opciones = ["Todos"] + sorted([
             f"{a['id_activo_tecnico']} (pertenece a {a['pertenece_a']})" if a.get("pertenece_a") else a["id_activo_tecnico"]
@@ -135,8 +151,7 @@ def app():
         "fecha_evento": {
             "$gte": datetime.combine(fecha_desde, datetime.min.time()),
             "$lte": datetime.combine(fecha_hasta, datetime.max.time())
-        },
-        "tipo_evento": {"$in": tipo_evento}
+        }
     }
     if id_activo:
         subactivos = [a["id_activo_tecnico"] for a in activos if a.get("pertenece_a") == id_activo]
@@ -151,6 +166,12 @@ def app():
 
     df = pd.DataFrame(datos)
     df["fecha_evento"] = pd.to_datetime(df["fecha_evento"])
+    df["categoria_evento"] = df["tipo_evento"].apply(categorizar_tipo_evento)
+    df = df[df["categoria_evento"].isin(tipo_evento)].copy()
+    if df.empty:
+        st.warning("No se encontraron eventos técnicos para las categorías seleccionadas.")
+        return
+
     for campo in ["usuario_registro", "descripcion", "observaciones", "id_origen"]:
         if campo not in df.columns:
             df[campo] = "" if campo == "id_origen" else "-"
