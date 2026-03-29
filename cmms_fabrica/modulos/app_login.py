@@ -2,18 +2,16 @@ import streamlit as st
 import hashlib
 import secrets
 import time
-from modulos.conexion_mongo import db
-
-coleccion = db["usuarios"]
+from modulos.conexion_mongo import db, mongo_error
 
 def hash_password(password: str) -> str:
-    """Generate salted password hash in the form ``salt$hash``."""
+    """Generate salted password hash in the form salt$hash."""
     salt = secrets.token_hex(16)
     hashed = hashlib.sha256((salt + password).encode()).hexdigest()
     return f"{salt}${hashed}"
 
 def verify_password(stored: str, provided: str) -> bool:
-    """Verify a password against ``salt$hash`` structure."""
+    """Verify a password against salt$hash structure."""
     try:
         salt, saved_hash = stored.split("$")
     except ValueError:
@@ -28,6 +26,13 @@ def cerrar_sesion():
     time.sleep(1)
 
 def login_usuario():
+    # Verificar conexión antes de usar la colección
+    if db is None:
+        st.error(f"No hay conexión con MongoDB. {mongo_error}")
+        st.stop()
+
+    coleccion = db["usuarios"]
+
     # Si ya hay un usuario logueado, no mostrar el login
     if st.session_state.get("usuario") and st.session_state.get("rol"):
         return st.session_state.usuario, st.session_state.rol
