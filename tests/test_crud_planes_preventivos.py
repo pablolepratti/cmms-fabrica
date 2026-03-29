@@ -6,7 +6,8 @@ from cmms_fabrica.crud import crud_planes_preventivos
 def test_crear_plan_preventivo_registra_historial():
     db_mock = mongomock.MongoClient().db
     with patch("cmms_fabrica.modulos.conexion_mongo.db", db_mock), \
-         patch("cmms_fabrica.crud.generador_historial.db", db_mock):
+         patch("cmms_fabrica.crud.generador_historial.db", db_mock), \
+         patch("cmms_fabrica.crud.generador_historial.mongo_error", None, create=True):
         data = {
             "id_plan": "PP1",
             "id_activo_tecnico": "A1",

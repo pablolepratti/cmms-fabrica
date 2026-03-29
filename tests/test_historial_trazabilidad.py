@@ -6,7 +6,8 @@ from cmms_fabrica.crud.generador_historial import registrar_evento_historial
 
 def test_registrar_evento_historial_persiste_campos_trazables():
     db_mock = mongomock.MongoClient().db
-    with patch("cmms_fabrica.crud.generador_historial.db", db_mock):
+    with patch("cmms_fabrica.crud.generador_historial.db", db_mock), \
+         patch("cmms_fabrica.crud.generador_historial.mongo_error", None, create=True):
         registrar_evento_historial(
             tipo_evento="Alta de plan preventivo",
             id_activo="AT-001",
@@ -39,7 +40,8 @@ def test_crear_tarea_tecnica_registra_historial_con_campos_reales():
         "usuario_registro": "tecnico_b",
     }
 
-    with patch("cmms_fabrica.crud.generador_historial.db", db_mock):
+    with patch("cmms_fabrica.crud.generador_historial.db", db_mock), \
+         patch("cmms_fabrica.crud.generador_historial.mongo_error", None, create=True):
         tarea_id = crear_tarea_tecnica(data, database=db_mock)
 
     assert tarea_id == "TT-900"
