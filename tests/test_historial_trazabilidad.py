@@ -26,3 +26,31 @@ def test_registrar_evento_historial_persiste_campos_trazables():
     assert evento["id_origen"] == "PP-001"
     assert evento["proveedor_externo"] == "Proveedor X"
     assert evento["observaciones"] == "Programar seguimiento mensual"
+
+
+def test_crear_tarea_tecnica_registra_historial_con_campos_reales():
+    from cmms_fabrica.crud.crud_tareas_tecnicas import crear_tarea_tecnica
+
+    db_mock = mongomock.MongoClient().db
+    data = {
+        "id_tarea_tecnica": "TT-900",
+        "id_activo_tecnico": "AT-900",
+        "descripcion": "Inspección termográfica",
+        "usuario_registro": "tecnico_b",
+    }
+
+    with patch("cmms_fabrica.crud.generador_historial.db", db_mock):
+        tarea_id = crear_tarea_tecnica(data, database=db_mock)
+
+    assert tarea_id == "TT-900"
+
+    evento = db_mock.historial.find_one({"id_origen": "TT-900"})
+    assert evento is not None
+    assert evento["tipo_evento"] == "Alta de tarea técnica"
+    assert evento["id_activo_tecnico"] == "AT-900"
+    assert evento["descripcion"] == "Tarea técnica: Inspección termográfica..."
+    assert evento["usuario_registro"] == "tecnico_b"
+    assert evento["id_origen"] == "TT-900"
+    assert evento["proveedor_externo"] is None
+    assert evento["observaciones"] == ""
+    assert evento["id_evento"].startswith("HIST_")
