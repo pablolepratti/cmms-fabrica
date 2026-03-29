@@ -9,13 +9,18 @@ Descripción: Permite registrar, visualizar, modificar y eliminar usuarios con c
 
 import streamlit as st
 import pandas as pd
-from modulos.conexion_mongo import db
+from modulos.conexion_mongo import db, mongo_error
 from modulos.app_login import hash_password
 from crud.generador_historial import registrar_evento_historial
 
-coleccion = db["usuarios"]
 
 def app_usuarios(usuario_logueado: str, rol_logueado: str) -> None:
+    if db is None:
+        st.error(f"No hay conexión con MongoDB. {mongo_error}")
+        st.stop()
+
+    coleccion = db["usuarios"]
+
     st.title("👥 Gestión de Usuarios del Sistema")
 
     if rol_logueado != "admin":
@@ -76,10 +81,13 @@ def app_usuarios(usuario_logueado: str, rol_logueado: str) -> None:
             if not usuarios_disponibles:
                 st.info("No hay otros usuarios editables.")
                 return
+
             usuario_sel = st.selectbox("Seleccionar usuario", usuarios_disponibles)
+
             with st.form("form_actualizar_pass"):
                 nueva_pass = st.text_input("Nueva contraseña", type="password")
                 cambiar = st.form_submit_button("Actualizar Contraseña")
+
             if cambiar:
                 if not nueva_pass:
                     st.error("⚠️ La nueva contraseña no puede estar vacía.")
@@ -95,9 +103,7 @@ def app_usuarios(usuario_logueado: str, rol_logueado: str) -> None:
                         usuario_logueado,
                         id_origen=usuario_sel,
                     )
-                    st.success(
-                        f"✅ Contraseña de '{usuario_sel}' actualizada correctamente."
-                    )
+                    st.success(f"✅ Contraseña de '{usuario_sel}' actualizada correctamente.")
                     st.rerun()
 
     elif accion == "Eliminar Usuario":
@@ -109,7 +115,9 @@ def app_usuarios(usuario_logueado: str, rol_logueado: str) -> None:
             if not usuarios_disponibles:
                 st.info("No hay otros usuarios eliminables.")
                 return
+
             usuario_sel = st.selectbox("Seleccionar usuario", usuarios_disponibles)
+
             if st.button("Eliminar Usuario Seleccionado"):
                 coleccion.delete_one({"usuario": usuario_sel})
                 registrar_evento_historial(
@@ -121,6 +129,7 @@ def app_usuarios(usuario_logueado: str, rol_logueado: str) -> None:
                 )
                 st.success(f"🗑️ Usuario '{usuario_sel}' eliminado correctamente.")
                 st.rerun()
+
 
 if __name__ == "__main__":
     app_usuarios("admin", "admin")
