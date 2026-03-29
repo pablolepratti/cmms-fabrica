@@ -23,6 +23,22 @@ import matplotlib.dates as mdates
 from datetime import datetime
 from cmms_fabrica.modulos.conexion_mongo import db
 
+
+def categorizar_tipo_evento(tipo_evento: str) -> str:
+    texto = str(tipo_evento or "").strip().lower()
+
+    if "observ" in texto:
+        return "observacion"
+    if "correctiv" in texto:
+        return "correctiva"
+    if "preventiv" in texto:
+        return "preventiva"
+    if "calibr" in texto:
+        return "calibracion"
+    if "tecnica" in texto or "técnica" in texto:
+        return "tecnica"
+    return "otro"
+
 def app():
     if db is None:
         st.error("MongoDB no disponible")
@@ -65,8 +81,7 @@ def app():
         "fecha_evento": {
             "$gte": datetime.combine(fecha_inicio, datetime.min.time()),
             "$lte": datetime.combine(fecha_fin, datetime.max.time())
-        },
-        "tipo_evento": {"$in": tipo_evento}
+        }
     }
     if ids_filtrados:
         query["id_activo_tecnico"] = {"$in": ids_filtrados}
@@ -80,6 +95,13 @@ def app():
 
     # Procesamiento
     df["fecha_evento"] = pd.to_datetime(df["fecha_evento"])
+    df["tipo_evento_categoria"] = df["tipo_evento"].apply(categorizar_tipo_evento)
+    df = df[df["tipo_evento_categoria"].isin(tipo_evento)]
+
+    if df.empty:
+        st.warning("No hay datos en el período seleccionado.")
+        st.stop()
+
     df["mes"] = df["fecha_evento"].dt.to_period("M")
     df["usuario_registro"] = df.get("usuario_registro", df.get("usuario", "desconocido"))
 
@@ -92,7 +114,7 @@ def app():
 
     # Gráfico: Eventos por tipo
     st.subheader("📈 Eventos por Tipo")
-    tipo_counts = df["tipo_evento"].value_counts().sort_index()
+    tipo_counts = df["tipo_evento_categoria"].value_counts().sort_index()
     fig1, ax1 = plt.subplots()
     tipo_counts.plot(kind="bar", ax=ax1, color="skyblue", edgecolor="black")
     ax1.set_ylabel("Cantidad")
@@ -102,7 +124,7 @@ def app():
 
     # Gráfico: Evolución mensual
     st.subheader("📆 Evolución Mensual de Eventos")
-    mensual = df.groupby(["mes", "tipo_evento"]).size().unstack(fill_value=0)
+    mensual = df.groupby(["mes", "tipo_evento_categoria"]).size().unstack(fill_value=0)
     mensual.index = mensual.index.to_timestamp()
 
     fig2, ax2 = plt.subplots()
