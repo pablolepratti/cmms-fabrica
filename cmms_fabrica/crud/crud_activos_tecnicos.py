@@ -24,11 +24,11 @@ def crear_activo(data: dict, database=db):
     coleccion = database["activos_tecnicos"]
     coleccion.insert_one(data)
     registrar_evento_historial(
-        "Alta de activo técnico",
-        data["id_activo_tecnico"],
-        data["id_activo_tecnico"],
-        f"Se dio de alta el activo '{data['nombre']}'",
-        data["usuario_registro"],
+        tipo_evento="Alta de activo técnico",
+        id_activo=data["id_activo_tecnico"],
+        descripcion=f"Se dio de alta el activo '{data['nombre']}'",
+        usuario=data["usuario_registro"],
+        id_origen=data["id_activo_tecnico"],
     )
     return data["id_activo_tecnico"]
 
@@ -152,11 +152,11 @@ def app():
             if nuevos_datos:
                 coleccion.update_one({"_id": datos["_id"]}, {"$set": nuevos_datos})
                 registrar_evento_historial(
-                    "Edición de activo técnico",
-                    nuevos_datos["id_activo_tecnico"],
-                    nuevos_datos["id_activo_tecnico"],
-                    f"Se editó el activo '{nuevos_datos['nombre']}'",
-                    nuevos_datos["usuario_registro"],
+                    tipo_evento="Edición de activo técnico",
+                    id_activo=nuevos_datos["id_activo_tecnico"],
+                    descripcion=f"Se editó el activo '{nuevos_datos['nombre']}'",
+                    usuario=nuevos_datos["usuario_registro"],
+                    id_origen=nuevos_datos["id_activo_tecnico"],
                 )
                 st.success("Activo técnico actualizado correctamente.")
         else:
@@ -172,11 +172,11 @@ def app():
             if st.button("Eliminar definitivamente"):
                 coleccion.delete_one({"_id": datos["_id"]})
                 registrar_evento_historial(
-                    "Baja de activo técnico",
-                    datos.get("id_activo_tecnico"),
-                    datos.get("id_activo_tecnico"),
-                    f"Se eliminó el activo '{datos.get('nombre', '')}'",
-                    datos.get("usuario_registro", "desconocido"),
+                    tipo_evento="Baja de activo técnico",
+                    id_activo=datos.get("id_activo_tecnico"),
+                    descripcion=f"Se eliminó el activo '{datos.get('nombre', '')}'",
+                    usuario=datos.get("usuario_registro", "desconocido"),
+                    id_origen=datos.get("id_activo_tecnico"),
                 )
                 st.success("Activo técnico eliminado. Refrescar la página para ver los cambios.")
         else:

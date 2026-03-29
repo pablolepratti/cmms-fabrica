@@ -26,28 +26,15 @@
 
 ```bash
 cmms-fabrica/
-├── app.py                          # Lanzador principal (menú general)
-├── crud/                           # CRUDs principales (v3.4)
-│   ├── crud_activos_tecnicos.py
-│   ├── crud_tareas_correctivas.py
-│   ├── crud_planes_preventivos.py
-│   ├── crud_tareas_tecnicas.py
-│   ├── crud_observaciones.py
-│   ├── crud_calibraciones.py
-│   ├── crud_servicios_externos.py
-│   └── dashboard_kpi_historial.py
-├── modulos/                        # Módulos complementarios y de sistema
-│   ├── app_login.py
-│   ├── app_usuarios.py
-│   ├── app_reportes.py
-│   ├── conexion_mongo.py
-│   ├── estilos.py
-│   └── ../crud/generador_historial.py
-├── activos/                        # Carpeta técnica por activo (checklists, fotos, planos)
-├── docs/                           # Documentación e instructivos
-│   └── checklist_cruds_activos_tecnicos.md  # Comparativa de campos por CRUD
-├── reportes/                       # PDFs generados por el sistema
-└── requirements.txt                # Dependencias Python
+├── README.md
+├── docs/
+├── tests/
+└── cmms_fabrica/
+    ├── app.py                      # Lanzador principal (Streamlit)
+    ├── requirements.txt            # Dependencias de runtime
+    ├── requirements-dev.txt        # Dependencias para testing
+    ├── crud/                       # CRUDs y trazabilidad (historial)
+    └── modulos/                    # Módulos de login, reportes y utilidades
 ```
 
 ---
@@ -64,22 +51,41 @@ Este CMMS está alineado con:
 
 ## 🛠️ Cómo Ejecutarlo
 
-1. Clonar este repositorio
-2. Crear un entorno virtual (opcional pero recomendado)
-3. Instalar dependencias:
+1. Clonar este repositorio y ubicarse en la raíz del proyecto (`cmms-fabrica/`).
+2. Crear un entorno virtual (recomendado).
+3. Instalar dependencias de runtime (archivo dentro de `cmms_fabrica/`):
 
 ```bash
-pip install -r requirements.txt
+pip install -r cmms_fabrica/requirements.txt
 ```
 
-4. Iniciar la aplicación con:
+4. Crear archivo `.env` en la raíz del repositorio (`cmms-fabrica/.env`) con:
+
+```env
+MONGO_URI=mongodb://<host>:<puerto>/
+DB_NAME=cmms
+```
+
+- `MONGO_URI` es **obligatoria**.
+- `DB_NAME` es opcional (si no se define, el sistema usa `cmms` por defecto).
+
+5. Iniciar la aplicación desde la raíz del repositorio con:
 
 ```bash
-streamlit run app.py
+streamlit run cmms_fabrica/app.py
 ```
 
-5. Conectar a tu base de datos MongoDB (configurado en `modulos/conexion_mongo.py`)
-6. Crear un archivo `.env` con las variables `MONGO_URI` y opcionalmente `DB_NAME`
+6. (Opcional) Para correr pruebas, instalar dependencias de desarrollo:
+
+```bash
+pip install -r cmms_fabrica/requirements-dev.txt
+```
+
+7. Ejecutar tests desde la raíz del repositorio:
+
+```bash
+PYTHONPATH=cmms_fabrica pytest -q
+```
 
 ---
 

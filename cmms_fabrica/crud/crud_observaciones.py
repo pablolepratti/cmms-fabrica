@@ -139,11 +139,11 @@ def app():
         if data:
             coleccion.insert_one(data)
             registrar_evento_historial(
-                "Registro de observación técnica",
-                data["id_activo_tecnico"],
-                data["id_observacion"],
-                f"{data['tipo_observacion']} registrada: {data['descripcion'][:60]}...",
-                data["usuario_registro"],
+                tipo_evento="Registro de observación técnica",
+                id_activo=data["id_activo_tecnico"],
+                descripcion=f"{data['tipo_observacion']} registrada: {data['descripcion'][:60]}...",
+                usuario=data["usuario_registro"],
+                id_origen=data["id_observacion"],
                 observaciones=data.get("observaciones"),
             )
             st.success("✅ Observación registrada correctamente.")
@@ -211,11 +211,11 @@ def app():
         if nuevos_datos:
             coleccion.update_one({"_id": datos["_id"]}, {"$set": nuevos_datos})
             registrar_evento_historial(
-                "Edición de observación técnica",
-                nuevos_datos["id_activo_tecnico"],
-                nuevos_datos["id_observacion"],
-                f"Observación editada: {nuevos_datos['descripcion'][:60]}...",
-                nuevos_datos["usuario_registro"],
+                tipo_evento="Edición de observación técnica",
+                id_activo=nuevos_datos["id_activo_tecnico"],
+                descripcion=f"Observación editada: {nuevos_datos['descripcion'][:60]}...",
+                usuario=nuevos_datos["usuario_registro"],
+                id_origen=nuevos_datos["id_observacion"],
                 observaciones=nuevos_datos.get("observaciones"),
             )
             st.success("✅ Observación actualizada correctamente.")
@@ -238,11 +238,11 @@ def app():
         if st.button("Eliminar definitivamente"):
             coleccion.delete_one({"_id": datos["_id"]})
             registrar_evento_historial(
-                "Baja de observación técnica",
-                datos.get("id_activo_tecnico"),
-                datos.get("id_observacion"),
-                f"Se eliminó la observación: {datos.get('descripcion', '')[:60]}...",
-                datos.get("usuario_registro", "desconocido"),
+                tipo_evento="Baja de observación técnica",
+                id_activo=datos.get("id_activo_tecnico"),
+                descripcion=f"Se eliminó la observación: {datos.get('descripcion', '')[:60]}...",
+                usuario=datos.get("usuario_registro", "desconocido"),
+                id_origen=datos.get("id_observacion"),
                 observaciones=datos.get("observaciones"),
             )
             st.success("🗑️ Observación eliminada correctamente.")

@@ -11,6 +11,7 @@ def test_limpiar_coleccion_elimina_y_registra():
     coleccion_mock.count_documents.return_value = 200
     docs = [{"_id": i, "fecha": i} for i in range(60)]
     coleccion_mock.find.return_value.sort.return_value.limit.return_value = docs
+    coleccion_mock.delete_many.return_value.deleted_count = 60
     with patch.object(almacenamiento, "db", db_mock), \
          patch("cmms_fabrica.modulos.almacenamiento.registrar_evento_historial") as log:
         eliminados = almacenamiento.limpiar_coleccion("historial", "fecha")

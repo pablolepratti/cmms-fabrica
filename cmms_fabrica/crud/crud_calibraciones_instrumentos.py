@@ -24,11 +24,11 @@ def crear_calibracion(data: dict, database=db):
     coleccion = database["calibraciones"]
     coleccion.insert_one(data)
     registrar_evento_historial(
-        "Alta de calibración",
-        data["id_activo_tecnico"],
-        data["id_calibracion"],
-        f"Calibración registrada para {data['id_activo_tecnico']}",
-        data["usuario_registro"],
+        tipo_evento="Alta de calibración",
+        id_activo=data["id_activo_tecnico"],
+        descripcion=f"Calibración registrada para {data['id_activo_tecnico']}",
+        usuario=data["usuario_registro"],
+        id_origen=data["id_calibracion"],
     )
     return data["id_calibracion"]
 
@@ -193,11 +193,11 @@ def app():
         if nuevos:
             coleccion.update_one({"_id": datos["_id"]}, {"$set": nuevos})
             registrar_evento_historial(
-                "Edición de calibración",
-                nuevos["id_activo_tecnico"],
-                nuevos["id_calibracion"],
-                f"Edición de calibración ({nuevos['resultado']})",
-                nuevos["usuario_registro"]
+                tipo_evento="Edición de calibración",
+                id_activo=nuevos["id_activo_tecnico"],
+                descripcion=f"Edición de calibración ({nuevos['resultado']})",
+                usuario=nuevos["usuario_registro"],
+                id_origen=nuevos["id_calibracion"],
             )
             st.success("✅ Calibración actualizada correctamente.")
 
@@ -216,11 +216,11 @@ def app():
         if st.button("Eliminar definitivamente"):
             coleccion.delete_one({"_id": datos["_id"]})
             registrar_evento_historial(
-                "Baja de calibración",
-                datos.get("id_activo_tecnico"),
-                datos.get("id_calibracion"),
-                f"Se eliminó calibración ({datos.get('resultado', '-')})",
-                datos.get("usuario_registro", "desconocido")
+                tipo_evento="Baja de calibración",
+                id_activo=datos.get("id_activo_tecnico"),
+                descripcion=f"Se eliminó calibración ({datos.get('resultado', '-')})",
+                usuario=datos.get("usuario_registro", "desconocido"),
+                id_origen=datos.get("id_calibracion"),
             )
             st.success("🗑️ Calibración eliminada correctamente.")
 

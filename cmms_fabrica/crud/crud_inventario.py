@@ -28,11 +28,11 @@ def crear_item_inventario(data: dict):
         return None
     col.insert_one(data)
     registrar_evento_historial(
-        "Alta de inventario",
-        data.get("maquina_compatible"),   # activo técnico asociado si aplica
-        data.get("id_item"),
-        f"Ingreso de ítem {data.get('descripcion', '')}",
-        data.get("usuario_registro", ""),
+        tipo_evento="Alta de inventario",
+        id_activo=data.get("maquina_compatible"),   # activo técnico asociado si aplica
+        descripcion=f"Ingreso de ítem {data.get('descripcion', '')}",
+        usuario=data.get("usuario_registro", ""),
+        id_origen=data.get("id_item"),
     )
     return data.get("id_item")
 
@@ -190,11 +190,11 @@ def app_inventario(usuario: str) -> None:
             if nuevos_datos:
                 col.update_one({"_id": seleccionado_datos["_id"]}, {"$set": nuevos_datos})
                 registrar_evento_historial(
-                    "Edición de ítem inventario",
-                    nuevos_datos.get("maquina_compatible", ""),
-                    nuevos_datos["id_item"],
-                    f"Edición de ítem: {nuevos_datos['descripcion']}",
-                    usuario,
+                    tipo_evento="Edición de ítem inventario",
+                    id_activo=nuevos_datos.get("maquina_compatible", ""),
+                    descripcion=f"Edición de ítem: {nuevos_datos['descripcion']}",
+                    usuario=usuario,
+                    id_origen=nuevos_datos["id_item"],
                 )
                 st.success("Ítem actualizado correctamente.")
 
@@ -210,11 +210,11 @@ def app_inventario(usuario: str) -> None:
                 item = opciones[seleccionado]
                 col.delete_one({"_id": item["_id"]})
                 registrar_evento_historial(
-                    "Baja de ítem inventario",
-                    item.get("maquina_compatible", ""),
-                    item.get("id_item",""),
-                    f"Baja de ítem: {item.get('descripcion', '')}",
-                    usuario,
+                    tipo_evento="Baja de ítem inventario",
+                    id_activo=item.get("maquina_compatible", ""),
+                    descripcion=f"Baja de ítem: {item.get('descripcion', '')}",
+                    usuario=usuario,
+                    id_origen=item.get("id_item", ""),
                 )
                 st.success("Ítem eliminado correctamente.")
 

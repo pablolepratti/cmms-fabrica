@@ -73,10 +73,10 @@ def app(database=db, usuario: str = ""):
         if data:
             coleccion.insert_one(data)
             registrar_evento_historial(
-                "consumo",
-                None,
-                f"Se registró consumo de {data['tipo_consumo']}: {data['valor']} {data['unidad']}",
-                data["usuario_registro"],
+                tipo_evento="consumo",
+                id_activo=None,
+                descripcion=f"Se registró consumo de {data['tipo_consumo']}: {data['valor']} {data['unidad']}",
+                usuario=data["usuario_registro"],
                 id_origen=data["id_consumo"],
             )
             st.success("Consumo registrado correctamente.")
@@ -149,10 +149,10 @@ def app(database=db, usuario: str = ""):
         if nuevos_datos:
             coleccion.update_one({"_id": datos["_id"]}, {"$set": nuevos_datos})
             registrar_evento_historial(
-                "consumo",
-                None,
-                f"Se editó consumo de {nuevos_datos['tipo_consumo']}: {nuevos_datos['valor']} {nuevos_datos['unidad']}",
-                usuario,
+                tipo_evento="consumo",
+                id_activo=None,
+                descripcion=f"Se editó consumo de {nuevos_datos['tipo_consumo']}: {nuevos_datos['valor']} {nuevos_datos['unidad']}",
+                usuario=usuario,
                 id_origen=nuevos_datos["id_consumo"],
             )
             st.success("Consumo actualizado correctamente.")
@@ -169,10 +169,10 @@ def app(database=db, usuario: str = ""):
         if st.button("Eliminar definitivamente"):
             coleccion.delete_one({"_id": datos["_id"]})
             registrar_evento_historial(
-                "consumo",
-                None,
-                f"Se eliminó consumo {datos['id_consumo']}",
-                usuario,
+                tipo_evento="consumo",
+                id_activo=None,
+                descripcion=f"Se eliminó consumo {datos['id_consumo']}",
+                usuario=usuario,
                 id_origen=datos["id_consumo"],
             )
             st.success("Consumo eliminado. Actualizá la vista para confirmar.")

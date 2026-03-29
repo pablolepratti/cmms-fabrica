@@ -63,10 +63,10 @@ def app_usuarios(usuario_logueado: str, rol_logueado: str) -> None:
                 }
                 coleccion.insert_one(nuevo)
                 registrar_evento_historial(
-                    "Alta usuario",
-                    "-",
-                    f"Usuario creado con rol: {rol}",
-                    usuario_logueado,
+                    tipo_evento="Alta usuario",
+                    id_activo="-",
+                    descripcion=f"Usuario creado con rol: {rol}",
+                    usuario=usuario_logueado,
                     id_origen=nuevo_usuario,
                 )
                 st.success(f"✅ Usuario '{nuevo_usuario}' creado correctamente.")
@@ -97,10 +97,10 @@ def app_usuarios(usuario_logueado: str, rol_logueado: str) -> None:
                         {"$set": {"password_hash": hash_password(nueva_pass)}}
                     )
                     registrar_evento_historial(
-                        "Modificación usuario",
-                        "-",
-                        "Contraseña modificada",
-                        usuario_logueado,
+                        tipo_evento="Modificación usuario",
+                        id_activo="-",
+                        descripcion="Contraseña modificada",
+                        usuario=usuario_logueado,
                         id_origen=usuario_sel,
                     )
                     st.success(f"✅ Contraseña de '{usuario_sel}' actualizada correctamente.")
@@ -121,10 +121,10 @@ def app_usuarios(usuario_logueado: str, rol_logueado: str) -> None:
             if st.button("Eliminar Usuario Seleccionado"):
                 coleccion.delete_one({"usuario": usuario_sel})
                 registrar_evento_historial(
-                    "Baja usuario",
-                    "-",
-                    "Usuario eliminado",
-                    usuario_logueado,
+                    tipo_evento="Baja usuario",
+                    id_activo="-",
+                    descripcion="Usuario eliminado",
+                    usuario=usuario_logueado,
                     id_origen=usuario_sel,
                 )
                 st.success(f"🗑️ Usuario '{usuario_sel}' eliminado correctamente.")

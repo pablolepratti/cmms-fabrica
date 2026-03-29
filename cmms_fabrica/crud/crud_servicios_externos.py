@@ -23,11 +23,11 @@ def crear_proveedor(data: dict, database=db):
     coleccion = database["servicios_externos"]
     coleccion.insert_one(data)
     registrar_evento_historial(
-        "Alta de proveedor externo",
-        None,
-        data["id_proveedor"],
-        f"Alta de proveedor {data['nombre']}",
-        data["usuario_registro"],
+        tipo_evento="Alta de proveedor externo",
+        id_activo=None,
+        descripcion=f"Alta de proveedor {data['nombre']}",
+        usuario=data["usuario_registro"],
+        id_origen=data["id_proveedor"],
     )
     return data["id_proveedor"]
 
@@ -117,11 +117,11 @@ def app():
         if nuevos_datos:
             coleccion.update_one({"_id": datos["_id"]}, {"$set": nuevos_datos})
             registrar_evento_historial(
-                "Edición de proveedor externo",
-                None,
-                nuevos_datos["id_proveedor"],
-                f"Se actualizó proveedor {nuevos_datos['nombre']}",
-                nuevos_datos["usuario_registro"],
+                tipo_evento="Edición de proveedor externo",
+                id_activo=None,
+                descripcion=f"Se actualizó proveedor {nuevos_datos['nombre']}",
+                usuario=nuevos_datos["usuario_registro"],
+                id_origen=nuevos_datos["id_proveedor"],
             )
             st.success("Proveedor actualizado correctamente.")
 
@@ -137,11 +137,11 @@ def app():
         if st.button("Eliminar definitivamente"):
             coleccion.delete_one({"_id": datos["_id"]})
             registrar_evento_historial(
-                "Baja de proveedor externo",
-                None,
-                datos.get("id_proveedor"),
-                f"Se eliminó al proveedor {datos['nombre']}",
-                datos.get("usuario_registro", "desconocido"),
+                tipo_evento="Baja de proveedor externo",
+                id_activo=None,
+                descripcion=f"Se eliminó al proveedor {datos['nombre']}",
+                usuario=datos.get("usuario_registro", "desconocido"),
+                id_origen=datos.get("id_proveedor"),
             )
             st.success("Proveedor eliminado. Actualizá la vista para confirmar.")
 

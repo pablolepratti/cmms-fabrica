@@ -82,10 +82,10 @@ class CMMSRepository:
         )
 
         registrar_evento_historial(
-            event.tipo_evento,
-            id_activo,
-            event.descripcion,
-            event.usuario,
+            tipo_evento=event.tipo_evento,
+            id_activo=id_activo,
+            descripcion=event.descripcion,
+            usuario=event.usuario,
             id_origen=id_origen,
             proveedor_externo=event.proveedor_externo or payload.get("proveedor_externo"),
             observaciones=event.observaciones or payload.get("observaciones"),
@@ -116,10 +116,10 @@ class CMMSRepository:
         )
 
         registrar_evento_historial(
-            event.tipo_evento,
-            id_activo,
-            event.descripcion,
-            event.usuario,
+            tipo_evento=event.tipo_evento,
+            id_activo=id_activo,
+            descripcion=event.descripcion,
+            usuario=event.usuario,
             id_origen=id_origen,
             proveedor_externo=event.proveedor_externo or payload.get("proveedor_externo"),
             observaciones=event.observaciones or payload.get("observaciones"),
@@ -152,10 +152,10 @@ class CMMSRepository:
                 or registro.get("id_documento")
             )
             registrar_evento_historial(
-                event.tipo_evento,
-                id_activo,
-                event.descripcion,
-                event.usuario,
+                tipo_evento=event.tipo_evento,
+                id_activo=id_activo,
+                descripcion=event.descripcion,
+                usuario=event.usuario,
                 id_origen=id_origen,
                 proveedor_externo=event.proveedor_externo or registro.get("proveedor_externo"),
                 observaciones=event.observaciones or registro.get("observaciones"),
