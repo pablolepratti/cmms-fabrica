@@ -20,4 +20,4 @@ jobs:
         run: pip install -r cmms_fabrica/requirements-dev.txt
 
       - name: Run tests
-        run: PYTHONPATH=cmms_fabrica pytest -q
+        run: PYTHONPATH=. pytest -q

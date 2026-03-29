@@ -8,8 +8,8 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-from modulos.conexion_mongo import db, mongo_error
-from crud.generador_historial import registrar_evento_historial
+from cmms_fabrica.modulos.conexion_mongo import db, mongo_error
+from cmms_fabrica.crud.generador_historial import registrar_evento_historial
 
 tipos_observacion = ["Advertencia", "Hallazgo", "Ruido", "Otro"]
 estados_posibles = ["Pendiente", "Revisado"]

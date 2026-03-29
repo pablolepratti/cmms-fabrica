@@ -12,8 +12,8 @@ Cada cambio se documenta automáticamente en la colección `historial`.
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-from modulos.conexion_mongo import db
-from crud.generador_historial import registrar_evento_historial
+from cmms_fabrica.modulos.conexion_mongo import db
+from cmms_fabrica.crud.generador_historial import registrar_evento_historial
 
 
 def crear_proveedor(data: dict, database=db):

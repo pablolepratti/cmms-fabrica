@@ -9,9 +9,9 @@ Descripción: Permite registrar, visualizar, modificar y eliminar usuarios con c
 
 import streamlit as st
 import pandas as pd
-from modulos.conexion_mongo import db, mongo_error
-from modulos.app_login import hash_password
-from crud.generador_historial import registrar_evento_historial
+from cmms_fabrica.modulos.conexion_mongo import db, mongo_error
+from cmms_fabrica.modulos.app_login import hash_password
+from cmms_fabrica.crud.generador_historial import registrar_evento_historial
 
 
 def app_usuarios(usuario_logueado: str, rol_logueado: str) -> None:

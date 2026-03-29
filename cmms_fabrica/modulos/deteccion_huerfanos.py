@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import List, Dict
 
-from modulos.conexion_mongo import db
+from cmms_fabrica.modulos.conexion_mongo import db
 
 
 def obtener_correctivas_sin_historial() -> List[str]:

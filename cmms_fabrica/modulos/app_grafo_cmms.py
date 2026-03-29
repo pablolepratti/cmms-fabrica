@@ -23,7 +23,7 @@ if TYPE_CHECKING or PYVIS_SPEC:
 else:  # pragma: no cover - fallback path cuando Pyvis no está disponible
     Network = None  # type: ignore[assignment]
 
-from modulos.conexion_mongo import get_db, mongo_error
+from cmms_fabrica.modulos.conexion_mongo import get_db, mongo_error
 
 # Colores corporativos consistentes para cada tipo de nodo
 COLOR_ACTIVO = "#1976d2"

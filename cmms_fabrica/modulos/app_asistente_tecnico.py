@@ -3,9 +3,9 @@ import pandas as pd
 import json
 from datetime import datetime
 from openai import OpenAI
-from modulos.estilos import aplicar_estilos
-from modulos.conexion_mongo import db, mongo_error
-from modulos.conexion_openai import obtener_api_key_openai
+from cmms_fabrica.modulos.estilos import aplicar_estilos
+from cmms_fabrica.modulos.conexion_mongo import db, mongo_error
+from cmms_fabrica.modulos.conexion_openai import obtener_api_key_openai
 
 # Configuración general
 ASISTENTE_ID = "tecnico"

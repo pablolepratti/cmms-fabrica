@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 from typing import List
-from modulos.conexion_mongo import db
+from cmms_fabrica.modulos.conexion_mongo import db
 
 
 def select_activo_tecnico(database=db) -> List[str]:

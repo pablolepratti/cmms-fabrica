@@ -9,9 +9,9 @@ Descripción: Permite registrar, visualizar, editar y eliminar eventos de calibr
 import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
-from modulos.conexion_mongo import db
-from crud.generador_historial import registrar_evento_historial
-from modulos.utilidades_formularios import (
+from cmms_fabrica.modulos.conexion_mongo import db
+from cmms_fabrica.crud.generador_historial import registrar_evento_historial
+from cmms_fabrica.modulos.utilidades_formularios import (
     select_activo_tecnico,
     select_proveedores_externos,
 )

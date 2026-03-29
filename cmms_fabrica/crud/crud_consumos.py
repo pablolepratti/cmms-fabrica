@@ -12,9 +12,9 @@ from datetime import datetime, timedelta
 import pandas as pd
 import streamlit as st
 
-from modulos.conexion_mongo import db
-from modulos.estilos import aplicar_estilos
-from crud.generador_historial import registrar_evento_historial
+from cmms_fabrica.modulos.conexion_mongo import db
+from cmms_fabrica.modulos.estilos import aplicar_estilos
+from cmms_fabrica.crud.generador_historial import registrar_evento_historial
 
 TIPOS_CONSUMO = ["UTE", "OSE", "Schulz SRP 3040", "Atlas Copco GX7"]
 UNIDADES = ["kWh", "m³", "h"]

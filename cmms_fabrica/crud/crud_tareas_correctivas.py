@@ -18,9 +18,9 @@ from typing import Any, Dict, List, Optional
 import pandas as pd
 import streamlit as st
 
-from modulos.conexion_mongo import get_db
-from modulos.repository import CMMSRepository, HistorialEvent
-from modulos.utilidades_formularios import (
+from cmms_fabrica.modulos.conexion_mongo import get_db
+from cmms_fabrica.modulos.repository import CMMSRepository, HistorialEvent
+from cmms_fabrica.modulos.utilidades_formularios import (
     select_activo_tecnico,
     select_proveedores_externos,
 )

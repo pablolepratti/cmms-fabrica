@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from datetime import datetime
 import logging
-from modulos.conexion_mongo import db
+from cmms_fabrica.modulos.conexion_mongo import db, mongo_error
 import streamlit as st
 
 logger = logging.getLogger(__name__)
@@ -31,7 +31,7 @@ def registrar_evento_historial(
     if db is None:
         logger.warning("MongoDB no disponible. Evento no registrado.")
         try:
-            st.warning("MongoDB no disponible. Evento no registrado.")
+            st.warning(f"MongoDB no disponible. {mongo_error or 'Evento no registrado.'}")
         except Exception:
             pass
         return ""

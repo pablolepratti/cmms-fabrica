@@ -12,8 +12,8 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from typing import Dict, List, Tuple, Optional
 
-from crud.generador_historial import registrar_evento_historial
-from modulos.conexion_mongo import db
+from cmms_fabrica.crud.generador_historial import registrar_evento_historial
+from cmms_fabrica.modulos.conexion_mongo import db
 
 # 📏 Límite total estimado permitido antes de ejecutar limpieza (ajustable)
 LIMITE_MB: int = 400
