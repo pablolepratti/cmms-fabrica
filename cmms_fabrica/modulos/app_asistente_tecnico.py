@@ -4,7 +4,7 @@ import json
 from datetime import datetime
 from openai import OpenAI
 from modulos.estilos import aplicar_estilos
-from modulos.conexion_mongo import db
+from modulos.conexion_mongo import db, mongo_error
 from modulos.conexion_openai import obtener_api_key_openai
 
 # Configuración general
@@ -48,6 +48,10 @@ def serializar_bd_mongo(limit_por_col=10):
     return json.dumps(contexto, default=convertir)
 
 def app():
+    if db is None:
+        st.error(f"No hay conexión con MongoDB. {mongo_error}")
+        st.stop()
+
     obtener_api_key_openai()
     aplicar_estilos()
     st.title("🤖 Asistente Técnico Industrial")

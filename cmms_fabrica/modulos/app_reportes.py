@@ -13,14 +13,9 @@ import streamlit as st
 import pandas as pd
 from fpdf import FPDF
 from datetime import datetime, date
-from modulos.conexion_mongo import db
+from modulos.conexion_mongo import db, mongo_error
 import os
 from io import BytesIO
-
-# 🔗 Colecciones MongoDB
-coleccion = db["historial"]
-activos_tecnicos = db["activos_tecnicos"]
-inventario = db["inventario"]
 
 # 🔐 Función para eliminar caracteres no soportados por PDF
 def safe_text(text):
@@ -108,6 +103,14 @@ def filtrar_ultimo_por_activo(df):
 
 # 🚀 Interfaz principal
 def app():
+    if db is None:
+        st.error(f"No hay conexión con MongoDB. {mongo_error}")
+        st.stop()
+
+    coleccion = db["historial"]
+    activos_tecnicos = db["activos_tecnicos"]
+    inventario = db["inventario"]
+
     st.title("📄 Reportes Técnicos del CMMS")
 
     with st.sidebar:
