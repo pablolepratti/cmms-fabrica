@@ -8,48 +8,90 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-from modulos.conexion_mongo import db
+from modulos.conexion_mongo import db, mongo_error
 from crud.generador_historial import registrar_evento_historial
-from modulos.utilidades_formularios import select_activo_tecnico
-
-
 
 tipos_observacion = ["Advertencia", "Hallazgo", "Ruido", "Otro"]
 estados_posibles = ["Pendiente", "Revisado"]
 
+
 def generar_id_observacion():
     return f"OBS_{int(datetime.now().timestamp())}"
 
-def form_observacion(defaults=None):
-    activos_lista = list(activos.find({}, {"_id": 0, "id_activo_tecnico": 1, "nombre": 1, "pertenece_a": 1}))
+
+def form_observacion(activos, defaults=None):
+    activos_lista = list(
+        activos.find(
+            {},
+            {"_id": 0, "id_activo_tecnico": 1, "nombre": 1, "pertenece_a": 1}
+        )
+    )
+
     if not activos_lista:
         st.warning("⚠️ No hay activos técnicos registrados.")
         return None
 
     id_map = {
-        a["id_activo_tecnico"]: f"{a['id_activo_tecnico']} - {a.get('nombre', '')}" +
-        (f" (pertenece a {a['pertenece_a']})" if a.get("pertenece_a") else "")
+        a["id_activo_tecnico"]: f"{a['id_activo_tecnico']} - {a.get('nombre', '')}"
+        + (f" (pertenece a {a['pertenece_a']})" if a.get("pertenece_a") else "")
         for a in activos_lista
     }
+
     opciones = [""] + sorted(id_map.values())
     id_default = defaults.get("id_activo_tecnico") if defaults else ""
     label_default = id_map.get(id_default, id_default)
     index_default = opciones.index(label_default) if label_default in opciones else 0
 
     with st.form("form_observacion"):
-        seleccion_visible = st.selectbox("ID del Activo Técnico", opciones, index=index_default)
-        id_activo = next((k for k, v in id_map.items() if v == seleccion_visible), "") if seleccion_visible else ""
+        seleccion_visible = st.selectbox(
+            "ID del Activo Técnico",
+            opciones,
+            index=index_default
+        )
+        id_activo = next(
+            (k for k, v in id_map.items() if v == seleccion_visible),
+            ""
+        ) if seleccion_visible else ""
 
         id_observacion = defaults.get("id_observacion") if defaults else generar_id_observacion()
-        fecha_evento = st.date_input("Fecha del Evento", value=datetime.strptime(defaults.get("fecha_evento"), "%Y-%m-%d") if defaults else datetime.today())
-        descripcion = st.text_area("Descripción de la Observación", value=defaults.get("descripcion") if defaults else "")
-        tipo = st.selectbox("Tipo de Observación", tipos_observacion,
-                            index=tipos_observacion.index(defaults.get("tipo_observacion")) if defaults and defaults.get("tipo_observacion") in tipos_observacion else 0)
-        reportado_por = st.text_input("Reportado por", value=defaults.get("reportado_por") if defaults else "")
-        estado = st.selectbox("Estado", estados_posibles,
-                              index=estados_posibles.index(defaults.get("estado")) if defaults and defaults.get("estado") in estados_posibles else 0)
-        usuario = st.text_input("Usuario que registra", value=defaults.get("usuario_registro") if defaults else "")
-        observaciones = st.text_area("Notas adicionales", value=defaults.get("observaciones") if defaults else "")
+
+        fecha_default = (
+            datetime.strptime(defaults.get("fecha_evento"), "%Y-%m-%d")
+            if defaults and defaults.get("fecha_evento")
+            else datetime.today()
+        )
+
+        fecha_evento = st.date_input("Fecha del Evento", value=fecha_default)
+        descripcion = st.text_area(
+            "Descripción de la Observación",
+            value=defaults.get("descripcion") if defaults else ""
+        )
+        tipo = st.selectbox(
+            "Tipo de Observación",
+            tipos_observacion,
+            index=tipos_observacion.index(defaults.get("tipo_observacion"))
+            if defaults and defaults.get("tipo_observacion") in tipos_observacion
+            else 0
+        )
+        reportado_por = st.text_input(
+            "Reportado por",
+            value=defaults.get("reportado_por") if defaults else ""
+        )
+        estado = st.selectbox(
+            "Estado",
+            estados_posibles,
+            index=estados_posibles.index(defaults.get("estado"))
+            if defaults and defaults.get("estado") in estados_posibles
+            else 0
+        )
+        usuario = st.text_input(
+            "Usuario que registra",
+            value=defaults.get("usuario_registro") if defaults else ""
+        )
+        observaciones = st.text_area(
+            "Notas adicionales",
+            value=defaults.get("observaciones") if defaults else ""
+        )
 
         submit = st.form_submit_button("Guardar Observación")
 
@@ -70,22 +112,30 @@ def form_observacion(defaults=None):
             "observaciones": observaciones,
             "fecha_registro": datetime.now()
         }
+
     return None
+
 
 def app():
     if db is None:
-        st.error("MongoDB no disponible")
-        return
+        st.error(f"MongoDB no disponible. {mongo_error}")
+        st.stop()
+
     coleccion = db["observaciones"]
     activos = db["activos_tecnicos"]
 
     st.title("👁️ Gestión de Observaciones Técnicas")
-    menu = ["Registrar Observación", "Ver Observaciones", "Editar Observación", "Eliminar Observación"]
+    menu = [
+        "Registrar Observación",
+        "Ver Observaciones",
+        "Editar Observación",
+        "Eliminar Observación"
+    ]
     choice = st.sidebar.radio("Acción", menu)
 
     if choice == "Registrar Observación":
         st.subheader("➕ Nueva Observación Técnica")
-        data = form_observacion()
+        data = form_observacion(activos)
         if data:
             coleccion.insert_one(data)
             registrar_evento_historial(
@@ -149,12 +199,15 @@ def app():
             f"{o.get('id_observacion', 'Sin ID')} - {o.get('id_activo_tecnico', 'Sin Activo')} ({o.get('fecha_evento', 'Sin Fecha')})": o
             for o in obs
         }
+
         if not opciones:
             st.info("No hay observaciones disponibles.")
             return
+
         seleccion = st.selectbox("Seleccionar observación", list(opciones.keys()))
         datos = opciones[seleccion]
-        nuevos_datos = form_observacion(defaults=datos)
+        nuevos_datos = form_observacion(activos, defaults=datos)
+
         if nuevos_datos:
             coleccion.update_one({"_id": datos["_id"]}, {"$set": nuevos_datos})
             registrar_evento_historial(
@@ -174,11 +227,14 @@ def app():
             f"{o.get('id_observacion', 'Sin ID')} - {o.get('id_activo_tecnico', 'Sin Activo')} ({o.get('fecha_evento', 'Sin Fecha')})": o
             for o in obs
         }
+
         if not opciones:
             st.info("No hay observaciones disponibles.")
             return
+
         seleccion = st.selectbox("Seleccionar observación", list(opciones.keys()))
         datos = opciones[seleccion]
+
         if st.button("Eliminar definitivamente"):
             coleccion.delete_one({"_id": datos["_id"]})
             registrar_evento_historial(
@@ -190,6 +246,7 @@ def app():
                 observaciones=datos.get("observaciones"),
             )
             st.success("🗑️ Observación eliminada correctamente.")
+
 
 if __name__ == "__main__":
     app()
