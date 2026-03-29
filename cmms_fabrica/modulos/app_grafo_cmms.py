@@ -23,7 +23,7 @@ if TYPE_CHECKING or PYVIS_SPEC:
 else:  # pragma: no cover - fallback path cuando Pyvis no está disponible
     Network = None  # type: ignore[assignment]
 
-from modulos.conexion_mongo import get_db
+from modulos.conexion_mongo import get_db, mongo_error
 
 # Colores corporativos consistentes para cada tipo de nodo
 COLOR_ACTIVO = "#1976d2"
@@ -142,8 +142,8 @@ def app() -> None:
     db = get_db()
 
     if db is None:
-        st.error("No se pudo conectar a la base de datos.")
-        return
+        st.error(f"No se pudo conectar a la base de datos. {mongo_error}")
+        st.stop()
 
     activos_cursor = db["activos_tecnicos"].find({}, {"_id": 0, "id_activo_tecnico": 1})
     activos_disponibles = sorted({

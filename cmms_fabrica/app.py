@@ -6,7 +6,7 @@ st.set_page_config(page_title="CMMS Fábrica", layout="wide")
 
 # 🔐 Login y cierre de sesión
 from modulos.app_login import login_usuario, cerrar_sesion
-from modulos.conexion_mongo import db
+from modulos.conexion_mongo import db, mongo_error
 
 # 💄 Estilos responsive
 from modulos.estilos import aplicar_estilos
@@ -52,7 +52,7 @@ with st.sidebar:
 
 # Verificamos la conexión a la base de datos
 if db is None:
-    st.error("Error: No se pudo conectar a la base de datos MongoDB.")
+    st.error(f"Error: No se pudo conectar a la base de datos MongoDB. {mongo_error}")
     st.stop()
 
 def render_home(context: Dict[str, Any]) -> None:
