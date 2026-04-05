@@ -48,6 +48,7 @@ def app():
         opciones_tipo = ["Sistema General", "Infraestructura", "Administración", "Producción",
                          "Logística", "Mantenimiento", "Instrumento Laboratorio", "Equipo en Cliente", "Componente"]
         opciones_estado = ["Activo", "En revisión", "Fuera de servicio"]
+        opciones_nivel = ["sistema", "subsistema", "equipo"]
 
         tipo_default = defaults.get("tipo") if defaults else None
         estado_default = defaults.get("estado") if defaults else None
@@ -73,7 +74,22 @@ def app():
             ids_disponibles.insert(0, "")
             valor_default = defaults.get("pertenece_a") if defaults else ""
             index_default = ids_disponibles.index(valor_default) if valor_default in ids_disponibles else 0
-            pertenece_a = st.selectbox("Pertenece a (opcional)", options=ids_disponibles, index=index_default)
+            pertenece_a = st.selectbox(
+                "Activo padre / Proceso padre (opcional)",
+                options=ids_disponibles,
+                index=index_default,
+                help="Usa este campo para vincular el registro a su padre operativo. Se guarda en `pertenece_a`.",
+            )
+
+            nivel_default = defaults.get("nivel") if defaults else ""
+            opciones_nivel_form = [""] + opciones_nivel
+            index_nivel = opciones_nivel_form.index(nivel_default) if nivel_default in opciones_nivel_form else 0
+            nivel = st.selectbox(
+                "Nivel técnico (opcional)",
+                options=opciones_nivel_form,
+                index=index_nivel,
+                help="Nivel técnico conceptual del activo: sistema, subsistema o equipo.",
+            )
 
             responsable = st.selectbox("Responsable del Activo", options=responsables, index=responsable_index)
             usuario = st.text_input("Usuario que registra", value=defaults.get("usuario_registro") if defaults else "")
@@ -92,6 +108,8 @@ def app():
                 }
                 if pertenece_a:
                     data["pertenece_a"] = pertenece_a
+                if nivel:
+                    data["nivel"] = nivel
                 return data
 
         return None
@@ -136,9 +154,10 @@ def app():
                     nombre = a.get("nombre", "")
                     estado = a.get("estado", "-")
                     id_activo = a.get("id_activo_tecnico", "⛔ Sin ID")
-                    subtitulo = f" (pertenece a {a['pertenece_a']})" if "pertenece_a" in a else ""
+                    padre_info = f" | Padre: {a['pertenece_a']}" if "pertenece_a" in a else ""
+                    nivel_info = f" | Nivel: {a['nivel']}" if a.get("nivel") else ""
                     st.code(f"ID del Activo: {id_activo}", language="yaml")
-                    st.markdown(f"- **{nombre}** ({estado}){subtitulo}")
+                    st.markdown(f"- **{nombre}** ({estado}){padre_info}{nivel_info}")
 
     elif choice == "Editar":
         st.subheader("✏️ Editar activo técnico")

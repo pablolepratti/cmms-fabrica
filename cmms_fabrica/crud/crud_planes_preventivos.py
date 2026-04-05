@@ -125,28 +125,30 @@ def app():
             # Tipo de programación (novedad)
             # ---------------------------------------------------------
             tipo_programacion = st.selectbox(
-                "Tipo de programación",
+                "Tipo de programación preventiva",
                 ["tiempo", "uso", "ambos"],
                 index=["tiempo", "uso", "ambos"].index(
                     defaults.get("tipo_programacion", "tiempo")
                 ),
-                help="‘tiempo’: por fecha. ‘uso’: por horas/km. ‘ambos’: vence por el primero.",
+                help="Definí si el vencimiento del plan se controla por calendario (tiempo), por lecturas de uso (uso) o por ambas condiciones.",
             )
 
             # ---------------------------------------------------------
             # BLOQUE POR TIEMPO
             # ---------------------------------------------------------
             frecuencia = st.number_input(
-                "Frecuencia (para tiempo)",
+                "Frecuencia por tiempo",
                 min_value=1,
                 value=int(defaults.get("frecuencia", 1)),
+                help="Se usa cuando la programación incluye tiempo (tiempo o ambos).",
             )
             unidad_frecuencia = st.selectbox(
-                "Unidad",
+                "Unidad de frecuencia temporal",
                 ["días", "semanas", "meses"],
                 index=["días", "semanas", "meses"].index(
                     defaults.get("unidad_frecuencia", "días")
                 ),
+                help="Unidad aplicada a la frecuencia temporal.",
             )
 
             # fechas seguras
@@ -169,10 +171,12 @@ def app():
                 ultima_default = date.today()
 
             proxima_fecha = st.date_input(
-                "Próxima Ejecución (por tiempo)", value=proxima_default
+                "Próxima ejecución por tiempo", value=proxima_default,
+                help="Fecha objetivo del siguiente mantenimiento cuando aplica criterio temporal.",
             )
             ultima_fecha = st.date_input(
-                "Última Ejecución (por tiempo)", value=ultima_default
+                "Última ejecución por tiempo", value=ultima_default,
+                help="Última fecha ejecutada bajo criterio temporal.",
             )
 
             # ---------------------------------------------------------
@@ -184,6 +188,7 @@ def app():
                     "Umbral de uso (ej. 250 h / 500 km)",
                     min_value=0.0,
                     value=float(defaults.get("umbral_uso", 0.0)),
+                    help="Se usa cuando la programación incluye uso (uso o ambos).",
                 )
             with col2:
                 unidad_uso = st.text_input(
