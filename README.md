@@ -74,3 +74,23 @@ streamlit run cmms_fabrica/app.py
 pip install -r cmms_fabrica/requirements-dev.txt
 PYTHONPATH=cmms_fabrica pytest -q
 ```
+
+## 🔄 Lógica de operación
+
+⚠️ Criterio de priorización
+
+Las intervenciones se priorizan según criticidad:
+
+🔴 Crítico → parada de línea o riesgo de seguridad
+🟠 Alto → impacto en producción
+🟡 Medio → degradación del rendimiento
+🟢 Bajo → sin impacto relevante
+
+La criticidad se evalúa en base a:
+
+Impacto en producción
+Riesgo de seguridad
+Estado del activo
+Reincidencia
+
+La criticidad define prioridad, no urgencia percibida.
