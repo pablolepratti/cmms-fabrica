@@ -1,0 +1,61 @@
+📂 FUENTE: REPOSITORIO CMMS (v2.0)
+
+
+📌 Tipo
+Fuente técnica principal
+
+📌 Ubicación
+https://github.com/pablolepratti/cmms-fabrica
+
+📌 Versión
+main (o activa en uso)
+
+📌 Responsable
+Pablo Lepratti
+
+📌 DESCRIPCIÓN
+
+Repositorio que contiene el código completo del sistema CMMS.
+
+Define:
+
+Estructura real de datos
+Lógica de negocio
+Funcionamiento operativo
+Implementación efectiva del sistema
+
+📌 ROL EN EL SISTEMA
+
+Fuente de verdad para la implementación
+Base para cualquier cambio técnico
+Referencia obligatoria antes de modificar código
+Validación final de coherencia entre modelo y ejecución
+
+📌 CRITERIO DE USO
+
+Las instrucciones y fuentes definen el modelo conceptual
+El repositorio define la implementación real
+
+👉 Si hay conflicto:
+manda el código
+
+📌 ALINEACIÓN CON EL MODELO
+
+El repositorio debe reflejar:
+
+Activo técnico como eje
+Separación de tipos de tareas
+Trazabilidad mediante historial
+Uso de relaciones (activo_padre)
+Aplicación de jerarquía (nivel)
+
+👉 Sin romper la estructura existente
+
+📌 REGLA CLAVE
+
+No se modifica el modelo conceptual para adaptarlo al código.
+Se ajusta el código para reflejar el modelo, cuando sea necesario.
+
+📌 OBJETIVO FINAL
+
+Que repo, instrucciones y uso en planta hablen el mismo idioma.

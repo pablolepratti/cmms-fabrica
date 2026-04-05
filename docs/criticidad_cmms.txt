@@ -1,0 +1,70 @@
+📄 CRITERIO DE CRITICIDAD – CMMS PORTABLE (v1.0)
+
+📌 OBJETIVO
+
+Definir prioridades de intervención sobre activos y fallas.
+
+👉 Evitar reacción caótica.
+👉 Concentrar esfuerzo donde importa.
+
+📊 CRITERIO DE EVALUACIÓN
+
+Cada evento se evalúa en 4 dimensiones:
+
+1. 🏭 Impacto en producción
+Alto → detiene línea / cuello de botella
+Medio → reduce capacidad
+Bajo → no afecta producción
+2. ⚠️ Riesgo de seguridad
+Alto → riesgo para personas
+Medio → riesgo controlado
+Bajo → sin riesgo
+3. 🔧 Estado del activo
+Crítico → falla total o inminente
+Degradado → funciona mal
+Normal → sin falla
+4. 🔁 Frecuencia / reincidencia
+Alta → falla repetitiva
+Media → ocasional
+Baja → aislada
+🧮 CLASIFICACIÓN
+🔴 CRÍTICO
+Afecta producción + seguridad o parada total
+
+👉 Acción inmediata
+👉 Prioridad absoluta
+
+🟠 ALTO
+Afecta producción sin riesgo grave
+
+👉 Resolver en corto plazo
+👉 No se posterga
+
+🟡 MEDIO
+No detiene, pero degrada
+
+👉 Planificar intervención
+
+🟢 BAJO
+No impacta
+
+👉 Monitorear / observación
+
+📌 REGLAS DE USO
+Toda correctiva se clasifica
+Toda observación se evalúa
+Preventivos se ajustan según criticidad
+La criticidad define prioridad, no urgencia emocional
+📆 VALIDACIÓN (cada 15 días)
+Fallas críticas
+Reincidencias
+Activos más problemáticos
+Ajustes de planes
+🧨 REGLA CENTRAL
+
+👉 Primero lo crítico, después lo importante, nunca al revés
+
+🎯 RESULTADO
+Menos caos
+Mejor uso del tiempo
+Decisiones técnicas (no impulsivas)

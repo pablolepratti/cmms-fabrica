@@ -1,0 +1,101 @@
+📄 POLÍTICA DE MANTENIMIENTO – CMMS PORTABLE (v4.1)
+
+📌 PROPÓSITO
+
+Garantizar disponibilidad, confiabilidad y vida útil de los activos mediante una gestión técnica, ordenada y trazable.
+
+---
+
+📌 ALCANCE
+
+Aplica a todos los activos técnicos:
+
+Sistemas industriales  
+Equipos de producción  
+Equipos auxiliares  
+Infraestructura técnica  
+Instrumentos  
+Activos externos bajo seguimiento  
+
+---
+
+📌 CRITERIO BASE
+
+Todo sistema se analiza desde:
+
+Proceso → flujo o etapa  
+Activo → equipo  
+Componente → parte  
+
+👉 Uso operativo, sin modificar el CMMS.
+
+---
+
+📌 PRINCIPIOS
+
+La prevención es prioridad con criterio técnico  
+El CMMS es la única fuente de verdad  
+Toda acción relevante se registra  
+Cada tarea tiene responsable  
+No se interviene sin entender el sistema  
+No se acumulan frentes abiertos  
+La mejora se basa en lo ejecutado  
+
+---
+
+📌 REGLA OPERATIVA CLAVE
+
+Toda intervención debe comenzar con:
+
+Análisis técnico  
+Evaluación de criticidad  
+
+👉 No se actúa por impulso ni por urgencia percibida.
+
+---
+
+📌 TIPOS DE MANTENIMIENTO
+
+Correctivo → fallas reales  
+Preventivo → acciones planificadas  
+Técnico → análisis y diagnóstico  
+
+---
+
+📌 REGLAS OPERATIVAS
+
+Toda tarea se registra en el CMMS  
+Todo evento genera historial  
+No hay tareas críticas fuera del sistema  
+La documentación externa es soporte, no fuente principal  
+Se priorizan soluciones simples y ejecutables  
+
+👉 Control de carga:
+No más de 3 tareas abiertas por activo  
+No más de 1 frente crítico por sistema  
+
+---
+
+📆 VALIDACIÓN
+
+Cada 15 días se revisa:
+
+Tareas ejecutadas  
+Pendientes  
+Reincidencias  
+Observaciones abiertas  
+Ajustes necesarios  
+
+---
+
+📌 CRITERIO DE APLICACIÓN
+
+Sistema portable:
+
+Debe funcionar igual en cualquier fábrica.
+
+---
+
+👤 RESPONSABLE TÉCNICO
+
+Pablo Lepratti

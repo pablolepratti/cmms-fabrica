@@ -1,0 +1,107 @@
+📄 PLANES DE ACCIÓN – CMMS PORTABLE (v4.2)
+
+📌 CRITERIO BASE
+
+Toda tarea se entiende desde:
+
+Proceso → dónde ocurre
+Activo → qué equipo
+Componente → qué falla
+
+👉 Criterio de uso, sin modificar la base.
+
+🛠️ CORRECTIVAS (falla real)
+
+Detectar falla
+Analizar situación
+Registrar en CMMS
+Asociar a activo
+Evaluar criticidad
+Definir responsable (interno / externo)
+Ejecutar intervención
+Registrar:
+Repuestos
+Tiempo
+Técnicos
+
+📌 CRITERIO DE CIERRE
+
+Una tarea no se considera resuelta sin comprensión técnica de la causa (al menos hipótesis validada).
+
+Evaluar RCA
+Ejecutar RCA si aplica
+Cerrar
+
+📅 PREVENTIVAS (planificadas)
+
+Consultar plan
+Analizar condición del activo
+Verificar activo y frecuencia
+Ejecutar tarea
+Registrar ejecución
+Documentar:
+Estado
+Hallazgos
+
+Si hay anomalía:
+Generar observación
+Evaluar criticidad
+Escalar a correctiva
+
+👉 Ajuste obligatorio:
+Los planes preventivos se ajustan en base a observaciones y reincidencias.
+
+🧾 TÉCNICAS (análisis / gestión)
+
+Detectar necesidad
+Analizar situación
+Registrar en CMMS
+Asociar a activo (si aplica)
+Ejecutar análisis
+Registrar conclusiones
+
+Si corresponde:
+Generar correctiva
+Generar preventiva
+Generar observación
+
+Cerrar o dejar en seguimiento
+
+👁️ OBSERVACIONES (hallazgos)
+
+Detectar hallazgo
+Analizar condición
+Registrar en CMMS
+Asociar a activo
+Evaluar criticidad
+Clasificar
+Dejar pendiente
+
+Evaluar en revisión:
+Escalar a correctiva
+Escalar a preventiva
+Cerrar
+
+📆 VALIDACIÓN (cada 15 días)
+
+Correctivas ejecutadas
+Preventivos cumplidos
+Técnicas abiertas
+Observaciones pendientes
+Reincidencias
+Ajustes necesarios
+
+📌 REGLA CENTRAL
+
+Todo se registra
+Todo es trazable
+Nada crítico queda fuera del CMMS
+
+📊 RESULTADO
+
+Sistema:
+
+Ejecutable
+Trazable
+Cerrado
+Portable

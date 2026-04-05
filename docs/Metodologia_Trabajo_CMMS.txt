@@ -1,0 +1,102 @@
+📄 METODOLOGÍA DE TRABAJO – CMMS PORTABLE (v4.2)
+
+📌 ENFOQUE OPERATIVO
+
+→ Detectar → Analizar → Ejecutar → Registrar → Validar → Mejorar
+
+Sistema cerrado:
+Nada crítico queda fuera del CMMS.
+
+📌 REGLA CLAVE
+
+No se ejecuta ninguna intervención sin análisis técnico previo y evaluación de criticidad.
+
+📌 CRITERIO BASE
+
+Todo trabajo se entiende desde:
+
+Proceso → dónde ocurre
+Activo → qué intervengo
+Componente → qué falla
+
+👉 Criterio de uso, sin modificar la base.
+
+📌 USO POR TIPO DE TAREA
+
+🛠️ Correctivas
+Detectar falla
+Analizar situación
+Registrar en CMMS
+Asociar a activo
+Evaluar criticidad
+Definir responsable
+Ejecutar intervención
+Documentar causa y resolución
+Aplicar RCA si corresponde
+Cerrar
+
+📅 Preventivas
+Analizar condición del activo
+Ejecutar según plan
+Registrar ejecución
+Documentar estado del activo
+Si hay anomalía:
+Generar observación
+Evaluar criticidad
+Ajustar si aplica
+
+🧾 Técnicas
+Detectar necesidad
+Analizar situación
+Registrar en CMMS
+Asociar a activo (si aplica)
+Ejecutar análisis
+Registrar conclusiones
+Generar acciones si corresponde
+
+👁️ Observaciones
+Detectar hallazgo
+Analizar condición
+Registrar en CMMS
+Asociar a activo
+Evaluar criticidad
+Clasificar
+Dejar pendiente
+
+📌 CRITERIO DE ESCALADO
+
+Observación con criticidad alta → escalar inmediatamente a correctiva  
+Criticidad media → evaluar en revisión  
+Criticidad baja → mantener en monitoreo  
+
+Evaluar en revisión:
+Escalar a correctiva
+Escalar a preventiva
+Cerrar
+
+📆 VALIDACIÓN (cada 15 días)
+
+Tareas ejecutadas
+Pendientes
+Reincidencias
+Observaciones abiertas
+Ajustes de preventivos
+
+📌 REGLAS DE TRABAJO
+
+No intervenir sin entender el sistema
+No acumular frentes abiertos
+Un objetivo a la vez
+Toda tarea inicia con análisis y criticidad
+No más de 3 tareas abiertas por activo
+Todo se registra
+Todo es trazable
+
+📊 RESULTADO
+
+Sistema:
+
+Ordenado
+Trazable
+Ejecutable
+Portable
