@@ -35,12 +35,17 @@ def crear_tarea_tecnica(data: dict, database=db):
     return data["id_tarea_tecnica"]
 
 estados_posibles = ["Pendiente", "En curso", "Finalizada"]
-tipos_tecnica = ["Presupuesto", "Consulta", "Gestión", "Otra"]
+tipos_tecnica_canonicas = ["Relevamiento", "Diagnóstico", "Gestión", "Presupuesto"]
 
 def generar_id_tarea_tecnica():
     return f"TT-{int(datetime.now().timestamp())}"
 
 def form_tecnica(defaults=None):
+    tipo_actual = defaults.get("tipo_tecnica") if defaults else None
+    tipos_tecnica_form = list(tipos_tecnica_canonicas)
+    if tipo_actual and tipo_actual not in tipos_tecnica_form:
+        tipos_tecnica_form = [tipo_actual] + tipos_tecnica_form
+
     with st.form("form_tarea_tecnica"):
         hoy = datetime.today()
 
@@ -69,8 +74,12 @@ def form_tecnica(defaults=None):
         id_tarea = defaults.get("id_tarea_tecnica") if defaults else generar_id_tarea_tecnica()
         fecha_evento = st.date_input("Fecha del Evento", value=datetime.strptime(defaults.get("fecha_evento"), "%Y-%m-%d") if defaults else hoy)
         descripcion = st.text_area("Descripción Técnica", value=defaults.get("descripcion") if defaults else "")
-        tipo_tecnica = st.selectbox("Tipo de Tarea Técnica", tipos_tecnica,
-                                    index=tipos_tecnica.index(defaults.get("tipo_tecnica")) if defaults and defaults.get("tipo_tecnica") in tipos_tecnica else 0)
+        tipo_tecnica = st.selectbox(
+            "Tipo de Tarea Técnica",
+            tipos_tecnica_form,
+            index=tipos_tecnica_form.index(tipo_actual) if tipo_actual in tipos_tecnica_form else 0,
+            help="En registros nuevos se usan categorías canónicas. Si este registro tiene una categoría histórica, podés recategorizarla manualmente.",
+        )
         responsable = st.text_input("Responsable", value=defaults.get("responsable") if defaults else "")
 
         # Proveedor externo opcional
