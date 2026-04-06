@@ -21,6 +21,7 @@ def registrar_evento_historial(
     id_origen: str | None = None,
     proveedor_externo: str | None = None,
     observaciones: str | None = None,
+    criticidad: str | None = None,
 ) -> str:
     """Inserta un evento consolidado en la colección ``historial``.
 
@@ -47,7 +48,8 @@ def registrar_evento_historial(
         "descripcion": descripcion,
         "usuario_registro": usuario,
         "proveedor_externo": proveedor_externo,
-        "observaciones": observaciones or ""
+        "observaciones": observaciones or "",
+        "criticidad": criticidad or "",
     }
 
     historial.insert_one(evento)

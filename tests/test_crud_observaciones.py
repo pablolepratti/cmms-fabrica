@@ -53,6 +53,7 @@ def test_registrar_observacion_inserta_observacion_y_historial():
         "estado": "Pendiente",
         "usuario_registro": "tecnico_cmms",
         "observaciones": "Verificar vibración en próxima ronda",
+        "criticidad": "Media",
         "fecha_registro": 0,
     }
 
@@ -72,3 +73,12 @@ def test_registrar_observacion_inserta_observacion_y_historial():
     assert evento is not None
     assert evento["id_origen"] == "OBS-100"
     assert evento["usuario_registro"] == "tecnico_cmms"
+    assert evento["criticidad"] == "Media"
+    observacion = db_mock.observaciones.find_one({"id_observacion": "OBS-100"})
+    assert observacion["criticidad"] == "Media"
+
+
+def test_normalizar_criticidad_observacion_guarda_none_para_sin_clasificar():
+    assert crud_observaciones._normalizar_criticidad("Sin clasificar") is None
+    assert crud_observaciones._normalizar_criticidad(None) is None
+    assert crud_observaciones._normalizar_criticidad("Alta") == "Alta"

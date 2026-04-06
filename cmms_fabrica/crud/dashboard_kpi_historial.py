@@ -39,6 +39,28 @@ def categorizar_tipo_evento(tipo_evento: str) -> str:
         return "tecnica"
     return "otro"
 
+
+def filtrar_ultimo_evento_por_origen(df: pd.DataFrame) -> pd.DataFrame:
+    """Evita duplicación de KPIs manteniendo el último evento por origen.
+
+    Se agrupa por combinación de:
+    - id_activo_tecnico
+    - tipo_evento_categoria
+    - id_origen (cuando existe)
+    """
+    columnas_requeridas = {"id_activo_tecnico", "tipo_evento_categoria", "fecha_evento"}
+    if not columnas_requeridas.issubset(df.columns):
+        return df
+
+    df_base = df.copy()
+    if "id_origen" not in df_base.columns:
+        df_base["id_origen"] = ""
+
+    df_base["id_origen"] = df_base["id_origen"].fillna("").astype(str)
+    df_ordenado = df_base.sort_values("fecha_evento", ascending=False)
+    idx = df_ordenado.groupby(["id_activo_tecnico", "tipo_evento_categoria", "id_origen"])["fecha_evento"].idxmax()
+    return df_ordenado.loc[idx].reset_index(drop=True)
+
 def app():
     if db is None:
         st.error("MongoDB no disponible")
@@ -104,6 +126,8 @@ def app():
 
     df["mes"] = df["fecha_evento"].dt.to_period("M")
     df["usuario_registro"] = df.get("usuario_registro", df.get("usuario", "desconocido"))
+    df["criticidad"] = df.get("criticidad", "").replace("", "Sin clasificar").fillna("Sin clasificar")
+    df = filtrar_ultimo_evento_por_origen(df)
 
     # KPIs Principales
     st.header("📌 Indicadores Clave")
@@ -111,6 +135,12 @@ def app():
     col1.metric("Eventos Registrados", len(df))
     col2.metric("Activos Afectados", df["id_activo_tecnico"].nunique())
     col3.metric("Usuarios Participantes", df["usuario_registro"].nunique())
+
+    st.subheader("🚦 Distribución de criticidad")
+    criticidad_counts = df["criticidad"].value_counts().reindex(
+        ["Crítica", "Alta", "Media", "Baja", "Sin clasificar"], fill_value=0
+    )
+    st.bar_chart(criticidad_counts)
 
     # Gráfico: Eventos por tipo
     st.subheader("📈 Eventos por Tipo")
@@ -156,7 +186,7 @@ def app():
     st.subheader("📋 Detalle de Eventos Técnicos")
     st.dataframe(df[[
         "fecha_evento", "tipo_evento", "id_activo_tecnico",
-        "descripcion", "usuario_registro"
+        "criticidad", "descripcion", "usuario_registro"
     ]].sort_values("fecha_evento", ascending=False))
 
 if __name__ == "__main__":

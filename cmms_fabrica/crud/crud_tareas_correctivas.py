@@ -54,6 +54,17 @@ def _to_datetime(value: Optional[object]) -> datetime:
     return datetime.utcnow()
 
 
+def _normalizar_criticidad(valor: Optional[str]) -> Optional[str]:
+    """Normaliza criticidad de UI a persistencia.
+
+    - ``Sin clasificar`` se guarda como ``None`` para no contaminar datos.
+    - valores vacíos también se guardan como ``None``.
+    """
+    if not valor or valor == "Sin clasificar":
+        return None
+    return valor
+
+
 def shared_section(title: str, subtitle: Optional[str] = None):
     st.markdown(f"### {title}")
     if subtitle:
@@ -63,6 +74,7 @@ def shared_section(title: str, subtitle: Optional[str] = None):
 
 def form_tarea(database, defaults: Optional[Dict[str, Any]] = None):
     defaults = defaults or {}
+    criticidades = ["Sin clasificar", "Baja", "Media", "Alta", "Crítica"]
     with st.form("form_tarea_correctiva"):
         ids_activos: List[str] = select_activo_tecnico(database)
         id_default = defaults.get("id_activo_tecnico")
@@ -154,6 +166,13 @@ def form_tarea(database, defaults: Optional[Dict[str, Any]] = None):
             "Observaciones adicionales",
             value=defaults.get("observaciones", ""),
         ).strip()
+        criticidad = st.selectbox(
+            "Criticidad (opcional)",
+            criticidades,
+            index=criticidades.index(defaults.get("criticidad"))
+            if defaults.get("criticidad") in criticidades
+            else 0,
+        )
         submit = st.form_submit_button("Guardar Tarea")
 
     if submit:
@@ -182,6 +201,7 @@ def form_tarea(database, defaults: Optional[Dict[str, Any]] = None):
             "estado": estado,
             "usuario_registro": usuario,
             "observaciones": observaciones,
+            "criticidad": _normalizar_criticidad(criticidad),
             "fecha_registro": _to_datetime(defaults.get("fecha_registro")),
             "incompleto": False,
         }
@@ -219,6 +239,7 @@ def app():
                             id_origen=data.get("id_tarea"),
                             proveedor_externo=data.get("proveedor_externo") or None,
                             observaciones=data.get("observaciones") or None,
+                            criticidad=data.get("criticidad") or None,
                         ),
                     )
                 except ValueError as exc:
@@ -279,6 +300,7 @@ def app():
                         activo = t.get("id_activo_tecnico", "—")
                         id_tarea = t.get("id_tarea", "—")
                         responsable = t.get("responsable", "—")
+                        criticidad = t.get("criticidad") or "Sin clasificar"
 
                         st.markdown(
                             f"""
@@ -300,6 +322,9 @@ def app():
   </p>
   <p style="margin:0.15rem 0 0; font-size:0.72rem; color:#9ca3af;">
     <strong>Responsable:</strong> {responsable} · <strong>Fecha:</strong> {fecha_str}
+  </p>
+  <p style="margin:0.15rem 0 0; font-size:0.72rem; color:#fbbf24;">
+    <strong>Criticidad:</strong> {criticidad}
   </p>
   <p style="margin:0.4rem 0 0; font-size:0.7rem;">
     <span style="
@@ -329,6 +354,7 @@ def app():
                                     "Descripción": t.get("descripcion_falla"),
                                     "Fecha evento": t.get("fecha_evento"),
                                     "Responsable": t.get("responsable"),
+                                    "Criticidad": t.get("criticidad") or "Sin clasificar",
                                 }
                                 for t in filtradas
                             ]
@@ -367,6 +393,7 @@ def app():
                                     id_origen=nuevos_datos.get("id_tarea"),
                                     proveedor_externo=nuevos_datos.get("proveedor_externo") or None,
                                     observaciones=nuevos_datos.get("observaciones") or None,
+                                    criticidad=nuevos_datos.get("criticidad") or None,
                                 ),
                             )
                         except ValueError as exc:
@@ -409,6 +436,7 @@ def app():
                                     id_origen=datos.get("id_tarea"),
                                     proveedor_externo=datos.get("proveedor_externo") or None,
                                     observaciones=datos.get("observaciones") or None,
+                                    criticidad=datos.get("criticidad") or None,
                                 ),
                                 document=datos,
                             )
