@@ -38,6 +38,7 @@ class HistorialEvent:
     id_origen: Optional[str] = None
     proveedor_externo: Optional[str] = None
     observaciones: Optional[str] = None
+    criticidad: Optional[str] = None
 
 
 class CMMSRepository:
@@ -89,6 +90,7 @@ class CMMSRepository:
             id_origen=id_origen,
             proveedor_externo=event.proveedor_externo or payload.get("proveedor_externo"),
             observaciones=event.observaciones or payload.get("observaciones"),
+            criticidad=event.criticidad or payload.get("criticidad"),
         )
         return str(result.inserted_id)
 
@@ -123,6 +125,7 @@ class CMMSRepository:
             id_origen=id_origen,
             proveedor_externo=event.proveedor_externo or payload.get("proveedor_externo"),
             observaciones=event.observaciones or payload.get("observaciones"),
+            criticidad=event.criticidad or payload.get("criticidad"),
         )
         return result.modified_count
 
@@ -159,6 +162,7 @@ class CMMSRepository:
                 id_origen=id_origen,
                 proveedor_externo=event.proveedor_externo or registro.get("proveedor_externo"),
                 observaciones=event.observaciones or registro.get("observaciones"),
+                criticidad=event.criticidad or registro.get("criticidad"),
             )
 
         return result.deleted_count

@@ -58,6 +58,7 @@ class PDF(FPDF):
             origen = row.get('id_origen') or "HUÉRFANO"
             self.multi_cell(0, 6, safe_text(f"ID de origen: {origen}"), 0)
             self.multi_cell(0, 6, safe_text(f"Usuario: {row.get('usuario_registro', '-')}"), 0)
+            self.multi_cell(0, 6, safe_text(f"Criticidad: {row.get('criticidad', '-')}"), 0)
             self.set_font("Arial", "B", 10)
             self.multi_cell(0, 6, safe_text("Descripción:"), 0)
             self.set_font("Arial", "", 10)
@@ -172,7 +173,7 @@ def app():
         st.warning("No se encontraron eventos técnicos para las categorías seleccionadas.")
         return
 
-    for campo in ["usuario_registro", "descripcion", "observaciones", "id_origen"]:
+    for campo in ["usuario_registro", "descripcion", "observaciones", "id_origen", "criticidad"]:
         if campo not in df.columns:
             df[campo] = "" if campo == "id_origen" else "-"
     df["usuario_registro"] = df["usuario_registro"].fillna("desconocido")
@@ -180,7 +181,16 @@ def app():
 
     df_filtrado = filtrar_ultimo_por_tarea_y_activo(df)
 
-    columnas = ["fecha_evento", "tipo_evento", "id_activo_tecnico", "id_origen", "descripcion", "usuario_registro", "observaciones"]
+    columnas = [
+        "fecha_evento",
+        "tipo_evento",
+        "id_activo_tecnico",
+        "id_origen",
+        "criticidad",
+        "descripcion",
+        "usuario_registro",
+        "observaciones",
+    ]
     for col in columnas:
         if col not in df_filtrado.columns:
             df_filtrado[col] = "HUÉRFANO" if col == "id_origen" else "-"

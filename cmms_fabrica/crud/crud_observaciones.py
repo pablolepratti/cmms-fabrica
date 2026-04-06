@@ -13,10 +13,17 @@ from cmms_fabrica.crud.generador_historial import registrar_evento_historial
 
 tipos_observacion = ["Advertencia", "Hallazgo", "Ruido", "Otro"]
 estados_posibles = ["Pendiente", "Revisado"]
+criticidades = ["Sin clasificar", "Baja", "Media", "Alta", "Crítica"]
 
 
 def generar_id_observacion():
     return f"OBS_{int(datetime.now().timestamp())}"
+
+
+def _normalizar_criticidad(valor):
+    if not valor or valor == "Sin clasificar":
+        return None
+    return valor
 
 
 def form_observacion(activos, defaults=None):
@@ -92,6 +99,13 @@ def form_observacion(activos, defaults=None):
             "Notas adicionales",
             value=defaults.get("observaciones") if defaults else ""
         )
+        criticidad = st.selectbox(
+            "Criticidad (opcional)",
+            criticidades,
+            index=criticidades.index(defaults.get("criticidad"))
+            if defaults and defaults.get("criticidad") in criticidades
+            else 0
+        )
 
         submit = st.form_submit_button("Guardar Observación")
 
@@ -110,6 +124,7 @@ def form_observacion(activos, defaults=None):
             "estado": estado,
             "usuario_registro": usuario,
             "observaciones": observaciones,
+            "criticidad": _normalizar_criticidad(criticidad),
             "fecha_registro": datetime.now()
         }
 
@@ -145,6 +160,7 @@ def app():
                 usuario=data["usuario_registro"],
                 id_origen=data["id_observacion"],
                 observaciones=data.get("observaciones"),
+                criticidad=data.get("criticidad"),
             )
             st.success("✅ Observación registrada correctamente.")
 
@@ -189,7 +205,8 @@ def app():
                     id_info = f"ID: {o.get('id_observacion', '')} | Activo: {o.get('id_activo_tecnico', '')}"
                     st.code(id_info, language="yaml")
                     st.markdown(
-                        f"- **{o.get('descripcion', '')[:80]}** ({o.get('fecha_evento', '')})"
+                        f"- **{o.get('descripcion', '')[:80]}** ({o.get('fecha_evento', '')}) · "
+                        f"Criticidad: {o.get('criticidad') or 'Sin clasificar'}"
                     )
 
     elif choice == "Editar Observación":
@@ -217,6 +234,7 @@ def app():
                 usuario=nuevos_datos["usuario_registro"],
                 id_origen=nuevos_datos["id_observacion"],
                 observaciones=nuevos_datos.get("observaciones"),
+                criticidad=nuevos_datos.get("criticidad"),
             )
             st.success("✅ Observación actualizada correctamente.")
 
@@ -244,6 +262,7 @@ def app():
                 usuario=datos.get("usuario_registro", "desconocido"),
                 id_origen=datos.get("id_observacion"),
                 observaciones=datos.get("observaciones"),
+                criticidad=datos.get("criticidad"),
             )
             st.success("🗑️ Observación eliminada correctamente.")
 

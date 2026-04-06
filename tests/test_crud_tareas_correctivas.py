@@ -25,6 +25,7 @@ def test_crear_tarea_correctiva_registra_historial():
             "estado": "Abierta",
             "usuario_registro": "tech",
             "observaciones": "",
+            "criticidad": "Alta",
             "fecha_registro": 0,
             "incompleto": False,
         }
@@ -44,6 +45,7 @@ def test_crear_tarea_correctiva_registra_historial():
                 id_origen=data["id_tarea"],
                 proveedor_externo=data.get("proveedor_externo") or None,
                 observaciones=data.get("observaciones") or None,
+                criticidad=data.get("criticidad") or None,
             ),
         )
 
@@ -54,3 +56,12 @@ def test_crear_tarea_correctiva_registra_historial():
         assert evento["id_activo_tecnico"] == "A1"
         assert evento["usuario_registro"] == "tech"
         assert evento["id_origen"] == "TC1"
+        assert evento["criticidad"] == "Alta"
+        tarea = db_mock.tareas_correctivas.find_one({"id_tarea": "TC1"})
+        assert tarea["criticidad"] == "Alta"
+
+
+def test_normalizar_criticidad_tarea_guarda_none_para_sin_clasificar():
+    assert crud_tareas_correctivas._normalizar_criticidad("Sin clasificar") is None
+    assert crud_tareas_correctivas._normalizar_criticidad("") is None
+    assert crud_tareas_correctivas._normalizar_criticidad("Media") == "Media"

@@ -5,6 +5,7 @@ from cmms_fabrica.modulos.app_reportes import (
     generar_excel,
     filtrar_ultimo_por_activo,
 )
+from cmms_fabrica.crud.dashboard_kpi_historial import filtrar_ultimo_evento_por_origen
 
 
 def test_generar_reportes_con_observaciones(tmp_path):
@@ -13,6 +14,7 @@ def test_generar_reportes_con_observaciones(tmp_path):
         "tipo_evento": ["test"],
         "id_activo_tecnico": ["A1"],
         "id_origen": ["EV-1"],
+        "criticidad": ["Alta"],
         "descripcion": ["ok"],
         "observaciones": ["-"],
         "usuario_registro": ["user"],
@@ -29,6 +31,7 @@ def test_generar_reportes_con_observaciones(tmp_path):
         "tipo_evento",
         "id_activo_tecnico",
         "id_origen",
+        "criticidad",
         "descripcion",
         "observaciones",
         "usuario_registro",
@@ -97,3 +100,22 @@ def test_filtrado_por_categoria_evento_en_dataframe():
 
     assert len(filtrado) == 2
     assert set(filtrado["categoria_evento"]) == {"observacion", "correctiva"}
+
+
+def test_kpi_filtra_ultimo_evento_por_origen_para_evitar_duplicados():
+    df = pd.DataFrame(
+        {
+            "id_activo_tecnico": ["A1", "A1", "A1"],
+            "id_origen": ["TC-1", "TC-1", "OBS-1"],
+            "tipo_evento_categoria": ["correctiva", "correctiva", "observacion"],
+            "fecha_evento": [
+                pd.Timestamp("2024-01-01"),
+                pd.Timestamp("2024-01-05"),
+                pd.Timestamp("2024-01-03"),
+            ],
+        }
+    )
+    filtrado = filtrar_ultimo_evento_por_origen(df)
+    assert len(filtrado) == 2
+    correctiva = filtrado[filtrado["id_origen"] == "TC-1"].iloc[0]
+    assert correctiva["fecha_evento"] == pd.Timestamp("2024-01-05")
