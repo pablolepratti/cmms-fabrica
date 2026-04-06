@@ -1,125 +1,131 @@
-🏭 CMMS Fábrica – Portable
+# 🏭 CMMS Fábrica – Portable
 
 CMMS orientado a mantenimiento industrial con trazabilidad operativa e integración con MongoDB.
 
-🧭 Modelo conceptual vigente
+## 🧭 Modelo conceptual vigente (fuentes en `/docs`)
 
 La aplicación se alinea con dos vistas complementarias:
 
-Jerarquía técnica:
-Sistema > Subsistema > Equipo
+- **Jerarquía técnica:** Sistema → Subsistema → Equipo
+- **Nivel funcional:** Proceso → Activo → Componente
 
-Nivel funcional:
-Proceso > Activo > Componente
+Este modelo convive con el esquema operativo actual para conservar compatibilidad histórica.
 
-Este modelo conceptual convive con el esquema operativo actual de la aplicación para mantener compatibilidad con datos históricos.
+## 🔒 Compatibilidad de datos (sin ruptura)
 
-🔒 Compatibilidad de datos (sin ruptura)
-El campo pertenece_a se mantiene como relación padre operativa vigente entre registros
-El campo nivel (cuando exista en el registro) representa la jerarquía técnica (sistema, subsistema, equipo)
-No se requieren renombres de colecciones ni migraciones masivas
-🧱 Núcleo CMMS
+Para evitar migraciones silenciosas:
 
-Módulos centrados en la gestión técnica de activos y mantenimiento:
+- Se mantiene **`pertenece_a`** como relación padre operativa vigente.
+- Se usa **`nivel`** (cuando existe) para expresar jerarquía técnica.
+- Se conserva **`tipo`** como campo persistido en activos (equivalente operativo de `tipo_activo` conceptual).
+- No se renombraron colecciones persistidas ni campos críticos existentes.
 
-Activos técnicos
-Planes preventivos
-Tareas correctivas
-Tareas técnicas
-Observaciones técnicas
-Calibraciones
-Servicios técnicos
-🧩 Módulos auxiliares (no núcleo conceptual)
+## 🧱 Núcleo CMMS (implementación activa)
 
-Estos módulos se mantienen como soporte de operación y análisis:
+- Activos técnicos
+- Planes preventivos
+- Tareas correctivas
+- Tareas técnicas
+- Observaciones técnicas
+- Calibraciones
+- Servicios técnicos externos
+- Historial técnico
+- Usuarios y roles
 
-Inventario técnico
-Consumos técnicos
-Grafo CMMS
-Reportes técnicos
-KPIs y tablero de seguimiento
-✅ Capacidades principales
-CRUD completo por dominio técnico
-Trazabilidad mediante colección historial
-Gestión de usuarios y roles
-Integración con MongoDB (conexion_mongo.py)
-Alineación con ISO 55001, ISO 14224 e ISO 9001
-🛠️ Ejecución local
+## 🧩 Módulos auxiliares (soporte operativo)
+
+- Inventario técnico
+- Consumos técnicos
+- Grafo CMMS
+- Reportes técnicos
+- KPIs y tablero de seguimiento
+- Asistentes técnicos (IA)
+
+## ✅ Capacidades principales
+
+- CRUD por dominio técnico.
+- Registro de trazabilidad en colección `historial`.
+- Gestión de usuarios y roles.
+- Integración con MongoDB (`conexion_mongo.py`).
+- Alineación operativa con ISO 55001, ISO 14224 e ISO 9001.
+
+## 🛠️ Ejecución local
 
 Instalar dependencias:
 
+```bash
 pip install -r cmms_fabrica/requirements.txt
+```
 
-Definir variables de entorno en .env:
+Definir variables de entorno en `.env`:
 
+```bash
 MONGO_URI=mongodb://<host>:<puerto>/
 DB_NAME=cmms
+```
 
 Ejecutar la app:
 
+```bash
 streamlit run cmms_fabrica/app.py
+```
 
-(Opcional) pruebas:
+Pruebas (opcional):
 
+```bash
 pip install -r cmms_fabrica/requirements-dev.txt
-PYTHONPATH=cmms_fabrica pytest -q
+PYTHONPATH=. pytest -q
+```
 
-🔄 Lógica de operación
+## 🔄 Lógica de operación
 
-Detectar → Ejecutar → Registrar → Validar → Mejorar
+Detectar → Analizar → Ejecutar → Registrar → Validar → Mejorar
 
 Revisión obligatoria cada 15 días.
 
-⚠️ Criterio de priorización
+## ⚠️ Criterio de priorización
 
 Las intervenciones se priorizan según criticidad:
 
-🔴 Crítico → parada de línea o riesgo de seguridad
-🟠 Alto → impacto en producción
-🟡 Medio → degradación del rendimiento
-🟢 Bajo → sin impacto relevante
+- 🔴 Crítico → parada de línea o riesgo de seguridad.
+- 🟠 Alto → impacto en producción.
+- 🟡 Medio → degradación del rendimiento.
+- 🟢 Bajo → sin impacto relevante.
 
-La criticidad se evalúa en base a:
+La criticidad se evalúa con:
 
-Impacto en producción
-Riesgo de seguridad
-Estado del activo
-Reincidencia
+- Impacto en producción
+- Riesgo de seguridad
+- Estado del activo
+- Reincidencia
 
-La criticidad define prioridad, no urgencia percibida.
+La criticidad define prioridad (no urgencia percibida).
 
-🎯 Filosofía de uso
-El CMMS es la única fuente de verdad
-Toda acción se registra
-Simplicidad > complejidad
-El sistema se adapta al técnico
-La mejora se basa en lo ejecutado
-📋 Tipos de tareas
-Correctivas → fallas reales + RCA
-Preventivas → tareas planificadas
-Técnicas → análisis y gestión
-Observaciones → hallazgos
-📊 Resultado esperado
+## 🎯 Filosofía de uso
 
-Sistema:
+- El CMMS es la única fuente de verdad.
+- Toda acción se registra.
+- Simplicidad > complejidad.
+- El sistema se adapta al técnico.
+- La mejora se basa en lo ejecutado.
 
-Ordenado
-Trazable
-Repetible
-Aplicable en cualquier fábrica
-📋 Normas
+## 📋 Tipos de tareas
+
+- Correctivas → fallas reales + RCA
+- Preventivas → tareas planificadas
+- Técnicas → análisis y gestión
+- Observaciones → hallazgos
+
+## 📋 Normas
 
 Alineado con:
 
-ISO 55001
-ISO 9001
-ISO 14224
-🌱 Escalabilidad
-Integración con sensores (IoT)
-Automatización
-IA sobre historial
-👤 Autor
+- ISO 55001
+- ISO 9001
+- ISO 14224
+
+## 👤 Autor
 
 Pablo Lepratti
 
-“El sistema no representa la fábrica. Representa cómo el técnico la entiende.”
+> “El sistema no representa la fábrica. Representa cómo el técnico la entiende.”

@@ -66,7 +66,12 @@ def app():
             id_activo = st.text_input("ID del Activo Técnico", value=defaults.get("id_activo_tecnico") if defaults else "")
             nombre = st.text_input("Nombre o Descripción", value=defaults.get("nombre") if defaults else "")
             ubicacion = st.text_input("Ubicación", value=defaults.get("ubicacion") if defaults else "")
-            tipo = st.selectbox("Tipo de Activo", opciones_tipo, index=tipo_index)
+            tipo = st.selectbox(
+                "Tipo de Activo (campo operativo: tipo)",
+                opciones_tipo,
+                index=tipo_index,
+                help="Equivale al concepto `tipo_activo` definido en las fuentes oficiales.",
+            )
             estado = st.selectbox("Estado", opciones_estado, index=estado_index)
 
             activos_existentes = list(coleccion.find({}, {"_id": 0, "id_activo_tecnico": 1}))
@@ -75,7 +80,7 @@ def app():
             valor_default = defaults.get("pertenece_a") if defaults else ""
             index_default = ids_disponibles.index(valor_default) if valor_default in ids_disponibles else 0
             pertenece_a = st.selectbox(
-                "Activo padre / Proceso padre (opcional)",
+                "Activo padre / Proceso padre (campo operativo: pertenece_a)",
                 options=ids_disponibles,
                 index=index_default,
                 help="Usa este campo para vincular el registro a su padre operativo. Se guarda en `pertenece_a`.",
