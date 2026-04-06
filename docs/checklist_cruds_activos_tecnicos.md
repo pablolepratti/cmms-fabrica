@@ -1,15 +1,18 @@
 # Comparación de CRUDs frente al Estándar de Activos Técnicos
 
-Este informe resume la alineación de los principales CRUDs del sistema con el estándar de campos definidos para `activos_tecnicos`.
+Este informe resume la alineación de los principales CRUDs del sistema con el estándar de campos definidos para `activos_tecnicos`, diferenciando **modelo conceptual** y **campos operativos actuales**.
 
 ## Estándar de campos para un activo técnico
 
 - `id_activo_tecnico`
 - `nombre`
 - `ubicacion`
-- `tipo`
+- `tipo_activo` *(conceptual en fuentes oficiales)*
+- `tipo` *(campo persistido vigente en código)*
 - `estado`
-- `pertenece_a` *(opcional)*
+- `activo_padre` *(conceptual en fuentes oficiales)*
+- `pertenece_a` *(campo persistido vigente, opcional)*
+- `nivel` *(opcional, jerarquía técnica)*
 - `usuario_registro`
 - `fecha_registro`
 
@@ -17,7 +20,7 @@ Este informe resume la alineación de los principales CRUDs del sistema con el e
 
 | Módulo | Campos clave utilizados | Cumple estándar |
 | ------ | ---------------------- | --------------- |
-| `crud_activos_tecnicos.py` | `id_activo_tecnico`, `nombre`, `ubicacion`, `tipo`, `estado`, `pertenece_a`, `usuario_registro`, `fecha_registro` | ✅ |
+| `crud_activos_tecnicos.py` | `id_activo_tecnico`, `nombre`, `ubicacion`, `tipo`, `estado`, `pertenece_a`, `nivel`, `usuario_registro`, `fecha_registro` | ✅ |
 | `crud_tareas_correctivas.py` | `id_activo_tecnico`, `id_tarea`, `descripcion_falla`, `fecha_evento`, `usuario_registro` | Parcial |
 | `crud_planes_preventivos.py` | `id_activo_tecnico`, `id_plan`, `descripcion`, `fecha_evento`, `usuario_registro` | Parcial |
 | `crud_tareas_tecnicas.py` | `id_activo_tecnico` *(opcional)*, `id_tarea_tecnica`, `descripcion`, `fecha_evento`, `usuario_registro` | Parcial |
@@ -29,7 +32,7 @@ La columna *Cumple estándar* indica si el módulo implementa todos los campos o
 
 ## Detalle de campos por CRUD
 
-- **crud_activos_tecnicos.py**: `id_activo_tecnico`, `nombre`, `ubicacion`, `tipo`, `estado`, `pertenece_a`, `responsable`, `usuario_registro`, `fecha_registro`.
+- **crud_activos_tecnicos.py**: `id_activo_tecnico`, `nombre`, `ubicacion`, `tipo`, `estado`, `pertenece_a`, `nivel`, `responsable`, `usuario_registro`, `fecha_registro`.
 - **crud_tareas_correctivas.py**: `id_tarea`, `id_activo_tecnico`, `fecha_evento`, `descripcion_falla`, `modo_falla`, `responsable`, `proveedor_externo`, `estado`, `usuario_registro`, `observaciones`, `fecha_registro`.
 - **crud_planes_preventivos.py**: `id_plan`, `id_activo_tecnico`, `frecuencia`, `unidad_frecuencia`, `proxima_fecha`, `ultima_fecha`, `responsable`, `proveedor_externo`, `estado`, `adjunto_plan`, `usuario_registro`, `observaciones`, `fecha_registro`.
 - **crud_tareas_tecnicas.py**: `id_tarea_tecnica`, `id_activo_tecnico` *(opcional)*, `fecha_evento`, `descripcion`, `tipo_tecnica`, `responsable`, `proveedor_externo`, `estado`, `usuario_registro`, `observaciones`, `fecha_registro`.
@@ -42,5 +45,5 @@ La columna *Cumple estándar* indica si el módulo implementa todos los campos o
 
 - [x] Cada CRUD registra `usuario_registro` y fecha de creación para trazabilidad.
 - [x] Los eventos quedan centralizados en la colección `historial` vía `generador_historial.py`.
+- [x] Se documenta compatibilidad entre campos conceptuales (`tipo_activo`, `activo_padre`) y campos operativos vigentes (`tipo`, `pertenece_a`).
 - [x] Documentar en futuros desarrollos los campos específicos de cada CRUD para facilitar auditorías.
-
